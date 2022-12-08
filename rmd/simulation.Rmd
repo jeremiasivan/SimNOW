@@ -1,0 +1,159 @@
+---
+title: "ms and AliSim Sequence Simulation"
+---
+
+### ms
+```{r ms, echo = FALSE}
+simulation_outdir <- paste(getwd(), "/simulation", sep="")
+simulation_output <- paste(simulation_outdir, "/", params$prefix, ".ms", sep="")
+
+if (!file.exists(simulation_outdir)) {
+  dir.create(simulation_outdir, recursive = T)
+}
+
+options(scipen=999)
+ms_command <- paste(params$ms_params, "-r", params$ms_r, params$ms_l)
+
+# skip this step if msfile exists
+if (file.exists(simulation_output)) {
+  print("msfile already exists. Skipping this step...")
+} else {
+  print(paste(params$msdir,ms_command,">",simulation_output))
+  system(paste(params$msdir,ms_command,">",simulation_output))
+}
+```
+
+```{r postms, echo = FALSE, message = FALSE, collapse = TRUE}
+simulation_outdir <- paste(getwd(), "/simulation", sep="")
+msfile <- paste(simulation_outdir, "/", params$prefix, ".ms", sep="")
+
+fn_mstrees <- paste(simulation_outdir, "/", params$prefix, ".mstrees", sep="")
+fn_mttrees <- paste(simulation_outdir, "/", params$prefix, ".multitree", sep="")
+fn_mstops <- paste(simulation_outdir, "/", params$prefix, ".mstops", sep="")
+fn_uqtops <- paste(simulation_outdir, "/", params$prefix, ".uqtops", sep="")
+
+# skip this step if all summary files exist
+if (file.exists(fn_mstrees) && file.exists(fn_mstops) && file.exists(fn_mttrees) && file.exists(fn_uqtops)) {
+  print("ms summary files already exist. Skipping this step...")
+} else {
+  ms <- read.delim(msfile)
+  mstrees <- subset(ms, grepl("^\\[", ms[,1]))
+  options(scipen=999)
+  
+  if (nrow(mstrees) == 0) {
+    onlytree <- subset(ms, grepl("^\\(.+\\);$", ms[,1]))
+    mstrees <- data.frame(paste("[",params$ms_l,"]",onlytree,sep=""))
+  }
+  
+  # convert msfile into dataframe
+  trees <- data.frame(do.call('rbind', strsplit(as.character(mstrees[,1]), '\\[|\\]')))
+  trees[,1] <- NULL
+  colnames(trees) <- c("length","tree")
+  trees$length <- as.numeric(trees$length)
+    
+  print("Summarizing ms trees...")
+  summary <- trees %>%
+    group_by(tree, group_run = data.table::rleid(tree)) %>%
+    summarise_all(sum) %>%
+    arrange(group_run)
+  summary$group_run <- NULL
+    
+  start <- c(1)
+  stop <- c(summary$length[1])
+  
+  # store first tree without branch lengths  
+  first_tree <- read.tree(text=summary$tree[1])
+  first_tree$edge.length <- NULL
+  topology <- c(write.tree(first_tree))
+    
+  if (nrow(summary) > 1) {
+    for (i in 2:nrow(summary)){
+      start <- c(start,stop[length(stop)]+1)
+      stop <- c(stop,stop[length(stop)]+summary$length[i])
+        
+      # store trees without branch lengths
+      temp_tree <- read.tree(text=summary$tree[i])
+      temp_tree$edge.length <- NULL
+      topology <- c(topology,write.tree(temp_tree))
+    }
+  }
+    
+  summary <- cbind(summary,start=start,stop=stop,topology=topology)
+  write.table(summary, fn_mstrees, sep="\t", quote=F, row.names=F)
+  
+  print("Summarizing multitrees...")
+  write.table(summary$tree, file=fn_mttrees, sep="\t", quote=F, row.names=F, col.names=F)
+    
+  print("Summarizing ms topologies...")
+  t_summary <- summary %>%
+    group_by(topology, group_run = data.table::rleid(topology)) %>%
+    summarise(length=sum(length)) %>%
+    arrange(group_run)
+  t_summary$group_run <- NULL
+    
+  start <- c(1)
+  stop <- c(t_summary$length[1])
+
+  if (nrow(t_summary) > 1) {
+    for (i in 2:nrow(t_summary)){
+      start <- c(start,stop[length(stop)]+1)
+      stop <- c(stop,stop[length(stop)]+t_summary$length[i])
+    }
+  }    
+  
+  t_summary <- cbind(t_summary,start=start,stop=stop)
+  write.table(t_summary, file=fn_mstops, sep="\t", quote=F, row.names=F)
+  
+  print("Summarizing unique topologies...")
+  write.table(data.frame(unique(t_summary$topology)), file=fn_uqtops, sep="\t", quote=F, row.names=F, col.names=F)
+}
+```
+
+### alisim
+```{r prealisim, echo = FALSE}
+simulation_outdir <- paste(getwd(), "/simulation", sep="")
+fn_mstrees <- paste(simulation_outdir, "/", params$prefix, ".mstrees", sep="")
+
+fn_nexus <- paste(simulation_outdir, "/", params$prefix, ".nex", sep="")
+
+if (file.exists(fn_nexus)) {
+  print("Nexus file already exists. Skipping this step...")
+} else {
+  mstrees <- read.table(fn_mstrees)
+  colnames(mstrees) <- mstrees[1,]
+  mstrees <- mstrees[-1,]
+  
+  print("Writing Nexus file...")
+  nexus_lines <- c("#nexus", "begin sets;")
+  
+  for (i in 1:nrow(mstrees)) {
+    temp <- paste("    charset gene_",i," = DNA, ",mstrees$start[i],"-",mstrees$stop[i],";",sep="")
+    nexus_lines <- c(nexus_lines, temp)
+  }
+  nexus_lines <- c(nexus_lines, "end;")
+  
+  fileConn<-file(fn_nexus)
+  writeLines(nexus_lines, fileConn)
+  close(fileConn)
+}
+```
+
+```{r alisim, echo = FALSE}
+simulation_outdir <- paste(getwd(), "/simulation", sep="")
+fn_nexus <- paste(simulation_outdir, "/", params$prefix, ".nex", sep="")
+fn_mttrees <- paste(simulation_outdir, "/", params$prefix, ".multitree", sep="")
+
+fn_alisim <- paste(simulation_outdir, "/", params$prefix, sep="")
+
+if (file.exists(paste(fn_alisim, ".fa", sep = ""))) {
+  print("AliSim simulated alignment already exists. Skipping this step...")
+} else {
+  if (params$alisim_scale == 0 || is.null(params$alisim_scale)) {
+    print(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"-m",params$alisim_model,"-af fasta", sep=" "))
+    system(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"-m",params$alisim_model,"-af fasta", sep=" "))
+  } else {
+    print(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"--branch-scale",params$alisim_scale,"-m",params$alisim_model,"-af fasta", sep=" "))
+    system(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"--branch-scale",params$alisim_scale,"-m",params$alisim_model,"-af fasta", sep=" "))
+  }
+}
+```

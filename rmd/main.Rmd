@@ -1,0 +1,51 @@
+---
+title: "Non-overlapping Windows Report"
+params:
+  # general
+  rmddir: ""
+  prefix: ""
+  outdir: ""
+  
+  # sequence simulation
+  msdir: ""
+  ms_params: ""
+  ms_r: 0
+  ms_l: 0
+  
+  iqtree2dir: ""
+  alisim_model: ""
+  alisim_scale: 0
+  outgroup: ""
+  
+  # non-overlapping window analysis
+  window_size: !r c()
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ape)
+library(seqinr)
+library(hash)
+library(data.table)
+library(ggplot2)
+library(forcats)
+
+currentdir <- paste(params$outdir, "/", params$prefix, sep="")
+if (!file.exists(currentdir)) {
+  dir.create(currentdir, recursive = T)
+}
+
+knitr::opts_knit$set(echo = TRUE, root.dir = currentdir)
+```
+
+## Sequence Simulation
+```{r child = paste(params$rmddir,"/simulation.Rmd",sep="")}
+```
+
+## Non-Overlapping Windows Analysis
+```{r child = paste(params$rmddir,"/window.Rmd",sep="")}
+```
+
+## Summary
+```{r child = paste(params$rmddir,"/summary.Rmd",sep="")}
+```

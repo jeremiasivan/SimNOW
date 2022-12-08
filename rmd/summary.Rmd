@@ -1,0 +1,109 @@
+---
+title: "Summary of Non-overlapping Windows vs Truth"
+---
+
+```{r mswindow, echo = FALSE}
+window_outdir <- paste(getwd(), "/windows/", sep="")
+window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
+
+fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
+msfile <- read.table(fn_mstops)
+colnames(msfile) <- msfile[1,]
+msfile <- msfile[-1,]
+
+for (i in window_sizes) {
+  temp_outdir <- paste(window_outdir,i,"/summary/",sep="")
+  if (!file.exists(temp_outdir)) {
+    dir.create(temp_outdir, recursive = T)
+  }
+  
+  fn_summary <- paste(temp_outdir, params$prefix, ".atsum", sep="")
+  fn_cmp <- paste(temp_outdir, params$prefix, ".cmp", sep="")
+  fn_figure <- paste(temp_outdir, params$prefix, ".cmp.tiff", sep="")
+  if (file.exists(fn_cmp) && file.exists(fn_figure)) {
+    print(paste(i, "bp window comparison already exists. Moving on...", sep=""))
+    next
+  }
+  
+  smfile <- read.table(fn_summary)
+  colnames(smfile) <- smfile[1,]
+  smfile <- smfile[-1,]
+  
+  unique_topologies <- unique(smfile$newick)
+  
+  for (j in 1:nrow(msfile)) {
+    for (k in unique_topologies) {
+      if (all.equal.phylo(unroot(read.tree(text = msfile$topology[j])), read.tree(text = k))) {
+        msfile$topology[j] <- k
+        break
+      }
+    }
+  }
+  
+  # extracting essential columns
+  dat <- apply(smfile, 1,
+               function(x) data.table(bp = x["start"]:x["stop"], newick = x["newick"], topology = x["topology"])) %>%
+    rbindlist()
+  
+  # create empty dataframe
+  tree_header <- unique(msfile$topology)
+  
+  empty_matrix <- as.data.frame(matrix(rep(0, length(tree_header)+1), nrow=length(tree_header), ncol=length(tree_header)+1))
+  names(empty_matrix) <- c(tree_header,"NT")
+  
+  output <- data.frame(topology = tree_header)
+  output <- cbind(output, empty_matrix)
+  
+  # annotating
+  for (j in 1:nrow(msfile)){
+    sites <- dat[msfile$start[j]:msfile$stop[j],]
+    topology_idx <- which(output$topology==msfile$topology[j])
+    
+    sites_sum <- sites %>%
+      group_by(newick) %>%
+      summarise(n=n())
+    
+    for (k in 1:nrow(sites_sum)) {
+      window_idx <- which(colnames(output)==sites_sum$newick[k])
+      
+      if (length(window_idx) == 0) {
+        output$NT[topology_idx] = output$NT[topology_idx] + sites_sum$n[k]
+      } else {
+        output[topology_idx,window_idx] = output[topology_idx,window_idx] + sites_sum$n[k]
+      }
+    }
+  }
+  
+  write.table(output, file=fn_cmp, sep = "\t", quote = F, row.names = F)
+  
+  # visualization
+  sub_output <- data.frame()
+  
+  for (j in 1:nrow(output)) {
+    for (k in 2:ncol(output)) {
+      sub_output <- rbind(sub_output, c(output$topology[j],colnames(output[k]),output[j,k]))
+    }
+  }
+  colnames(sub_output) <- c("topology","sites","frequency")
+  sub_output$sites <- factor(sub_output$sites,levels = unique(sub_output$sites),ordered = T)
+  
+  tiff(filename=fn_figure, units="px", width=2880, height=1800)
+  print(ggplot(sub_output, aes(fill=sites, y=as.numeric(frequency), x=topology)) + 
+          geom_bar(position="dodge", stat="identity") +
+          aes(x = fct_inorder(topology)) +
+          ggtitle("Distribution of Sites from Sliding-Window Analysis in Simulated Dataset") + 
+          xlab("True topology from simulated data") +
+          ylab("Number of sites from sliding-window analysis") +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=30),
+            axis.text.x=element_text(size=30),
+            legend.title=element_blank(),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+          ))
+  dev.off()
+}
+```
