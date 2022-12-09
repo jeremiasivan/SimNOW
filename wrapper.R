@@ -4,7 +4,7 @@ library(doParallel)
 # wrapper-specific parameters
 ms_r <- c(0,1,10)
 nreps <- 2
-prefix <- "wrap"
+prefix <- "sim"
 nthread <- 2
 
 # general

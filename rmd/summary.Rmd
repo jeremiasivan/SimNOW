@@ -107,3 +107,42 @@ for (i in window_sizes) {
   dev.off()
 }
 ```
+
+```{r sumtable, echo = FALSE}
+window_outdir <- paste(getwd(), "/windows/", sep="")
+window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
+
+t_accuracy <- c("window_size","accuracy","aic","aicc","bic","bic_contiguous")
+fn_summary <- paste(window_outdir,params$prefix,".sum",sep="")
+
+for (i in window_sizes) {
+  fn_cmp <- paste(window_outdir,i,"/summary/",params$prefix,".cmp", sep="")
+  fn_iqtree <- paste(window_outdir,i,"/trees/",params$prefix,".iqtree", sep="")
+  fn_contiguous <- paste(window_outdir,i,"/contiguous/trees/",params$prefix,".iqtree", sep="")
+  
+  cmp <- read.table(fn_cmp)
+  cmp <- sapply(cmp[-1,-1], as.numeric)
+  
+  acc <- 0
+  if (is.null(nrow(cmp))) {
+    acc <- cmp[1]
+  } else {
+    for (j in 1:nrow(cmp)) {
+      acc <- acc + as.numeric(cmp[j,j])
+    }
+  }
+  acc <- round(acc / sum(cmp) * 100, 3)
+  
+  aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
+  aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
+  bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
+  cbic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_contiguous), intern = T))
+  
+  t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,cbic))
+}
+
+colnames(t_accuracy) <- t_accuracy[1,]
+t_accuracy <- t_accuracy[-1,]
+
+write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
+```

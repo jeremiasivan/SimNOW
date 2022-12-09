@@ -39,13 +39,13 @@ knitr::opts_knit$set(echo = TRUE, root.dir = currentdir)
 ```
 
 ## Sequence Simulation
-```{r child = paste(params$rmddir,"/simulation.Rmd",sep="")}
+```{r child = paste(params$rmddir,"/simulation.Rmd",sep=""), include = FALSE}
 ```
 
 ## Non-Overlapping Windows Analysis
-```{r child = paste(params$rmddir,"/window.Rmd",sep="")}
+```{r child = paste(params$rmddir,"/window.Rmd",sep=""), include = FALSE}
 ```
 
 ## Summary
-```{r child = paste(params$rmddir,"/summary.Rmd",sep="")}
+```{r child = paste(params$rmddir,"/summary.Rmd",sep=""), include = FALSE}
 ```
