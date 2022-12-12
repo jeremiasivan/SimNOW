@@ -6,15 +6,16 @@ Software incorporated in the pipeline:
 - <a href="http://home.uchicago.edu/~rhudson1/source/mksamples.html">ms</a>
 - <a href="http://www.iqtree.org/doc/AliSim">AliSim</a>
 - <a href="http://www.iqtree.org">IQ-TREE 2</a>
+- <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a>
 
 ---
 ### Notes
 1. Output HTML report is not fixed yet
 2. Currently, you can only set `ms` recombination rate to vary between simulations using `wrapper.R`
+3. Multiple MAST models should be manually specified in `wrapper_masthmm.R`
 
 ---
 ### Future Works
-- Incorporate <a href="https://www.biorxiv.org/content/10.1101/2022.10.06.511210v1">MAST</a> and HMM
 - Incorporate other methods to improve accuracy
 - Create summary report for the whole pipeline, including HTML template
 
@@ -26,3 +27,4 @@ Software incorporated in the pipeline:
 
 3. Minh, B.Q., et al. (<a href="https://doi.org/10.1093/molbev/msaa015">2020</a>). **IQ-TREE 2: New Models and Efficient Methods for Phylogenetic Inference in the Genomic Era**. *Molecular Biology and Evolution*, *37*(5), 1530–1534.
  
+4. Wong, T., et al. (<a href="https://doi.org/10.1101/2022.10.06.511210">*in press*</a>). **MAST: Phylogenetic Inference with Mixtures Across Sites and Trees**. *bioRxiv*.

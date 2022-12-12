@@ -7,11 +7,9 @@ nthread <- 2
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
 outdir <- "~/Documents/simulation/rmd_test"
-  
-# sequence simulation
-iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
-  
+
 # mast and hmm
+iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
 mast_model <- c("JC+FO+T", "JC+T")
 mast_tops <- 1
 
