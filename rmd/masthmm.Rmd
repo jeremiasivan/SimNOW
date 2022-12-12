@@ -1,0 +1,83 @@
+---
+title: "MAST and HMM"
+params:
+  # general
+  rmddir: "~/Documents/SimNOW/rmd"
+  prefix: "wrap_6"
+  outdir: "~/Documents/simulation/rmd_test"
+  
+  # sequence simulation
+  iqtree2dir: "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
+  
+  # mast and hmm
+  mast_model: "JC+FO+T"
+  mast_tops: 1
+---
+
+```{r setup, include=FALSE}
+currentdir <- paste(params$outdir, "/", params$prefix, sep="")
+if (!file.exists(currentdir)) {
+  dir.create(currentdir, recursive = T)
+}
+
+knitr::opts_knit$set(echo = TRUE, root.dir = currentdir)
+```
+
+```{r prehmm, echo = FALSE}
+window_outdir <- paste(getwd(), "/windows/", sep="")
+window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
+
+for (i in window_sizes) {
+  fn_tops <- paste(window_outdir, i, "/summary/", params$prefix, ".topsum", sep="")
+  
+  temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
+  if (!file.exists(temp_outdir)) {
+    dir.create(temp_outdir, recursive = T)
+  }
+  
+  fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
+  if (file.exists(fn_mast_tops)) {
+    print(paste(i, "bp window MAST topology file already exists. Moving on...", sep=""))
+    next
+  }
+  
+  topsum <- read.table(fn_tops)
+  colnames(topsum) <- topsum[1,]
+  topsum <- topsum[-1,]
+  
+  tpercent <- 0
+  tmast <- c()
+  for (j in 1:nrow(topsum)) {
+    tmast <- c(tmast, topsum$newick[j])
+    tpercent <- topsum$cum.percentage[j]
+    
+    if (tpercent >= params$mast_tops) {
+      break
+    }
+  }
+  
+  write.table(tmast, fn_mast_tops, quote = F, row.names = F, col.names = F)
+}
+```
+
+```{r masthmm, echo = FALSE}
+window_outdir <- paste(getwd(), "/windows/", sep="")
+window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
+
+fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
+
+for (i in window_sizes) {
+  temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
+  fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
+  
+  mast_model <- paste("'", params$mast_model, "'", sep="")
+  outdir <- paste(temp_outdir, gsub("[[:punct:]]","",mast_model), "/", sep="")
+  if (!file.exists(outdir)) {
+    dir.create(outdir, recursive = T)
+  }
+  
+  prefix <- paste(outdir, params$prefix, sep="")
+  mast_cl <- paste(params$iqtree2dir,"-s",fn_alisim,"-m",mast_model,"-blmin 0.0001 -te",fn_mast_tops,"-pre",prefix,"-hmm -wslm -wspm -alninfo")
+  system(mast_cl)
+}
+```
