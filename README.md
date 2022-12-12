@@ -17,6 +17,7 @@ Software incorporated in the pipeline:
 ---
 ### Future Works
 - Incorporate other methods to improve accuracy
+- Add `redo` parameter to overwrite previous result
 - Create summary report for the whole pipeline, including HTML template
 
 ---

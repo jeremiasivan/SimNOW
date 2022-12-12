@@ -91,9 +91,9 @@ for (i in window_sizes) {
   print(ggplot(sub_output, aes(fill=sites, y=as.numeric(frequency), x=topology)) + 
           geom_bar(position="dodge", stat="identity") +
           aes(x = fct_inorder(topology)) +
-          ggtitle("Distribution of Sites from Sliding-Window Analysis in Simulated Dataset") + 
+          ggtitle("Distribution of Sites from Non-Overlapping Window Analysis in Simulated Dataset") + 
           xlab("True topology from simulated data") +
-          ylab("Number of sites from sliding-window analysis") +
+          ylab("Number of sites from non-overlapping window analysis") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
             axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
