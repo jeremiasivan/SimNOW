@@ -57,7 +57,7 @@ for (i in window_sizes) {
   }
   
   mast_model <- tolower(paste("'", params$mast_model, "'", sep=""))
-  outdir <- paste(temp_outdir, gsub("[[:punct:]]","",mast_model), "/", sep="")
+  outdir <- paste(temp_outdir, gsub("[[:punct:]]","_",mast_model), "/", sep="")
   if (!file.exists(outdir)) {
     dir.create(outdir, recursive = T)
   }
@@ -84,11 +84,15 @@ msfile <- msfile[-1,]
 
 for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
-  fn_hmm <- paste(temp_outdir, params$prefix, ".hmm", sep="")
-  fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
   
-  fn_hmmsum <- paste(temp_outdir, params$prefix, ".hmmsum", sep="")
-  fn_hmmfig <- paste(temp_outdir, params$prefix, ".hmmsum.tiff", sep="")
+  mast_model <- tolower(paste("'", params$mast_model, "'", sep=""))
+  outdir <- paste(temp_outdir, gsub("[[:punct:]]","_",mast_model), "/", sep="")
+ 
+  fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
+  fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
+  
+  fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
+  fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
   if (all(file.exists(fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
     print(paste(i, "bp window MASTHMM summary file already exists. Moving on...", sep=""))
     next
@@ -117,7 +121,7 @@ for (i in window_sizes) {
   output <- cbind(output, empty_matrix)
   
   # annotating
-  log_info("Annotating...")
+  print("Annotating...")
   for (i in 1:nrow(msfile)){
     sites <- dat[msfile$start[i]:msfile$stop[i],]
     topology_idx <- which(output$topology==msfile$topology[i])
@@ -140,7 +144,7 @@ for (i in window_sizes) {
   write.table(output, file=fn_hmmsum, quote = F, row.names = F)
   
   # visualization
-  log_info("Visualizing...")
+  print("Visualizing...")
   sub_output <- data.frame()
   
   for (i in 1:nrow(output)) {
