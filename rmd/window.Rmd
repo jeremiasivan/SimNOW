@@ -2,7 +2,7 @@
 title: "Non-overlapping Windows Analysis"
 ---
 
-### Initialization
+### initialization
 ```{r initialization}
 if (length(params$window_size) == 0) {
   print("Window size is not specified. Quitting...")
@@ -82,7 +82,7 @@ for (i in window_sizes) {
 
 ```
 
-### Annotation
+### annotation
 ```{r annotation}
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)

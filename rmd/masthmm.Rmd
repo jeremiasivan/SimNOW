@@ -1,29 +1,8 @@
 ---
-title: "MAST and HMM"
-params:
-  # general
-  rmddir: "~/Documents/SimNOW/rmd"
-  prefix: "wrap_6"
-  outdir: "~/Documents/simulation/rmd_test"
-  redo: TRUE
-  
-  # sequence simulation
-  iqtree2dir: "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
-  
-  # mast and hmm
-  mast_model: "JC+FO+T"
-  mast_tops: 1
+title: "MASTHMM Analysis"
 ---
 
-```{r setup, include=FALSE}
-currentdir <- paste(params$outdir, "/", params$prefix, sep="")
-if (!file.exists(currentdir)) {
-  dir.create(currentdir, recursive = T)
-}
-
-knitr::opts_knit$set(include = FALSE, root.dir = currentdir)
-```
-
+### analysis
 ```{r prehmm}
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
