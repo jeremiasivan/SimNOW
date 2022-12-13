@@ -3,7 +3,7 @@ title: "ms and AliSim Sequence Simulation"
 ---
 
 ### ms
-```{r ms, echo = FALSE}
+```{r ms}
 simulation_outdir <- paste(getwd(), "/simulation", sep="")
 simulation_output <- paste(simulation_outdir, "/", params$prefix, ".ms", sep="")
 
@@ -15,15 +15,15 @@ options(scipen=999)
 ms_command <- paste(params$ms_params, "-r", params$ms_r, params$ms_l)
 
 # skip this step if msfile exists
-if (file.exists(simulation_output)) {
+if (file.exists(simulation_output) && params$redo == FALSE) {
   print("msfile already exists. Skipping this step...")
 } else {
-  print(paste(params$msdir,ms_command,">",simulation_output))
+  print("Generating ms trees...")
   system(paste(params$msdir,ms_command,">",simulation_output))
 }
 ```
 
-```{r postms, echo = FALSE, message = FALSE, collapse = TRUE}
+```{r postms}
 simulation_outdir <- paste(getwd(), "/simulation", sep="")
 msfile <- paste(simulation_outdir, "/", params$prefix, ".ms", sep="")
 
@@ -33,7 +33,7 @@ fn_mstops <- paste(simulation_outdir, "/", params$prefix, ".mstops", sep="")
 fn_uqtops <- paste(simulation_outdir, "/", params$prefix, ".uqtops", sep="")
 
 # skip this step if all summary files exist
-if (file.exists(fn_mstrees) && file.exists(fn_mstops) && file.exists(fn_mttrees) && file.exists(fn_uqtops)) {
+if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && params$redo == FALSE) {
   print("ms summary files already exist. Skipping this step...")
 } else {
   ms <- read.delim(msfile)
@@ -110,13 +110,13 @@ if (file.exists(fn_mstrees) && file.exists(fn_mstops) && file.exists(fn_mttrees)
 ```
 
 ### alisim
-```{r prealisim, echo = FALSE}
+```{r prealisim}
 simulation_outdir <- paste(getwd(), "/simulation", sep="")
 fn_mstrees <- paste(simulation_outdir, "/", params$prefix, ".mstrees", sep="")
 
 fn_nexus <- paste(simulation_outdir, "/", params$prefix, ".nex", sep="")
 
-if (file.exists(fn_nexus)) {
+if (file.exists(fn_nexus) && params$redo == FALSE) {
   print("Nexus file already exists. Skipping this step...")
 } else {
   mstrees <- read.table(fn_mstrees)
@@ -138,21 +138,20 @@ if (file.exists(fn_nexus)) {
 }
 ```
 
-```{r alisim, echo = FALSE}
+```{r alisim}
 simulation_outdir <- paste(getwd(), "/simulation", sep="")
 fn_nexus <- paste(simulation_outdir, "/", params$prefix, ".nex", sep="")
 fn_mttrees <- paste(simulation_outdir, "/", params$prefix, ".multitree", sep="")
 
 fn_alisim <- paste(simulation_outdir, "/", params$prefix, sep="")
 
-if (file.exists(paste(fn_alisim, ".fa", sep = ""))) {
+if (file.exists(paste(fn_alisim, ".fa", sep = "")) && params$redo == FALSE) {
   print("AliSim simulated alignment already exists. Skipping this step...")
 } else {
+  print("Generating AliSim alignment...")
   if (params$alisim_scale == 0 || is.null(params$alisim_scale)) {
-    print(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"-m",params$alisim_model,"-af fasta", sep=" "))
     system(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"-m",params$alisim_model,"-af fasta", sep=" "))
   } else {
-    print(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"--branch-scale",params$alisim_scale,"-m",params$alisim_model,"-af fasta", sep=" "))
     system(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"--branch-scale",params$alisim_scale,"-m",params$alisim_model,"-af fasta", sep=" "))
   }
 }

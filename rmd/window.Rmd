@@ -2,7 +2,8 @@
 title: "Non-overlapping Windows Analysis"
 ---
 
-```{r initialization, echo = FALSE, collapse = TRUE}
+### Initialization
+```{r initialization}
 if (length(params$window_size) == 0) {
   print("Window size is not specified. Quitting...")
   knitr::knit_exit()
@@ -32,29 +33,28 @@ for (w in params$window_size) {
     dir.create(temp_outdir, recursive = T)
   }
   
-  if (sapply(temp_outdir,function(dir){length(list.files(dir,pattern='fa'))}) != 0) {
+  if (sapply(temp_outdir,function(dir){length(list.files(dir,pattern='fa'))}) != 0 && params$redo == FALSE) {
     print(paste(w, "bp window alignment already exists. Moving on...", sep=""))
     next
-  } else {
-    start <- 1
-    
-    for (i in 1:floor(lens/w)) {
-      subfasta <- lapply(s, function(x) x[seq(from = start, to = as.numeric(i*w))])
-      df <- do.call(rbind,subfasta)
+  } 
+  
+  start <- 1
+  for (i in 1:floor(lens/w)) {
+    subfasta <- lapply(s, function(x) x[seq(from = start, to = as.numeric(i*w))])
+    df <- do.call(rbind,subfasta)
       
-      wi <- floor(log(floor(lens/w)) / log(10)) + 1
-      li <- formatC(i, width = wi, format = "d", flag = "0")
+    wi <- floor(log(floor(lens/w)) / log(10)) + 1
+    li <- formatC(i, width = wi, format = "d", flag = "0")
       
-      subfasta <- setNames(split(df, seq(nrow(df))), rownames(df))
-      write.fasta(sequences=subfasta, names=names(subfasta), file.out=paste(temp_outdir,"window_",li,".fa",sep=""), nbchar = 100)
+    subfasta <- setNames(split(df, seq(nrow(df))), rownames(df))
+    write.fasta(sequences=subfasta, names=names(subfasta), file.out=paste(temp_outdir,"window_",li,".fa",sep=""), nbchar = 100)
       
-      start <- start + w
-    }
+    start <- start + w
   }
 }
 ```
 
-```{r windowtree, echo = FALSE, collapse = TRUE}
+```{r windowtree}
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
@@ -65,24 +65,25 @@ for (i in window_sizes) {
     dir.create(temp_outdir, recursive = T)
   }
   
-  if (sapply(temp_outdir,function(dir){length(list.files(dir,pattern='treefile'))}) != 0) {
+  if (sapply(temp_outdir,function(dir){length(list.files(dir,pattern='treefile'))}) != 0 && params$redo == FALSE) {
     print(paste(i, "bp window treefile already exists. Moving on...", sep=""))
     next
-  } else {
-    fastadir <- paste(window_outdir,i,"/alignment/",sep="")
-    prefix <- paste(temp_outdir,params$prefix,sep="")
+  }
+  
+  fastadir <- paste(window_outdir,i,"/alignment/",sep="")
+  prefix <- paste(temp_outdir,params$prefix,sep="")
 
-    if (is.null(params$outgroup) || params$outgroup == ""){
-      system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet -T 2", sep=" "))
-    } else {
-      system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet -T 2 -o",params$outgroup, sep=" "))
-    }
+  if (is.null(params$outgroup) || params$outgroup == ""){
+    system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet", sep=" "))
+  } else {
+    system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet -o",params$outgroup, sep=" "))
   }
 }
 
 ```
 
-```{r annotation, echo = FALSE, message = FALSE, collapse = TRUE}
+### Annotation
+```{r annotation}
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
@@ -118,7 +119,7 @@ for (i in window_sizes) {
   fn_figure <- paste(temp_outdir, params$prefix, ".atsum.tiff", sep="")
   fn_cfigure <- paste(temp_outdir, params$prefix, ".count.tiff", sep="")
   fn_tops <- paste(temp_outdir, params$prefix, ".topsum", sep="")
-  if (file.exists(fn_summary) && file.exists(fn_figure) && file.exists(fn_count) && file.exists(fn_cfigure) && file.exists(fn_tops)) {
+  if (all(file.exists(fn_summary, fn_figure, fn_count, fn_cfigure, fn_tops)) && params$redo == FALSE) {
     print(paste(i, "bp window annotation already exists. Moving on...", sep=""))
     next
   }
@@ -228,7 +229,7 @@ for (i in window_sizes) {
 }
 ```
 
-```{r contiguous, echo = FALSE, collapse = TRUE}
+```{r contiguous}
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
@@ -253,42 +254,42 @@ for (i in window_sizes) {
   acount <- sapply(temp_outdir,function(dir){length(list.files(dir,pattern='fa'))})
   tcount <- sapply(treedir,function(dir){length(list.files(dir,pattern='iqtree'))})
   
-  if (acount != 0 && tcount != 0) {
+  if (acount != 0 && tcount != 0 && params$redo == FALSE) {
     print(paste(i, "bp window alignment and tree already exist. Moving on...", sep=""))
     next
-  } else {
-    fn_summary <- paste(window_outdir,i,"/summary/",params$prefix,".atsum", sep="")
+  }
   
-    smfile <- read.table(fn_summary)
-    colnames(smfile) <- smfile[1,]
-    smfile <- smfile[-1,]
+  fn_summary <- paste(window_outdir,i,"/summary/",params$prefix,".atsum", sep="")
+  
+  smfile <- read.table(fn_summary)
+  colnames(smfile) <- smfile[1,]
+  smfile <- smfile[-1,]
     
-    unique_topology <- sort(unique(smfile$newick))
-    newick_map <- data.frame()
-    count <- 1
+  unique_topology <- sort(unique(smfile$newick))
+  newick_map <- data.frame()
+  count <- 1
   
-    print("Generating topology-based contiguous sequence...")
-    for (t in unique_topology) {
-      sub_sw <- subset(smfile[smfile$newick == t,])
-      align_idx <- unlist(Map(seq, sub_sw$start, sub_sw$stop))
+  print("Generating topology-based contiguous sequence...")
+  for (t in unique_topology) {
+    sub_sw <- subset(smfile[smfile$newick == t,])
+    align_idx <- unlist(Map(seq, sub_sw$start, sub_sw$stop))
         
-      alignment <- sdf[,align_idx]
-      subfasta <- setNames(split(alignment, seq(nrow(alignment))), rownames(alignment))
+    alignment <- sdf[,align_idx]
+    subfasta <- setNames(split(alignment, seq(nrow(alignment))), rownames(alignment))
       
-      write.fasta(sequences=subfasta, names=names(subfasta), file.out=paste(temp_outdir,"G",count,".fa",sep=""), nbchar = 100)
-      newick_map <- rbind(newick_map, c(t, paste("G",count,sep="")))
-      count <- count + 1
-    }
+    write.fasta(sequences=subfasta, names=names(subfasta), file.out=paste(temp_outdir,"G",count,".fa",sep=""), nbchar = 100)
+    newick_map <- rbind(newick_map, c(t, paste("G",count,sep="")))
+    count <- count + 1
+  }
     
-    write.table(newick_map, paste(temp_outdir, "../", params$prefix, ".map", sep=""), quote = F, row.names = F, col.names = F)
+  write.table(newick_map, paste(temp_outdir, "../", params$prefix, ".map", sep=""), quote = F, row.names = F, col.names = F)
     
-    print("Generating contiguous window trees...")
-    prefix <- paste(treedir,params$prefix, sep="")
-    if (is.null(params$outgroup) || params$outgroup == ""){
-      system(paste(params$iqtree2dir,"-S",temp_outdir,"-m",params$alisim_model,"-pre",prefix,"--quiet -T 2", sep=" "))
-    } else {
-      system(paste(params$iqtree2dir,"-S",temp_outdir,"-m",params$alisim_model,"-pre",prefix,"--quiet -T 2 -o",params$outgroup, sep=" "))
-    }
+  print("Generating contiguous window trees...")
+  prefix <- paste(treedir,params$prefix, sep="")
+  if (is.null(params$outgroup) || params$outgroup == ""){
+    system(paste(params$iqtree2dir,"-S",temp_outdir,"-m",params$alisim_model,"-pre",prefix,"--quiet -T 2", sep=" "))
+  } else {
+    system(paste(params$iqtree2dir,"-S",temp_outdir,"-m",params$alisim_model,"-pre",prefix,"--quiet -T 2 -o",params$outgroup, sep=" "))
   }
 }
 ```

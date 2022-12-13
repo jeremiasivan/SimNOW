@@ -7,6 +7,7 @@ nthread <- 2
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
 outdir <- "~/Documents/simulation/rmd_test"
+redo <-  TRUE
 
 # mast and hmm
 iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
@@ -24,7 +25,7 @@ for (i in alldirs[dirname]) {
   for (j in mast_model) {
     out <- paste(outdir,"/",i,"/",gsub("[[:punct:]]","",j),".masthmm.html", sep="")
     templist <- list(out=out, params=list(prefix=i,
-                                          rmddir=rmddir, outdir=outdir,
+                                          rmddir=rmddir, outdir=outdir, redo=redo,
                                           iqtree2dir=iqtree2dir,
                                           mast_model=j, mast_tops=mast_tops
                                           ))

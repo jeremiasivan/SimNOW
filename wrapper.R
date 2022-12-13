@@ -10,6 +10,7 @@ nthread <- 2
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
 outdir <- "~/Documents/simulation/rmd_test"
+redo <- TRUE
   
 # sequence simulation
 msdir <- "~/Documents/msdir/ms"
@@ -41,7 +42,7 @@ for (i in 1:nrow(temp_table)) {
   }
   
   templist <- list(out=out, params=list(prefix=prex,
-                                        rmddir=rmddir, outdir=outdir,
+                                        rmddir=rmddir, outdir=outdir, redo=redo,
                                         msdir=msdir, ms_params=ms_params, ms_r=temp_table$rrate[i], ms_l=ms_l,
                                         iqtree2dir=iqtree2dir, alisim_model=alisim_model, alisim_scale=alisim_scale, outgroup=outgroup,
                                         window_size=window_size

@@ -5,6 +5,7 @@ params:
   rmddir: ""
   prefix: ""
   outdir: ""
+  redo: TRUE
   
   # sequence simulation
   msdir: ""
@@ -35,17 +36,17 @@ if (!file.exists(currentdir)) {
   dir.create(currentdir, recursive = T)
 }
 
-knitr::opts_knit$set(echo = TRUE, root.dir = currentdir)
+knitr::opts_knit$set(include = FALSE, root.dir = currentdir)
 ```
 
 ## Sequence Simulation
-```{r child = paste(params$rmddir,"/simulation.Rmd",sep=""), include = FALSE}
+```{r child = paste(params$rmddir,"/simulation.Rmd",sep="")}
 ```
 
 ## Non-Overlapping Windows Analysis
-```{r child = paste(params$rmddir,"/window.Rmd",sep=""), include = FALSE}
+```{r child = paste(params$rmddir,"/window.Rmd",sep="")}
 ```
 
 ## Summary
-```{r child = paste(params$rmddir,"/summary.Rmd",sep=""), include = FALSE}
+```{r child = paste(params$rmddir,"/summary.Rmd",sep="")}
 ```
