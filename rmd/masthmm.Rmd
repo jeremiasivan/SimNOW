@@ -71,6 +71,12 @@ for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
   fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
   
+  tmfile <- readLines(fn_mast_tops)
+  if (length(tmfile) <= 1) {
+    print(paste(i, "bp window has only one or less tree. Moving on...", sep=""))
+    next
+  }
+  
   mast_model <- tolower(paste("'", params$mast_model, "'", sep=""))
   outdir <- paste(temp_outdir, gsub("[[:punct:]]","",mast_model), "/", sep="")
   if (!file.exists(outdir)) {
