@@ -13,10 +13,12 @@ Software incorporated in the pipeline:
 1. Output HTML report is not fixed yet
 2. Currently, you can only set `ms` recombination rate to vary between simulations using `wrapper.R`
 3. Multiple MAST models should be manually specified in `wrapper_masthmm.R`
+4. Some parts of MASTHMM analysis has not been tested
 
 ---
 ### Future Works
 - Incorporate other methods to improve accuracy
+- Allow users to choose which analysis to run
 - Create summary report for the whole pipeline, including HTML template
 
 ---
