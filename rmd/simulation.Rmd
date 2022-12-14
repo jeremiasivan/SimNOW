@@ -150,9 +150,9 @@ if (file.exists(paste(fn_alisim, ".fa", sep = "")) && params$redo == FALSE) {
 } else {
   print("Generating AliSim alignment...")
   if (params$alisim_scale == 0 || is.null(params$alisim_scale)) {
-    system(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"-m",params$alisim_model,"-af fasta", sep=" "))
+    system(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"-m",params$alisim_model,"-af fasta -redo", sep=" "))
   } else {
-    system(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"--branch-scale",params$alisim_scale,"-m",params$alisim_model,"-af fasta", sep=" "))
+    system(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"--branch-scale",params$alisim_scale,"-m",params$alisim_model,"-af fasta -redo", sep=" "))
   }
 }
 ```

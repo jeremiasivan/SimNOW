@@ -19,6 +19,7 @@ Software incorporated in the pipeline:
 ### Future Works
 - Incorporate other methods to improve accuracy
 - Allow users to choose which analysis to run
+- Find a better way to _redo_ the analysis (e.g., delete all files within the directory, create a new directory, etc.)
 - Create summary report for the whole pipeline, including HTML template
 
 ---

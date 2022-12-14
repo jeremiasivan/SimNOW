@@ -74,9 +74,9 @@ for (i in window_sizes) {
   prefix <- paste(temp_outdir,params$prefix,sep="")
 
   if (is.null(params$outgroup) || params$outgroup == ""){
-    system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet", sep=" "))
+    system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet -redo", sep=" "))
   } else {
-    system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet -o",params$outgroup, sep=" "))
+    system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet -redo -o",params$outgroup, sep=" "))
   }
 }
 
@@ -287,9 +287,9 @@ for (i in window_sizes) {
   print("Generating contiguous window trees...")
   prefix <- paste(treedir,params$prefix, sep="")
   if (is.null(params$outgroup) || params$outgroup == ""){
-    system(paste(params$iqtree2dir,"-S",temp_outdir,"-m",params$alisim_model,"-pre",prefix,"--quiet -T 2", sep=" "))
+    system(paste(params$iqtree2dir,"-S",temp_outdir,"-m",params$alisim_model,"-pre",prefix,"--quiet -redo", sep=" "))
   } else {
-    system(paste(params$iqtree2dir,"-S",temp_outdir,"-m",params$alisim_model,"-pre",prefix,"--quiet -T 2 -o",params$outgroup, sep=" "))
+    system(paste(params$iqtree2dir,"-S",temp_outdir,"-m",params$alisim_model,"-pre",prefix,"--quiet -redo -o",params$outgroup, sep=" "))
   }
 }
 ```
