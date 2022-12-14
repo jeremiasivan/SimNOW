@@ -10,17 +10,22 @@ Software incorporated in the pipeline:
 
 ---
 ### Notes
-1. Output HTML report is not fixed yet
-2. Currently, you can only set `ms` recombination rate to vary between simulations using `wrapper.R`
-3. Multiple MAST models should be manually specified in `wrapper_masthmm.R`
-4. Some parts of MASTHMM analysis has not been tested
+1. Currently, you can only set `ms` recombination rate to vary between simulations via `wrapper.R`
+2. Multiple MAST models should be manually specified in `wrapper_masthmm.R`
+3. Some parts of the codes have not been fully tested
 
 ---
-### Future Works
-- Incorporate other methods to improve accuracy
+### Considerations
+- Fix naming convention for file extension and Rmd files
+- For summary between simulations, color the scatter plot based on recombination rate instead of prefix
 - Allow users to choose which analysis to run
 - Find a better way to _redo_ the analysis (e.g., delete all files within the directory, create a new directory, etc.)
-- Create summary report for the whole pipeline, including HTML template
+- Automate the selection of MAST model based on the number of topologies
+- Fix the summary report for the whole pipeline, including HTML template
+
+---
+### Future Work(s)
+- Incorporate other methods to assess (and improve) non-overlapping window accuracy
 
 ---
 ### References

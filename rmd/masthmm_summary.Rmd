@@ -2,7 +2,7 @@
 title: "MASTHMM Summary"
 ---
 
-```{r hmmwindowsum}
+```{r hmmtruthsum}
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
@@ -79,6 +79,4 @@ print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize)) +
           legend.key.size=unit(2,"cm")
         ))
 dev.off()
-
-
 ```

@@ -1,0 +1,83 @@
+---
+title: "Non-overlapping Windows Report"
+params:
+  prefix: ""
+  outdir: ""
+  redo: TRUE
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(data.table)
+library(ggplot2)
+library(forcats)
+
+knitr::opts_knit$set(include = FALSE)
+```
+
+```{r sim_summary}
+fn_simsum <- paste(params$outdir, "/", params$prefix, ".simsum", sep="")
+if (file.exists(fn_simsum) && params$redo == FALSE) {
+  print("Summary between simulations already exists. Quitting...")
+  knitr::knit_exit()
+}
+
+allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
+simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""))]
+
+window_sizes <- list.dirs(paste(params$outdir,"/",simulation[1],"/windows/",sep=""), full.names = F, recursive = F)
+window_sizes <- subset(wsizes, wsizes != paste(simulation[1],".summary",sep=""))
+
+empty_matrix <- as.data.frame(matrix(rep(0, length(window_sizes)), nrow=length(simulation), ncol=length(window_sizes)))
+names(empty_matrix) <- window_sizes
+  
+output <- data.frame(simulation = simulation)
+output <- cbind(output, empty_matrix)
+
+for (i in simulation) {
+  row_idx <- which(output$simulation == i)
+  
+  fn_sum <- paste(params$outdir,"/",i,"/windows/",i,".summary",sep="")
+  sumfile <- read.table(fn_sum)
+  colnames(sumfile) <- sumfile[1,]
+  sumfile <- sumfile[-1,]
+  
+  for (j in 1:nrow(sumfile)) {
+    col_idx <- sumfile$window_size[j]
+    output[row_idx,col_idx] <- sumfile$accuracy[j]
+  }
+}
+
+write.table(output, fn_simsum, quote = F, row.names = T, col.names = T)
+
+print("Visualizing...")
+sub_output <- data.frame()
+  
+for (i in 1:nrow(output)) {
+  for (j in 2:ncol(output)) {
+    sub_output <- rbind(sub_output, c(output$simulation[i],colnames(output[j]),output[i,j]))
+  }
+}
+colnames(sub_output) <- c("simulation","wsize","accuracy")
+sub_output$wsize <- factor(sub_output$wsize,levels = unique(sub_output$wsize),ordered = T)
+
+tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
+print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize)) + 
+        geom_boxplot() +
+        geom_jitter(shape=16, position=position_jitter(0.2), aes(colour=simulation)) +
+        aes(x = fct_inorder(wsize)) +
+        ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
+        xlab("Window size (bp)") +
+        ylab("Accuracy (%)") +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 50),
+          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+          axis.text.y=element_text(size=30),
+          axis.text.x=element_text(size=30),
+          legend.title=element_blank(),
+          legend.text=element_text(size=30),
+          legend.key.size=unit(2,"cm")
+        ))
+dev.off()
+```
