@@ -1,8 +1,8 @@
 ---
 title: "Non-overlapping Windows Report"
 params:
-  prefix: ""
-  outdir: ""
+  prefix: "helibut"
+  outdir: "~/Documents/simulation/rmd_test"
   redo: TRUE
 ---
 
@@ -10,26 +10,26 @@ params:
 library(dplyr)
 library(data.table)
 library(ggplot2)
-library(forcats)
 
 knitr::opts_knit$set(include = FALSE)
 ```
 
 ```{r sim_summary}
 fn_simsum <- paste(params$outdir, "/", params$prefix, ".simsum", sep="")
-if (file.exists(fn_simsum) && params$redo == FALSE) {
+fn_simfig <- paste(params$outdir, "/", params$prefix, ".simsum.tiff", sep="")
+if (all(file.exists(fn_simsum,fn_simfig)) && params$redo == FALSE) {
   print("Summary between simulations already exists. Quitting...")
   knitr::knit_exit()
 }
 
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
-simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""))]
+simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""), allsims)]
 
 window_sizes <- list.dirs(paste(params$outdir,"/",simulation[1],"/windows/",sep=""), full.names = F, recursive = F)
-window_sizes <- subset(wsizes, wsizes != paste(simulation[1],".summary",sep=""))
+window_sizes <- subset(window_sizes, window_sizes != paste(simulation[1],".summary",sep=""))
 
-empty_matrix <- as.data.frame(matrix(rep(0, length(window_sizes)), nrow=length(simulation), ncol=length(window_sizes)))
-names(empty_matrix) <- window_sizes
+empty_matrix <- as.data.frame(matrix(rep(0, length(window_sizes)+1), nrow=length(simulation), ncol=length(window_sizes)+1))
+names(empty_matrix) <- c(window_sizes, "r")
   
 output <- data.frame(simulation = simulation)
 output <- cbind(output, empty_matrix)
@@ -37,7 +37,7 @@ output <- cbind(output, empty_matrix)
 for (i in simulation) {
   row_idx <- which(output$simulation == i)
   
-  fn_sum <- paste(params$outdir,"/",i,"/windows/",i,".summary",sep="")
+  fn_sum <- paste(params$outdir,"/",i,"/windows/",i,".sum",sep="")
   sumfile <- read.table(fn_sum)
   colnames(sumfile) <- sumfile[1,]
   sumfile <- sumfile[-1,]
@@ -46,6 +46,11 @@ for (i in simulation) {
     col_idx <- sumfile$window_size[j]
     output[row_idx,col_idx] <- sumfile$accuracy[j]
   }
+  
+  fn_ms <- paste(params$outdir,"/",i,"/simulation/",i,".ms",sep="")
+  command <- strsplit(system(paste("grep 'ms'",fn_ms), intern=T), " ")
+  
+  output[row_idx,ncol(output)] = command[[1]][length(command[[1]])-1]
 }
 
 write.table(output, fn_simsum, quote = F, row.names = T, col.names = T)
@@ -54,18 +59,17 @@ print("Visualizing...")
 sub_output <- data.frame()
   
 for (i in 1:nrow(output)) {
-  for (j in 2:ncol(output)) {
-    sub_output <- rbind(sub_output, c(output$simulation[i],colnames(output[j]),output[i,j]))
+  for (j in 3:ncol(output)-1) {
+    sub_output <- rbind(sub_output, c(output$simulation[i],colnames(output[j]),output[i,j],output[i,ncol(output)]))
   }
 }
-colnames(sub_output) <- c("simulation","wsize","accuracy")
-sub_output$wsize <- factor(sub_output$wsize,levels = unique(sub_output$wsize),ordered = T)
+colnames(sub_output) <- c("simulation","wsize","accuracy","r")
+sub_output$wsize <- factor(as.numeric(sub_output$wsize))
 
-tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
+tiff(filename=fn_simfig, units="px", width=2880, height=1800)
 print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize)) + 
         geom_boxplot() +
-        geom_jitter(shape=16, position=position_jitter(0.2), aes(colour=simulation)) +
-        aes(x = fct_inorder(wsize)) +
+        geom_jitter(shape=16, position=position_jitter(0.2), aes(colour=r), size=5) +
         ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
         xlab("Window size (bp)") +
         ylab("Accuracy (%)") +
@@ -75,7 +79,7 @@ print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize)) +
           axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
           axis.text.y=element_text(size=30),
           axis.text.x=element_text(size=30),
-          legend.title=element_blank(),
+          legend.title=element_text(size=30),
           legend.text=element_text(size=30),
           legend.key.size=unit(2,"cm")
         ))
