@@ -17,7 +17,7 @@ Software incorporated in the pipeline:
 ---
 ### Considerations
 - Fix naming convention for file extension and Rmd files
-- For summary between simulations, color the scatter plot based on recombination rate instead of prefix
+- For summary between simulations, set the y-axis between 0 and 100
 - Allow users to choose which analysis to run
 - Find a better way to _redo_ the analysis (e.g., delete all files within the directory, create a new directory, etc.)
 - Automate the selection of MAST model based on the number of topologies
