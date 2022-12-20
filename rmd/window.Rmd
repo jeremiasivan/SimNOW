@@ -79,7 +79,6 @@ for (i in window_sizes) {
     system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet -redo -o",params$outgroup, sep=" "))
   }
 }
-
 ```
 
 ### annotation

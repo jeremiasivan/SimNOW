@@ -10,6 +10,7 @@ params:
 library(dplyr)
 library(data.table)
 library(ggplot2)
+library(RColorBrewer)
 
 knitr::opts_knit$set(include = FALSE)
 ```
@@ -57,6 +58,7 @@ write.table(output, fn_simsum, quote = F, row.names = T, col.names = T)
 
 print("Visualizing...")
 sub_output <- data.frame()
+pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
   
 for (i in 1:nrow(output)) {
   for (j in 3:ncol(output)-1) {
@@ -70,6 +72,7 @@ tiff(filename=fn_simfig, units="px", width=2880, height=1800)
 print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) + 
         geom_boxplot() +
         geom_jitter(shape=16, position=position_jitter(0.2), aes(colour=r), size=5) +
+        scale_colour_manual(values = pcolors) +
         ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
         xlab("Window size (bp)") +
         ylab("Accuracy (%)") +
@@ -85,14 +88,17 @@ print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100))
         ))
 dev.off()
 
+iterator <- 0
 for (i in unique(sub_output$r)) {
   fn_simfig <- paste(params$outdir, "/", params$prefix, ".simsum.r",i,".tiff", sep="")
+  iterator <- iterator + 1
   outperr <- subset(sub_output, sub_output$r == i)
   
   tiff(filename=fn_simfig, units="px", width=2880, height=1800)
   print(ggplot(outperr, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) + 
           geom_boxplot() +
           geom_jitter(shape=16, position=position_jitter(0.2), aes(colour=r), size=5) +
+          scale_colour_manual(values = pcolors[iterator]) +
           ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
           xlab("Window size (bp)") +
           ylab("Accuracy (%)") +
@@ -108,6 +114,4 @@ for (i in unique(sub_output$r)) {
           ))
   dev.off()
 }
-
-
 ```

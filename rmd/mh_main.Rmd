@@ -30,9 +30,9 @@ knitr::opts_knit$set(include = FALSE, root.dir = currentdir)
 ```
 
 ## MASTHMM Analysis
-```{r child = paste(params$rmddir,"/masthmm.Rmd",sep="")}
+```{r child = paste(params$rmddir,"/mh_run.Rmd",sep="")}
 ```
 
 ## MASTHMM Summary
-```{r child = paste(params$rmddir,"/masthmm_summary.Rmd",sep="")}
+```{r child = paste(params$rmddir,"/mh_summary.Rmd",sep="")}
 ```
