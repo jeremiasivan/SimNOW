@@ -11,6 +11,7 @@ msfile <- read.table(fn_mstops)
 colnames(msfile) <- msfile[1,]
 msfile <- msfile[-1,]
 
+# comparison between non-overlapping windows and ms topologies
 for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/summary/",sep="")
   if (!file.exists(temp_outdir)) {
@@ -26,6 +27,7 @@ for (i in window_sizes) {
     next
   }
   
+  # reading annotation summary file
   smfile <- read.table(fn_summary)
   colnames(smfile) <- smfile[1,]
   smfile <- smfile[-1,]
@@ -123,6 +125,7 @@ if (file.exists(fn_summary) && params$redo == FALSE) {
     fn_iqtree <- paste(window_outdir,i,"/trees/",params$prefix,".iqtree", sep="")
     fn_contiguous <- paste(window_outdir,i,"/contiguous/trees/",params$prefix,".iqtree", sep="")
     
+    # read and extract accuracy of each window
     cmp <- read.table(fn_cmp)
     cmp <- sapply(cmp[-1,-1], as.numeric)
     
@@ -136,6 +139,7 @@ if (file.exists(fn_summary) && params$redo == FALSE) {
     }
     acc <- round(acc / sum(cmp) * 100, 3)
     
+    # extract information of interest
     aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
     aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
     bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))

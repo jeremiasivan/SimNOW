@@ -6,6 +6,7 @@ title: "MASTHMM Summary"
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
+# extract row and column names
 model_list <- list.dirs(window_outdir, window_sizes[1], "/mast_hmm/", full.names = F, recursive = F)
 model_list <- subset(model_list, model_list != paste(params$prefix, ".mast.tops", sep="")) 
 
@@ -22,6 +23,7 @@ if (all(file.exists(fn_hmmacc, fn_hmmafig)) && params$redo == FALSE) {
   knitr::knit_exit()
 }
 
+# summarizing the accuracy between model and window sizes
 for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
   
@@ -49,7 +51,7 @@ for (i in window_sizes) {
 
 write.table(output, fn_hmmacc, quote = F, row.names = T, col.names = T)
 
-print("Visualizing...")
+# visualization
 sub_output <- data.frame()
   
 for (i in 1:nrow(output)) {

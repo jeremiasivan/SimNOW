@@ -1,7 +1,6 @@
 library(doParallel)
 
 #################################
-# wrapper-specific parameters
 ms_r <- c(30,300)
 nreps <- 5
 prefix <- "helibut"

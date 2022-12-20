@@ -2,16 +2,16 @@
 title: "MAST and HMM"
 params:
   # general
-  rmddir: "~/Documents/SimNOW/rmd"
-  prefix: "wrap_6"
-  outdir: "~/Documents/simulation/rmd_test"
+  rmddir: ""
+  prefix: ""
+  outdir: ""
   redo: TRUE
   
   # sequence simulation
-  iqtree2dir: "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
+  iqtree2dir: ""
   
   # mast and hmm
-  mast_model: "JC+FO+T"
+  mast_model: ""
   mast_tops: 1
 ---
 

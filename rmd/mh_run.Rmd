@@ -21,6 +21,7 @@ for (i in window_sizes) {
     next
   }
   
+  # extract top % topologies
   topsum <- read.table(fn_tops)
   colnames(topsum) <- topsum[1,]
   topsum <- topsum[-1,]
@@ -56,6 +57,7 @@ for (i in window_sizes) {
     next
   }
   
+  # create folder based on the MAST model
   mast_model <- tolower(paste("'", params$mast_model, "'", sep=""))
   outdir <- paste(temp_outdir, gsub("[[:punct:]]","_",mast_model), "/", sep="")
   if (!file.exists(outdir)) {
@@ -68,6 +70,7 @@ for (i in window_sizes) {
     next
   }
   
+  # run MAST and HMM
   mast_cl <- paste(params$iqtree2dir,"-s",fn_alisim,"-m",mast_model,"-blmin 0.0001 -te",fn_mast_tops,"-pre",prefix,"-hmm -wslm -wspm -alninfo")
   system(mast_cl)
 }
@@ -100,7 +103,6 @@ for (i in window_sizes) {
   
   # read input files
   tmfile <- readLines(fn_mast_tops)
-  
   hmmfile <- readLines(fn_hmm)
   hmmtrees <- subset(hmmfile, grepl("^\\[", hmmfile))
   
@@ -121,7 +123,6 @@ for (i in window_sizes) {
   output <- cbind(output, empty_matrix)
   
   # annotating
-  print("Annotating...")
   for (i in 1:nrow(msfile)){
     sites <- dat[msfile$start[i]:msfile$stop[i],]
     topology_idx <- which(output$topology==msfile$topology[i])
@@ -144,7 +145,6 @@ for (i in window_sizes) {
   write.table(output, file=fn_hmmsum, quote = F, row.names = F)
   
   # visualization
-  print("Visualizing...")
   sub_output <- data.frame()
   
   for (i in 1:nrow(output)) {

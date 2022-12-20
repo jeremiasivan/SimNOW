@@ -10,8 +10,8 @@ Software incorporated in the pipeline:
 
 ---
 ### Notes
-1. Currently, you can only set `ms` recombination rate to vary between simulations via `wrapper.R`
-2. Multiple MAST models should be manually specified in `wrapper_masthmm.R`
+1. Currently, you can only set `ms` recombination rate to vary between simulations via `wrapper/nw_main.R`
+2. Multiple MAST models should be manually specified in `wrapper/mh_main.R`
 3. Some parts of the codes have not been fully tested
 
 ---
