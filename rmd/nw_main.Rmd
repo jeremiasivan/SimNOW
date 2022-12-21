@@ -36,17 +36,17 @@ if (!file.exists(currentdir)) {
   dir.create(currentdir, recursive = T)
 }
 
-knitr::opts_knit$set(include = FALSE, root.dir = currentdir)
+knitr::opts_knit$set(root.dir = currentdir)
 ```
 
 ## Sequence Simulation
-```{r child = paste(params$rmddir,"/nw_simulation.Rmd",sep="")}
+```{r child = paste(params$rmddir,"/nw_simulation.Rmd",sep=""), include=FALSE}
 ```
 
 ## Non-Overlapping Windows Analysis
-```{r child = paste(params$rmddir,"/nw_run.Rmd",sep="")}
+```{r child = paste(params$rmddir,"/nw_run.Rmd",sep=""), include=FALSE}
 ```
 
 ## Summary
-```{r child = paste(params$rmddir,"/nw_summary.Rmd",sep="")}
+```{r child = paste(params$rmddir,"/nw_summary.Rmd",sep=""), include=FALSE}
 ```

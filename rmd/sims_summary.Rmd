@@ -11,11 +11,9 @@ library(dplyr)
 library(data.table)
 library(ggplot2)
 library(RColorBrewer)
-
-knitr::opts_knit$set(include = FALSE)
 ```
 
-```{r sim_summary}
+```{r sim_summary, include=FALSE}
 fn_simsum <- paste(params$outdir, "/", params$prefix, ".simsum", sep="")
 fn_simfig <- paste(params$outdir, "/", params$prefix, ".simsum.tiff", sep="")
 if (all(file.exists(fn_simsum,fn_simfig)) && params$redo == FALSE) {
@@ -68,7 +66,7 @@ for (i in 1:nrow(output)) {
   }
 }
 colnames(sub_output) <- c("simulation","wsize","accuracy","r")
-sub_output$wsize <- factor(as.numeric(sub_output$wsize))
+sub_output$wsize <- factor(as.numeric(sub_output$wsize)/1000)
 
 # visualization for all simulations
 tiff(filename=fn_simfig, units="px", width=2880, height=1800)
@@ -77,14 +75,15 @@ print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100))
         geom_jitter(shape=16, position=position_jitter(0.2), aes(colour=r), size=5) +
         scale_colour_manual(values = pcolors) +
         ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
-        xlab("Window size (bp)") +
+        xlab("Window size (kb)") +
         ylab("Accuracy (%)") +
         theme(
           plot.title = element_text(hjust = 0.5, size = 50),
+          plot.margin = margin(0, 0, 2.5, 0, "cm"),
           axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
           axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-          axis.text.y=element_text(size=20),
-          axis.text.x=element_text(size=20),
+          axis.text.y=element_text(size=30),
+          axis.text.x=element_text(size=30),
           legend.title=element_text(size=30),
           legend.text=element_text(size=30),
           legend.key.size=unit(2,"cm")
@@ -92,10 +91,12 @@ print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100))
 dev.off()
 
 # visualization for simulations per recombination rate
+fn_figs <- c(fn_simfig)
 iterator <- 0
 for (i in unique(sub_output$r)) {
   fn_simfig <- paste(params$outdir, "/", params$prefix, ".simsum.r",i,".tiff", sep="")
   outperr <- subset(sub_output, sub_output$r == i)
+  fn_figs <- c(fn_figs, fn_simfig)
   iterator <- iterator + 1
   
   tiff(filename=fn_simfig, units="px", width=2880, height=1800)
@@ -104,18 +105,25 @@ for (i in unique(sub_output$r)) {
           geom_jitter(shape=16, position=position_jitter(0.2), aes(colour=r), size=5) +
           scale_colour_manual(values = pcolors[iterator]) +
           ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
-          xlab("Window size (bp)") +
+          xlab("Window size (kb)") +
           ylab("Accuracy (%)") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
+            plot.margin = margin(0, 0, 2.5, 0, "cm"),
             axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
             axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=20),
-            axis.text.x=element_text(size=20),
+            axis.text.y=element_text(size=30),
+            axis.text.x=element_text(size=30),
             legend.title=element_text(size=30),
             legend.text=element_text(size=30),
             legend.key.size=unit(2,"cm")
           ))
   dev.off()
 }
+```
+
+<br>
+
+```{r, fig.width=1, echo=FALSE}
+knitr::include_graphics(fn_figs)
 ```
