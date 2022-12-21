@@ -58,8 +58,8 @@ for (i in window_sizes) {
   }
   
   # create folder based on the MAST model
-  mast_model <- tolower(paste("'", params$mast_model, "'", sep=""))
-  outdir <- paste(temp_outdir, gsub("[[:punct:]]","_",mast_model), "/", sep="")
+  mast_model <- paste("'", params$mast_model, "'", sep="")
+  outdir <- paste(temp_outdir, gsub("[[:punct:]]","_",tolower(mast_model)), "/", sep="")
   if (!file.exists(outdir)) {
     dir.create(outdir, recursive = T)
   }
@@ -87,13 +87,17 @@ msfile <- msfile[-1,]
 
 for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
+  fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
+  fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
+  
+  if (!file.exists(fn_hmm)) {
+    print("HMM file is not found. Moving on...")
+    next
+  }
   
   mast_model <- tolower(paste("'", params$mast_model, "'", sep=""))
   outdir <- paste(temp_outdir, gsub("[[:punct:]]","_",mast_model), "/", sep="")
  
-  fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
-  fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
-  
   fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
   fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
   if (all(file.exists(fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
