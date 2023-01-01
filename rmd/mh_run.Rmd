@@ -2,14 +2,20 @@
 title: "MASTHMM Analysis"
 ---
 
-### analysis
-```{r prehmm}
+### setup
+```{r vars, include=FALSE}
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
+fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
+fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
+
+mast_model <- paste("'", params$mast_model, "'", sep="")
+```
+
+### analysis
+```{r prehmm}
 for (i in window_sizes) {
-  fn_tops <- paste(window_outdir, i, "/summary/", params$prefix, ".topsum", sep="")
-  
   temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
   if (!file.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
@@ -22,6 +28,7 @@ for (i in window_sizes) {
   }
   
   # extract top % topologies
+  fn_tops <- paste(window_outdir, i, "/summary/", params$prefix, ".topsum", sep="")
   topsum <- read.table(fn_tops)
   colnames(topsum) <- topsum[1,]
   topsum <- topsum[-1,]
@@ -42,11 +49,6 @@ for (i in window_sizes) {
 ```
 
 ```{r masthmm}
-window_outdir <- paste(getwd(), "/windows/", sep="")
-window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
-
-fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
-
 for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
   fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
@@ -58,8 +60,7 @@ for (i in window_sizes) {
   }
   
   # create folder based on the MAST model
-  mast_model <- paste("'", params$mast_model, "'", sep="")
-  outdir <- paste(temp_outdir, gsub("[[:punct:]]","_",tolower(mast_model)), "/", sep="")
+  outdir <- paste(temp_outdir, tolower(gsub("[[:punct:]]","_",mast_model)), "/", sep="")
   if (!file.exists(outdir)) {
     dir.create(outdir, recursive = T)
   }
@@ -77,10 +78,6 @@ for (i in window_sizes) {
 ```
 
 ```{r posthmm}
-window_outdir <- paste(getwd(), "/windows/", sep="")
-window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
-
-fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
 msfile <- read.table(fn_mstops)
 colnames(msfile) <- msfile[1,]
 msfile <- msfile[-1,]
@@ -95,8 +92,7 @@ for (i in window_sizes) {
     next
   }
   
-  mast_model <- tolower(paste("'", params$mast_model, "'", sep=""))
-  outdir <- paste(temp_outdir, gsub("[[:punct:]]","_",mast_model), "/", sep="")
+  outdir <- paste(temp_outdir, tolower(gsub("[[:punct:]]","_",mast_model)), "/", sep="")
  
   fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
   fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")

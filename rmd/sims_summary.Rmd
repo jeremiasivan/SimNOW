@@ -71,7 +71,6 @@ sub_output$wsize <- factor(as.numeric(sub_output$wsize)/1000)
 # visualization for all simulations
 tiff(filename=fn_simfig, units="px", width=2880, height=1800)
 print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) + 
-        geom_boxplot() +
         geom_jitter(shape=16, position=position_jitter(0.2), aes(colour=r), size=5) +
         scale_colour_manual(values = pcolors) +
         ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
@@ -79,7 +78,7 @@ print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100))
         ylab("Accuracy (%)") +
         theme(
           plot.title = element_text(hjust = 0.5, size = 50),
-          plot.margin = margin(0, 0, 2.5, 0, "cm"),
+          plot.margin = margin(0, 0, 1.25, 0, "cm"),
           axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
           axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
           axis.text.y=element_text(size=30),
@@ -109,7 +108,7 @@ for (i in unique(sub_output$r)) {
           ylab("Accuracy (%)") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
-            plot.margin = margin(0, 0, 2.5, 0, "cm"),
+            plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
             axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
             axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
             axis.text.y=element_text(size=30),
