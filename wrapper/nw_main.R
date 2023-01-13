@@ -55,7 +55,7 @@ make_report <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste(rmddir,"/main.Rmd", sep=""),
+  rmarkdown::render(input=paste(rmddir,"/nw_main.Rmd", sep=""),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
