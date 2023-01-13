@@ -4,29 +4,27 @@ title: "MASTHMM Analysis"
 
 ### setup
 ```{r vars, include=FALSE}
+mast_outdir <- paste(getwd(), "/masthmm/", sep="")
+if (!file.exists(mast_outdir)) {
+  dir.create(mast_outdir, recursive = T)
+}
+
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
 fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
 fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
 
+fn_topset <- paste(mast_outdir, params$prefix, ".topset")
+
 mast_model <- paste("'", params$mast_model, "'", sep="")
 ```
 
 ### analysis
 ```{r prehmm}
+list_tops <- c("wsize","topologies")
+
 for (i in window_sizes) {
-  temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
-  if (!file.exists(temp_outdir)) {
-    dir.create(temp_outdir, recursive = T)
-  }
-  
-  fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
-  if (file.exists(fn_mast_tops) && params$redo == FALSE) {
-    print(paste(i, "bp window MAST topology file already exists. Moving on...", sep=""))
-    next
-  }
-  
   # extract top % topologies
   fn_tops <- paste(window_outdir, i, "/summary/", params$prefix, ".topsum", sep="")
   topsum <- read.table(fn_tops)
@@ -44,30 +42,48 @@ for (i in window_sizes) {
     }
   }
   
-  write.table(tmast, fn_mast_tops, quote = F, row.names = F, col.names = F)
+  list_tops <- rbind(list_tops, c(i,paste(sort(tmast),collapse="    ")))
 }
+
+list_tops <- as.data.frame(list_tops)
+colnames(list_tops) <- list_tops[1,]
+list_tops <- list_tops[-1,]
+
+uq_tops <- list_tops %>%
+  group_by(topologies) %>% 
+  summarise(wsizes = paste(wsize, collapse = "_"))
+
+write.table(uq_tops, file=fn_topset, quote=F, row.names=F, col.names=F)
 ```
 
 ```{r masthmm}
-for (i in window_sizes) {
-  temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
-  fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
+# create folder for each set topology
+for (k in 1:nrow(uq_tops)) {
+  setfn <- paste(mast_outdir,uq_tops$wsizes[k],"/",sep="")
+  if (!file.exists(setfn)) {
+    dir.create(setfn, recursive = T)
+  }
   
-  tmfile <- readLines(fn_mast_tops)
-  if (length(tmfile) <= 1) {
-    print(paste(i, "bp window has only one or less tree. Moving on...", sep=""))
+  topls <- strsplit(uq_tops$topologies[k],split = "    ")[[1]]
+  fn_mast_tops <- paste(setfn, params$prefix, ".mast.tops", sep="")
+  if (!file.exists(fn_mast_tops)) {
+    write.table(topls, file = fn_mast_tops, quote = F, row.names = F, col.names = F)
+  }
+  
+  if (length(topls) <= 1) {
+    print(paste(uq_tops$wsizes[k], "bp window has only one or less tree. Moving on..."))
     next
   }
   
   # create folder based on the MAST model
-  outdir <- paste(temp_outdir, tolower(gsub("[[:punct:]]","_",mast_model)), "/", sep="")
+  outdir <- paste(setfn, tolower(gsub("[[:punct:]]","_",mast_model)), "/", sep="")
   if (!file.exists(outdir)) {
     dir.create(outdir, recursive = T)
   }
   
   prefix <- paste(outdir, params$prefix, sep="")
   if (file.exists(paste(prefix,".hmm",sep="")) && params$redo == FALSE) {
-    print(paste(i, "bp window MASTHMM file already exists. Moving on...", sep=""))
+    print(paste(uq_tops$wsizes[k], "bp window MASTHMM file already exists. Moving on..."))
     next
   }
   
@@ -82,17 +98,16 @@ msfile <- read.table(fn_mstops)
 colnames(msfile) <- msfile[1,]
 msfile <- msfile[-1,]
 
-for (i in window_sizes) {
-  temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
+for (i in uq_tops$wsizes) {
+  temp_outdir <- paste(mast_outdir,i,"/",sep="")
   fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
-  fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
+  outdir <- paste(temp_outdir, tolower(gsub("[[:punct:]]","_",mast_model)), "/", sep="")
   
+  fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
   if (!file.exists(fn_hmm)) {
     print("HMM file is not found. Moving on...")
     next
   }
-  
-  outdir <- paste(temp_outdir, tolower(gsub("[[:punct:]]","_",mast_model)), "/", sep="")
  
   fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
   fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
