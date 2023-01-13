@@ -15,45 +15,52 @@ window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
 fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
 
-fn_topset <- paste(mast_outdir, params$prefix, ".topset")
+fn_topset <- paste(mast_outdir, params$prefix, ".topset", sep="")
 
 mast_model <- paste("'", params$mast_model, "'", sep="")
 ```
 
 ### analysis
 ```{r prehmm}
-list_tops <- c("wsize","topologies")
+uq_tops <- data.frame()
+if (file.exists(fn_topset) && params$redo == FALSE){
+  uq_tops <- read.table(fn_topset)
+  colnames(uq_tops) <- uq_tops[1,]
+  uq_tops <- uq_tops[-1,]
+} else {
+  list_tops <- c("wsize","topologies")
 
-for (i in window_sizes) {
-  # extract top % topologies
-  fn_tops <- paste(window_outdir, i, "/summary/", params$prefix, ".topsum", sep="")
-  topsum <- read.table(fn_tops)
-  colnames(topsum) <- topsum[1,]
-  topsum <- topsum[-1,]
-  
-  tpercent <- 0
-  tmast <- c()
-  for (j in 1:nrow(topsum)) {
-    tmast <- c(tmast, topsum$newick[j])
-    tpercent <- topsum$cum.percentage[j]
+  for (i in window_sizes) {
+    # extract top % topologies
+    fn_tops <- paste(window_outdir, i, "/summary/", params$prefix, ".topsum", sep="")
+    topsum <- read.table(fn_tops)
+    colnames(topsum) <- topsum[1,]
+    topsum <- topsum[-1,]
     
-    if (tpercent >= params$mast_tops) {
-      break
+    tpercent <- 0
+    tmast <- c()
+    for (j in 1:nrow(topsum)) {
+      tmast <- c(tmast, topsum$newick[j])
+      tpercent <- topsum$cum.percentage[j]
+      
+      if (tpercent >= params$mast_tops) {
+        break
+      }
     }
+    
+    list_tops <- rbind(list_tops, c(i,paste(sort(tmast),collapse="&")))
   }
   
-  list_tops <- rbind(list_tops, c(i,paste(sort(tmast),collapse="    ")))
+  list_tops <- as.data.frame(list_tops)
+  colnames(list_tops) <- list_tops[1,]
+  list_tops <- list_tops[-1,]
+  
+  uq_tops <- list_tops %>%
+    group_by(topologies) %>% 
+    summarise(wsizes = paste(wsize, collapse = "_"))
+  
+  write.table(uq_tops, file=fn_topset, quote=F, row.names=F, col.names=T)
 }
-
-list_tops <- as.data.frame(list_tops)
-colnames(list_tops) <- list_tops[1,]
-list_tops <- list_tops[-1,]
-
-uq_tops <- list_tops %>%
-  group_by(topologies) %>% 
-  summarise(wsizes = paste(wsize, collapse = "_"))
-
-write.table(uq_tops, file=fn_topset, quote=F, row.names=F, col.names=F)
 ```
 
 ```{r masthmm}
@@ -64,7 +71,7 @@ for (k in 1:nrow(uq_tops)) {
     dir.create(setfn, recursive = T)
   }
   
-  topls <- strsplit(uq_tops$topologies[k],split = "    ")[[1]]
+  topls <- strsplit(uq_tops$topologies[k],split = "&")[[1]]
   fn_mast_tops <- paste(setfn, params$prefix, ".mast.tops", sep="")
   if (!file.exists(fn_mast_tops)) {
     write.table(topls, file = fn_mast_tops, quote = F, row.names = F, col.names = F)
@@ -76,7 +83,7 @@ for (k in 1:nrow(uq_tops)) {
   }
   
   # create folder based on the MAST model
-  outdir <- paste(setfn, tolower(gsub("[[:punct:]]","_",mast_model)), "/", sep="")
+  outdir <- paste(setfn, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/", sep="")
   if (!file.exists(outdir)) {
     dir.create(outdir, recursive = T)
   }
@@ -101,7 +108,7 @@ msfile <- msfile[-1,]
 for (i in uq_tops$wsizes) {
   temp_outdir <- paste(mast_outdir,i,"/",sep="")
   fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
-  outdir <- paste(temp_outdir, tolower(gsub("[[:punct:]]","_",mast_model)), "/", sep="")
+  outdir <- paste(temp_outdir, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/", sep="")
   
   fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
   if (!file.exists(fn_hmm)) {
