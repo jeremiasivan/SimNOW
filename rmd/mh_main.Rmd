@@ -33,7 +33,3 @@ knitr::opts_knit$set(root.dir = currentdir)
 ## MAST-HMM Analysis
 ```{r child = paste(params$rmddir,"/mh_run.Rmd",sep=""), include=FALSE}
 ```
-
-## MAST-HMM Summary
-```{r child = paste(params$rmddir,"/mh_summary.Rmd",sep=""), include=FALSE}
-```

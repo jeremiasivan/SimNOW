@@ -12,7 +12,7 @@ if (!file.exists(mast_outdir)) {
 top_sets <- list.dirs(mast_outdir, full.names = F, recursive = F)
 top_sets <- subset(top_sets, top_sets != paste(params$prefix, ".topset", sep="")) 
 
-model_list <- list.dirs(mast_outdir, "/1/", full.names = F, recursive = F)
+model_list <- list.dirs(mast_outdir, "/", top_sets[1], "/", full.names = F, recursive = F)
 model_list <- subset(model_list, model_list != paste(params$prefix, ".mast.tops", sep="")) 
 ```
 
