@@ -1,5 +1,5 @@
 ---
-title: "MAST and HMM"
+title: "MAST-HMM"
 params:
   # general
   rmddir: ""
@@ -10,7 +10,7 @@ params:
   # sequence simulation
   iqtree2dir: ""
   
-  # mast and hmm
+  # masthmm
   mast_model: ""
   mast_tops: 1
 ---
@@ -30,10 +30,10 @@ if (!file.exists(currentdir)) {
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-## MASTHMM Analysis
+## MAST-HMM Analysis
 ```{r child = paste(params$rmddir,"/mh_run.Rmd",sep=""), include=FALSE}
 ```
 
-## MASTHMM Summary
+## MAST-HMM Summary
 ```{r child = paste(params$rmddir,"/mh_summary.Rmd",sep=""), include=FALSE}
 ```

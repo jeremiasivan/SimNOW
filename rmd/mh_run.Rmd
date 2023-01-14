@@ -1,5 +1,5 @@
 ---
-title: "MASTHMM Analysis"
+title: "MAST-HMM Analysis"
 ---
 
 ### setup
@@ -11,6 +11,7 @@ if (!file.exists(mast_outdir)) {
 
 fn_topset <- paste(mast_outdir, params$prefix, ".topset", sep="")
 mast_model <- paste("'", params$mast_model, "'", sep="")
+uq_tops <- data.frame()
 
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
@@ -21,7 +22,6 @@ fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
 
 ### analysis
 ```{r prehmm}
-uq_tops <- data.frame()
 # if (file.exists(fn_topset) && params$redo == FALSE){
 if (FALSE) {
   uq_tops <- read.table(fn_topset)
@@ -67,7 +67,7 @@ if (FALSE) {
 ```{r masthmm}
 # create folder for each set topology
 for (k in 1:nrow(uq_tops)) {
-  setfn <- paste(mast_outdir,uq_tops$wsizes[k],"/",sep="")
+  setfn <- paste(mast_outdir,k,"/",sep="")
   if (!file.exists(setfn)) {
     dir.create(setfn, recursive = T)
   }
@@ -92,7 +92,7 @@ for (k in 1:nrow(uq_tops)) {
   
   prefix <- paste(outdir, params$prefix, sep="")
   if (file.exists(paste(prefix,".hmm",sep="")) && params$redo == FALSE) {
-    print(paste(uq_tops$wsizes[k], "bp window MASTHMM file already exists. Moving on..."))
+    print(paste(uq_tops$wsizes[k], "bp window MAST-HMM file already exists. Moving on..."))
     next
   }
   
@@ -109,7 +109,7 @@ msfile <- msfile[-1,]
 
 options(scipen=999)
 
-for (i in uq_tops$wsizes) {
+for (i in 1:nrow(uq_tops)) {
   temp_outdir <- paste(mast_outdir,i,"/",sep="")
   fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
   outdir <- paste(temp_outdir, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/", sep="")
@@ -123,7 +123,7 @@ for (i in uq_tops$wsizes) {
   fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
   fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
   if (all(file.exists(fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
-    print(paste(i, "bp window MASTHMM summary file already exists. Moving on...", sep=""))
+    print(paste(i, "bp window MAST-HMM summary file already exists. Moving on...", sep=""))
     next
   }
   
@@ -196,9 +196,9 @@ for (i in uq_tops$wsizes) {
   print(ggplot(sub_output, aes(fill=sites, y=as.numeric(frequency), x=topology)) + 
           geom_bar(position="dodge", stat="identity") +
           aes(x = fct_inorder(topology)) +
-          ggtitle("Distribution of Sites from MAST+HMM in Simulated Dataset") + 
+          ggtitle("Distribution of Sites from MAST-HMM in Simulated Dataset") + 
           xlab("True topology from simulated data") +
-          ylab("Number of sites from MAST+HMM") +
+          ylab("Number of sites from MAST-HMM") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
             axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),

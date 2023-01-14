@@ -2,30 +2,39 @@
 title: "MASTHMM Summary"
 ---
 
-```{r hmmtruthsum}
-window_outdir <- paste(getwd(), "/windows/", sep="")
-window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
+### setup
+```{r vars, include=FALSE}
+mast_outdir <- paste(getwd(), "/masthmm/", sep="")
+if (!file.exists(mast_outdir)) {
+  dir.create(mast_outdir, recursive = T)
+}
 
-# extract row and column names
-model_list <- list.dirs(window_outdir, window_sizes[1], "/mast_hmm/", full.names = F, recursive = F)
+top_sets <- list.dirs(mast_outdir, full.names = F, recursive = F)
+top_sets <- subset(top_sets, top_sets != paste(params$prefix, ".topset", sep="")) 
+
+model_list <- list.dirs(mast_outdir, "/1/", full.names = F, recursive = F)
 model_list <- subset(model_list, model_list != paste(params$prefix, ".mast.tops", sep="")) 
+```
 
-empty_matrix <- as.data.frame(matrix(rep(0, length(window_sizes)), nrow=length(model_list), ncol=length(window_sizes)))
-names(empty_matrix) <- window_sizes
+### summary
+```{r hmmtruthsum}
+# extract row and column names
+empty_matrix <- as.data.frame(matrix(rep(0, length(top_sets)), nrow=length(model_list), ncol=length(top_sets)))
+names(empty_matrix) <- top_sets
   
 output <- data.frame(model = model_list)
 output <- cbind(output, empty_matrix)
 
-fn_hmmacc <- paste(window_outdir, params$prefix, ".hmmacc", sep="")
-fn_hmmfig <- paste(window_outdir, params$prefix, ".hmmacc.tiff", sep="")
+fn_hmmacc <- paste(mast_outdir, params$prefix, ".hmmacc", sep="")
+fn_hmmfig <- paste(mast_outdir, params$prefix, ".hmmacc.tiff", sep="")
 if (all(file.exists(fn_hmmacc, fn_hmmafig)) && params$redo == FALSE) {
-  print("MASTHMM accuracy file already exists. Stopping...")
+  print("MAST-HMM accuracy file already exists. Stopping...")
   knitr::knit_exit()
 }
 
 # summarizing the accuracy between model and window sizes
-for (i in window_sizes) {
-  temp_outdir <- paste(window_outdir,i,"/mast_hmm/",sep="")
+for (i in top_sets) {
+  temp_outdir <- paste(mast_outdir, i, "/", sep="")
   
   for (j in model_list) {
     fn_hmmsum <- paste(temp_outdir, j, "/", params$prefix, ".hmmsum", sep="")
@@ -59,15 +68,14 @@ for (i in 1:nrow(output)) {
     sub_output <- rbind(sub_output, c(output$model[i],colnames(output[j]),output[i,j]))
   }
 }
-colnames(sub_output) <- c("model","wsize","accuracy")
-sub_output$wsize <- factor(sub_output$wsize,levels = unique(sub_output$wsize),ordered = T)
+colnames(sub_output) <- c("model","set","accuracy")
+sub_output$set <- factor(sub_output$set,levels = unique(sub_output$set),ordered = T)
 
 tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
-print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize)) + 
+print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=set)) + 
         geom_boxplot() +
         geom_jitter(shape=16, position=position_jitter(0.2), aes(colour=model)) +
-        aes(x = fct_inorder(wsize)) +
-        ggtitle("Accuracy of MAST+HMM in Simulated Dataset") + 
+        ggtitle("Accuracy of MAST-HMM in Simulated Dataset") + 
         xlab("Window size (bp)") +
         ylab("Accuracy (%)") +
         theme(
