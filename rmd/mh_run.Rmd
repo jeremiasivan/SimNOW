@@ -9,21 +9,21 @@ if (!file.exists(mast_outdir)) {
   dir.create(mast_outdir, recursive = T)
 }
 
+fn_topset <- paste(mast_outdir, params$prefix, ".topset", sep="")
+mast_model <- paste("'", params$mast_model, "'", sep="")
+
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
 fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
 fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
-
-fn_topset <- paste(mast_outdir, params$prefix, ".topset", sep="")
-
-mast_model <- paste("'", params$mast_model, "'", sep="")
 ```
 
 ### analysis
 ```{r prehmm}
 uq_tops <- data.frame()
-if (file.exists(fn_topset) && params$redo == FALSE){
+# if (file.exists(fn_topset) && params$redo == FALSE){
+if (FALSE) {
   uq_tops <- read.table(fn_topset)
   colnames(uq_tops) <- uq_tops[1,]
   uq_tops <- uq_tops[-1,]
@@ -55,6 +55,7 @@ if (file.exists(fn_topset) && params$redo == FALSE){
   colnames(list_tops) <- list_tops[1,]
   list_tops <- list_tops[-1,]
   
+  # extract unique set of topologies
   uq_tops <- list_tops %>%
     group_by(topologies) %>% 
     summarise(wsizes = paste(wsize, collapse = "_"))
@@ -71,6 +72,7 @@ for (k in 1:nrow(uq_tops)) {
     dir.create(setfn, recursive = T)
   }
   
+  # save the topologies in separate file
   topls <- strsplit(uq_tops$topologies[k],split = "&")[[1]]
   fn_mast_tops <- paste(setfn, params$prefix, ".mast.tops", sep="")
   if (!file.exists(fn_mast_tops)) {
@@ -105,6 +107,8 @@ msfile <- read.table(fn_mstops)
 colnames(msfile) <- msfile[1,]
 msfile <- msfile[-1,]
 
+options(scipen=999)
+
 for (i in uq_tops$wsizes) {
   temp_outdir <- paste(mast_outdir,i,"/",sep="")
   fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
@@ -128,6 +132,17 @@ for (i in uq_tops$wsizes) {
   hmmfile <- readLines(fn_hmm)
   hmmtrees <- subset(hmmfile, grepl("^\\[", hmmfile))
   
+  unique_topologies <- unique(tmfile)
+  
+  for (j in 1:nrow(msfile)) {
+    for (k in unique_topologies) {
+      if (all.equal.phylo(unroot(read.tree(text = msfile$topology[j])), read.tree(text = k))) {
+        msfile$topology[j] <- k
+        break
+      }
+    }
+  }
+  
   trees <- data.frame(do.call('rbind', strsplit(as.character(hmmtrees),'\\[|,|\\]')))
   trees[,1] <- NULL
   colnames(trees) <- c("start","stop","tree")
@@ -145,9 +160,9 @@ for (i in uq_tops$wsizes) {
   output <- cbind(output, empty_matrix)
   
   # annotating
-  for (i in 1:nrow(msfile)){
-    sites <- dat[msfile$start[i]:msfile$stop[i],]
-    topology_idx <- which(output$topology==msfile$topology[i])
+  for (k in 1:nrow(msfile)){
+    sites <- dat[msfile$start[k]:msfile$stop[k],]
+    topology_idx <- which(output$topology==msfile$topology[k])
     
     sites_sum <- sites %>%
       group_by(tree) %>%

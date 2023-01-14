@@ -20,7 +20,6 @@ Software incorporated in the pipeline:
 - Allow users to choose which analysis to run
 - Find a better way to _redo_ the analysis (e.g., delete all files within the directory, create a new directory, etc.)
 - Automate the selection of MAST model based on the number of topologies
-- Run MASTHMM based on unique set of input topologies instead of windows
 - Fix the summary report for the whole pipeline, including HTML template
 
 ---

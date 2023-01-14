@@ -20,6 +20,7 @@ library(dplyr)
 library(data.table)
 library(ggplot2)
 library(forcats)
+library(ape)
 
 currentdir <- paste(params$outdir, "/", params$prefix, sep="")
 if (!file.exists(currentdir)) {
