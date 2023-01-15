@@ -1,13 +1,26 @@
 ---
-title: "MASTHMM Summary"
+title: "Summary of MAST-HMM Analyses"
+params:
+  prefix: ""
+  outdir: ""
+  redo: TRUE
 ---
 
 ### setup
+```{r setup, include=FALSE}
+library(dplyr)
+library(data.table)
+library(ggplot2)
+library(RColorBrewer)
+```
+
 ```{r vars, include=FALSE}
-mast_outdir <- paste(getwd(), "/masthmm/", sep="")
+mast_outdir <- paste(params$outdir, "/", params$prefix, "/masthmm/", sep="")
 if (!file.exists(mast_outdir)) {
   dir.create(mast_outdir, recursive = T)
 }
+
+pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
 
 top_sets <- list.dirs(mast_outdir, full.names = F, recursive = F)
 top_sets <- subset(top_sets, top_sets != paste(params$prefix, ".topset", sep="")) 
@@ -72,9 +85,9 @@ colnames(sub_output) <- c("model","set","accuracy")
 sub_output$set <- factor(sub_output$set,levels = unique(sub_output$set),ordered = T)
 
 tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
-print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=set)) + 
-        geom_boxplot() +
-        geom_jitter(shape=16, position=position_jitter(0.2), aes(colour=model)) +
+print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=set, ymin=0, ymax=100)) + 
+        geom_jitter(shape=16, position=position_jitter(0.2), aes(colour=r), size=5) +
+        scale_colour_manual(values = pcolors) +
         ggtitle("Accuracy of MAST-HMM in Simulated Dataset") + 
         xlab("Window size (bp)") +
         ylab("Accuracy (%)") +
