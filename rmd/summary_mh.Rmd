@@ -87,18 +87,18 @@ for (t in unique(dfsets$topologies)) {
 colnames(dfviz) <- dfviz[1,]
 dfviz <- dfviz[-1,]
 
-write.table(dfviz, fn_hmmacc, quote = F, row.names = T, col.names = T)
-
-# visualization
 dfviz$model <- gsub("\\_","+",toupper(dfviz$model))
 dfviz$set <- factor(dfviz$set,levels = unique(dfviz$set),ordered = T)
 
+write.table(dfviz, fn_hmmacc, quote = F, row.names = T, col.names = T)
+
+# visualization
 tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
 print(ggplot(dfviz, aes(y=as.numeric(accuracy), x=set, ymin=0, ymax=100)) + 
         geom_jitter(shape=16, width = 0.1, height = 0, aes(colour=r), size=5) +
         scale_colour_manual(values = pcolors) +
         ggtitle("Accuracy of MAST-HMM in Simulated Dataset") + 
-        xlab("Window size (bp)") +
+        xlab("Topology Set") +
         ylab("Accuracy (%)") +
         theme(
           plot.title = element_text(hjust = 0.5, size = 50),
@@ -127,7 +127,7 @@ for (i in unique(dfviz$r)) {
           geom_jitter(shape=16, width = 0.1, height = 0, aes(colour=r), size=5) +
           scale_colour_manual(values = pcolors[iterator]) +
           ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
-          xlab("Window size (kb)") +
+          xlab("Topology Set") +
           ylab("Accuracy (%)") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
