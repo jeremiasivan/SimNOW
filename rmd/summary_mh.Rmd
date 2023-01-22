@@ -16,8 +16,9 @@ library(RColorBrewer)
 pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
 
 fn_hmmacc <- paste(params$outdir, "/", params$prefix, ".hmmacc", sep="")
+fn_hmmtopset <- paste(params$outdir, "/", params$prefix, ".hmmtopset", sep="")
 fn_hmmfig <- paste(params$outdir, "/", params$prefix, ".hmmacc.tiff", sep="")
-if (all(file.exists(fn_hmmacc, fn_hmmfig)) && params$redo == FALSE) {
+if (all(file.exists(fn_hmmacc, fn_hmmtopset, fn_hmmfig)) && params$redo == FALSE) {
   print("MAST-HMM accuracy file already exists. Stopping...")
   knitr::knit_exit()
 }
@@ -54,6 +55,9 @@ colnames(dfsets) <- dfsets[1,]
 dfsets <- dfsets[-1,]
 
 dfviz <- data.frame("accuracy","model","r","set")
+dfstop <- data.frame("set","topology")
+set_iterator <- 1
+
 for (t in unique(dfsets$topologies)) {
   dfsubs <- subset(dfsets[dfsets$topologies == t,])
   
@@ -79,10 +83,16 @@ for (t in unique(dfsets$topologies)) {
       }
       acc <- round(acc / sum(hmmsum) * 100, 3)
       
-      dfviz <- rbind(dfviz, c(acc, m, dfsubs$r[r], dfsubs$set[r]))
+      dfviz <- rbind(dfviz, c(acc, m, dfsubs$r[r], set_iterator))
     }
   }
+  
+  dfstop <- rbind(dfstop, c(set_iterator,t))
+  set_iterator <- set_iterator + 1
 }
+
+colnames(dfstop) <- dfstop[1,]
+dfstop <- dfstop[-1,]
 
 colnames(dfviz) <- dfviz[1,]
 dfviz <- dfviz[-1,]
@@ -90,6 +100,7 @@ dfviz <- dfviz[-1,]
 dfviz$model <- gsub("\\_","+",toupper(dfviz$model))
 dfviz$set <- factor(dfviz$set,levels = unique(dfviz$set),ordered = T)
 
+write.table(dfstop, fn_hmmtopset, quote = F, row.names = T, col.names = T)
 write.table(dfviz, fn_hmmacc, quote = F, row.names = T, col.names = T)
 
 # visualization
