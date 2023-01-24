@@ -115,9 +115,11 @@ print(ggplot(dfviz, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) +
 dev.off()
 
 # visualization for simulations per recombination rate
+iterator <- 0
 for (i in unique(dfviz$r)) {
   fn_simfig <- paste(params$outdir, "/", params$prefix, ".hmmwacc.r",i,".tiff", sep="")
   outperr <- subset(dfviz, dfviz$r == i)
+  iterator <- iterator + 1
   
   tiff(filename=fn_simfig, units="px", width=2880, height=1800)
   print(ggplot(outperr, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) + 
