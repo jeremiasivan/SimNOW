@@ -1,12 +1,11 @@
 ---
 title: "Summary of MAST-HMM Analyses"
 params:
-  prefix: ""
-  outdir: ""
+  prefix: "hb"
+  outdir: "~/Documents/simulation/hb1"
   redo: TRUE
 ---
 
-### setup
 ```{r setup, include=FALSE}
 library(dplyr)
 library(data.table)
@@ -18,14 +17,132 @@ pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
 fn_hmmacc <- paste(params$outdir, "/", params$prefix, ".hmmacc", sep="")
 fn_hmmtopset <- paste(params$outdir, "/", params$prefix, ".hmmtopset", sep="")
 fn_hmmfig <- paste(params$outdir, "/", params$prefix, ".hmmacc.tiff", sep="")
-if (all(file.exists(fn_hmmacc, fn_hmmtopset, fn_hmmfig)) && params$redo == FALSE) {
+fn_hmmwacc <- paste(params$outdir, "/", params$prefix, ".hmmwacc", sep="")
+fn_hmmwfig <- paste(params$outdir, "/", params$prefix, ".hmmwacc.tiff", sep="")
+if (all(file.exists(fn_hmmacc, fn_hmmtopset, fn_hmmfig, fn_hmmwacc, fn_hmmwfig)) && params$redo == FALSE) {
   print("MAST-HMM accuracy file already exists. Stopping...")
   knitr::knit_exit()
 }
 ```
 
-### summary
-```{r hmmtruthsum, include=FALSE}
+```{r hmmtruthwindow, include=FALSE}
+# retrieve all simulations
+allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
+simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""), allsims)]
+
+# retrieve all MAST models
+top_sets <- list.dirs(paste(params$outdir, "/", simulation[1], "/masthmm/", sep=""), full.names = F, recursive = F)
+model_list <- list.dirs(paste(params$outdir, "/", simulation[1], "/masthmm/", top_sets[1], "/", sep=""), full.names = F, recursive = F)
+model_list <- subset(model_list, model_list != paste(simulation[1], ".mast.tops", sep=""))
+
+dfsets <- data.frame("wsize", "set", "simulation", "r")
+
+# 
+for (s in simulation) {
+  dftmp <- read.table(paste(params$outdir, "/", s, "/masthmm/", s, ".topset", sep=""))
+  colnames(dftmp) <- dftmp[1,]
+  dftmp <- dftmp[-1,]
+  
+  fn_ms <- paste(params$outdir, "/", s, "/simulation/", s, ".ms", sep="")
+  command <- strsplit(system(paste("grep 'ms'", fn_ms), intern=T), " ")
+  
+  for (r in 1:nrow(dftmp)) {
+    dfsets <- rbind(dfsets, c(dftmp$wsizes[r], as.numeric(rownames(dftmp)[r])-1, s, command[[1]][length(command[[1]])-1]))
+  }
+}
+
+colnames(dfsets) <- dfsets[1,]
+dfsets <- dfsets[-1,]
+
+dfviz <- data.frame("accuracy","model","r","wsize")
+
+for (e in 1:nrow(dfsets)) {
+  wstmp <- strsplit(dfsets$wsize[e],"_")[[1]]
+  mhtemp <- paste(params$outdir, "/", dfsets$simulation[e], "/masthmm/", dfsets$set[e], "/", sep="")
+    
+  for (m in model_list) {
+    fn_hmmsum <- paste(mhtemp, m, "/", dfsets$simulation[e], ".hmmsum", sep="")
+    if (!file.exists(fn_hmmsum)) {
+      next
+    }
+      
+    hmmsum <- read.table(fn_hmmsum)
+    hmmsum <- sapply(hmmsum[-1,-1], as.numeric)
+      
+    acc <- 0
+    if (is.null(nrow(hmmsum))) {
+      acc <- hmmsum[1]
+    } else {
+      for (k in 1:nrow(hmmsum)) {
+        acc <- acc + as.numeric(hmmsum[k,k])
+      }
+    }
+    acc <- round(acc / sum(hmmsum) * 100, 3)
+    
+    for (w in wstmp) {
+      dfviz <- rbind(dfviz, c(acc, m, dfsets$r[e], w))
+    }
+  }
+}
+
+colnames(dfviz) <- dfviz[1,]
+dfviz <- dfviz[-1,]
+
+dfviz$model <- gsub("\\_","+",toupper(dfviz$model))
+dfviz$wsize <- factor(as.numeric(dfviz$wsize)/1000)
+
+write.table(dfviz, fn_hmmwacc, quote = F, row.names = F, col.names = T)
+
+# visualization for all simulations
+tiff(filename=fn_hmmwfig, units="px", width=2880, height=1800)
+print(ggplot(dfviz, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) + 
+        geom_jitter(shape=16, width = 0.1, height = 0, aes(colour=r), size=5) +
+        scale_colour_manual(values = pcolors) +
+        ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
+        xlab("Window size (kb)") +
+        ylab("Accuracy (%)") +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 50),
+          plot.margin = margin(0, 0, 1.25, 0, "cm"),
+          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+          axis.text.y=element_text(size=30),
+          axis.text.x=element_text(size=30),
+          legend.title=element_text(size=30),
+          legend.text=element_text(size=30),
+          legend.key.size=unit(2,"cm")
+        ))
+dev.off()
+
+# visualization for simulations per recombination rate
+for (i in unique(dfviz$r)) {
+  fn_simfig <- paste(params$outdir, "/", params$prefix, ".hmmwacc.r",i,".tiff", sep="")
+  outperr <- subset(dfviz, dfviz$r == i)
+  
+  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
+  print(ggplot(outperr, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) + 
+          geom_boxplot() +
+          geom_jitter(shape=16, width = 0.1, height = 0, aes(colour=r), size=5) +
+          scale_colour_manual(values = pcolors[iterator]) +
+          ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
+          xlab("Window size (kb)") +
+          ylab("Accuracy (%)") +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=30),
+            axis.text.x=element_text(size=30),
+            legend.title=element_text(size=30),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+          ))
+  dev.off()
+}
+```
+
+```{r hmmtruthset, include=FALSE}
 # retrieve all simulations
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
 simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""), allsims)]
@@ -100,8 +217,8 @@ dfviz <- dfviz[-1,]
 dfviz$model <- gsub("\\_","+",toupper(dfviz$model))
 dfviz$set <- factor(dfviz$set,levels = unique(dfviz$set),ordered = T)
 
-write.table(dfstop, fn_hmmtopset, quote = F, row.names = T, col.names = T)
-write.table(dfviz, fn_hmmacc, quote = F, row.names = T, col.names = T)
+write.table(dfstop, fn_hmmtopset, quote = F, row.names = F, col.names = T)
+write.table(dfviz, fn_hmmacc, quote = F, row.names = F, col.names = T)
 
 # visualization
 tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
