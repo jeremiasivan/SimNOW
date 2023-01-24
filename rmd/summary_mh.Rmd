@@ -1,8 +1,8 @@
 ---
 title: "Summary of MAST-HMM Analyses"
 params:
-  prefix: "hb"
-  outdir: "~/Documents/simulation/hb1"
+  prefix: ""
+  outdir: ""
   redo: TRUE
 ---
 
@@ -37,7 +37,7 @@ model_list <- subset(model_list, model_list != paste(simulation[1], ".mast.tops"
 
 dfsets <- data.frame("wsize", "set", "simulation", "r")
 
-# 
+# retrieving accuracy between runs based on window sizes
 for (s in simulation) {
   dftmp <- read.table(paste(params$outdir, "/", s, "/masthmm/", s, ".topset", sep=""))
   colnames(dftmp) <- dftmp[1,]
