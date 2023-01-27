@@ -1,17 +1,19 @@
 ---
 title: "Summary of MAST-HMM Analyses"
 params:
-  prefix: ""
-  outdir: ""
+  prefix: "hb"
+  outdir: "~/Documents/simulation/hb1"
   redo: TRUE
 ---
 
-```{r setup, include=FALSE}
+```{r library, include=FALSE}
 library(dplyr)
 library(data.table)
 library(ggplot2)
 library(RColorBrewer)
+```
 
+```{r setup, include=FALSE}
 pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
 
 fn_hmmacc <- paste(params$outdir, "/", params$prefix, ".hmmacc", sep="")
@@ -20,12 +22,10 @@ fn_hmmfig <- paste(params$outdir, "/", params$prefix, ".hmmacc.tiff", sep="")
 fn_hmmwacc <- paste(params$outdir, "/", params$prefix, ".hmmwacc", sep="")
 fn_hmmwfig <- paste(params$outdir, "/", params$prefix, ".hmmwacc.tiff", sep="")
 if (all(file.exists(fn_hmmacc, fn_hmmtopset, fn_hmmfig, fn_hmmwacc, fn_hmmwfig)) && params$redo == FALSE) {
-  print("MAST-HMM accuracy file already exists. Stopping...")
+  print("MAST-HMM summary files already exist. Stopping...")
   knitr::knit_exit()
 }
-```
 
-```{r hmmtruthwindow, include=FALSE}
 # retrieve all simulations
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
 simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""), allsims)]
@@ -34,10 +34,12 @@ simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""), allsims)]
 top_sets <- list.dirs(paste(params$outdir, "/", simulation[1], "/masthmm/", sep=""), full.names = F, recursive = F)
 model_list <- list.dirs(paste(params$outdir, "/", simulation[1], "/masthmm/", top_sets[1], "/", sep=""), full.names = F, recursive = F)
 model_list <- subset(model_list, model_list != paste(simulation[1], ".mast.tops", sep=""))
+```
 
+```{r hmmtruthwindow, include=FALSE}
 dfsets <- data.frame("wsize", "set", "simulation", "r")
 
-# retrieving accuracy between runs based on window sizes
+# retrieve topology set and recombination rate for each simulation
 for (s in simulation) {
   dftmp <- read.table(paste(params$outdir, "/", s, "/masthmm/", s, ".topset", sep=""))
   colnames(dftmp) <- dftmp[1,]
@@ -54,21 +56,23 @@ for (s in simulation) {
 colnames(dfsets) <- dfsets[1,]
 dfsets <- dfsets[-1,]
 
+# calculate MAST-HMM accuracy for each window size
 dfviz <- data.frame("accuracy","model","r","wsize")
 
 for (e in 1:nrow(dfsets)) {
   wstmp <- strsplit(dfsets$wsize[e],"_")[[1]]
-  mhtemp <- paste(params$outdir, "/", dfsets$simulation[e], "/masthmm/", dfsets$set[e], "/", sep="")
+  mhtmp <- paste(params$outdir, "/", dfsets$simulation[e], "/masthmm/", dfsets$set[e], "/", sep="")
     
   for (m in model_list) {
-    fn_hmmsum <- paste(mhtemp, m, "/", dfsets$simulation[e], ".hmmsum", sep="")
+    fn_hmmsum <- paste(mhtmp, m, "/", dfsets$simulation[e], ".hmmsum", sep="")
     if (!file.exists(fn_hmmsum)) {
       next
     }
       
     hmmsum <- read.table(fn_hmmsum)
     hmmsum <- sapply(hmmsum[-1,-1], as.numeric)
-      
+    
+    # calculate the accuracy with if conditional for one topology  
     acc <- 0
     if (is.null(nrow(hmmsum))) {
       acc <- hmmsum[1]
@@ -79,6 +83,7 @@ for (e in 1:nrow(dfsets)) {
     }
     acc <- round(acc / sum(hmmsum) * 100, 3)
     
+    # store the values in dataframe
     for (w in wstmp) {
       dfviz <- rbind(dfviz, c(acc, m, dfsets$r[e], w))
     }
@@ -144,16 +149,7 @@ for (i in unique(dfviz$r)) {
 }
 ```
 
-```{r hmmtruthset, include=FALSE}
-# retrieve all simulations
-allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
-simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""), allsims)]
-
-# retrieve all MAST models
-top_sets <- list.dirs(paste(params$outdir, "/", simulation[1], "/masthmm/", sep=""), full.names = F, recursive = F)
-model_list <- list.dirs(paste(params$outdir, "/", simulation[1], "/masthmm/", top_sets[1], "/", sep=""), full.names = F, recursive = F)
-model_list <- subset(model_list, model_list != paste(simulation[1], ".mast.tops", sep=""))
-
+```{r hmmtruthset, eval=FALSE, include=FALSE}
 dfsets <- data.frame("topologies", "set", "simulation", "r")
 
 # naming benchmark for sets across runs
@@ -276,6 +272,6 @@ for (i in unique(dfviz$r)) {
 
 <br>
 
-```{r, fig.width=1, echo=FALSE}
+```{r, fig.width=1, eval=FALSE, echo=FALSE}
 knitr::include_graphics(fn_figs)
 ```

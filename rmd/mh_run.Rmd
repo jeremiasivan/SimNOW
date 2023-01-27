@@ -3,35 +3,36 @@ title: "MAST-HMM Analysis"
 ---
 
 ### setup
-```{r vars, include=FALSE}
+```{r setup, include=FALSE}
 mast_outdir <- paste(getwd(), "/masthmm/", sep="")
 if (!file.exists(mast_outdir)) {
   dir.create(mast_outdir, recursive = T)
 }
 
-fn_topset <- paste(mast_outdir, params$prefix, ".topset", sep="")
 mast_model <- paste("'", params$mast_model, "'", sep="")
-uq_tops <- data.frame()
 
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
+fn_topset <- paste(mast_outdir, params$prefix, ".topset", sep="")
 fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
 fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
 ```
 
 ### analysis
 ```{r prehmm}
-# if (file.exists(fn_topset) && params$redo == FALSE){
-if (FALSE) {
+uq_tops <- data.frame()
+
+if (file.exists(fn_topset) && params$redo == FALSE){
   uq_tops <- read.table(fn_topset)
   colnames(uq_tops) <- uq_tops[1,]
   uq_tops <- uq_tops[-1,]
+  
 } else {
   list_tops <- c("wsize","topologies")
 
+  # extract top % topologies
   for (i in window_sizes) {
-    # extract top % topologies
     fn_tops <- paste(window_outdir, i, "/summary/", params$prefix, ".topsum", sep="")
     topsum <- read.table(fn_tops)
     colnames(topsum) <- topsum[1,]
@@ -65,7 +66,6 @@ if (FALSE) {
 ```
 
 ```{r masthmm}
-# create folder for each set topology
 for (k in 1:nrow(uq_tops)) {
   setfn <- paste(mast_outdir,k,"/",sep="")
   if (!file.exists(setfn)) {
@@ -75,7 +75,7 @@ for (k in 1:nrow(uq_tops)) {
   # save the topologies in separate file
   topls <- strsplit(uq_tops$topologies[k],split = "&")[[1]]
   fn_mast_tops <- paste(setfn, params$prefix, ".mast.tops", sep="")
-  if (!file.exists(fn_mast_tops)) {
+  if (!file.exists(fn_mast_tops) || params$redo == TRUE) {
     write.table(topls, file = fn_mast_tops, quote = F, row.names = F, col.names = F)
   }
   
@@ -84,7 +84,7 @@ for (k in 1:nrow(uq_tops)) {
     next
   }
   
-  # create folder based on the MAST model
+  # create new directory based on the MAST model
   outdir <- paste(setfn, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/", sep="")
   if (!file.exists(outdir)) {
     dir.create(outdir, recursive = T)
@@ -111,29 +111,30 @@ options(scipen=999)
 
 for (i in 1:nrow(uq_tops)) {
   temp_outdir <- paste(mast_outdir,i,"/",sep="")
-  fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
   outdir <- paste(temp_outdir, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/", sep="")
+ 
+  fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
+  fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
+  if (all(file.exists(fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
+    print("MAST-HMM summary file already exists. Moving on...")
+    next
+  }
   
+  # read input files
+  fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
   fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
   if (!file.exists(fn_hmm)) {
     print("HMM file is not found. Moving on...")
     next
   }
- 
-  fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
-  fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
-  if (all(file.exists(fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
-    print(paste(i, "bp window MAST-HMM summary file already exists. Moving on...", sep=""))
-    next
-  }
   
-  # read input files
   tmfile <- readLines(fn_mast_tops)
   hmmfile <- readLines(fn_hmm)
   hmmtrees <- subset(hmmfile, grepl("^\\[", hmmfile))
   
   unique_topologies <- unique(tmfile)
   
+  # convert rooted tree to unrooted tree
   for (j in 1:nrow(msfile)) {
     for (k in unique_topologies) {
       if (all.equal.phylo(unroot(read.tree(text = msfile$topology[j])), read.tree(text = k))) {
@@ -147,7 +148,7 @@ for (i in 1:nrow(uq_tops)) {
   trees[,1] <- NULL
   colnames(trees) <- c("start","stop","tree")
   
-  # extracting essential columns
+  # extract per-site topology
   dat <- apply(trees, 1,
                function(x) data.table(bp = x["start"]:x["stop"], tree = x["tree"])) %>%
     rbindlist()
@@ -159,11 +160,11 @@ for (i in 1:nrow(uq_tops)) {
   output <- data.frame(topology = tmfile)
   output <- cbind(output, empty_matrix)
   
-  # annotating
   for (k in 1:nrow(msfile)){
     sites <- dat[msfile$start[k]:msfile$stop[k],]
     topology_idx <- which(output$topology==msfile$topology[k])
     
+    # count number of sites that recovers the ms topology
     sites_sum <- sites %>%
       group_by(tree) %>%
       summarise(n=n())
@@ -184,9 +185,9 @@ for (i in 1:nrow(uq_tops)) {
   # visualization
   sub_output <- data.frame()
   
-  for (i in 1:nrow(output)) {
+  for (k in 1:nrow(output)) {
     for (j in 2:ncol(output)) {
-      sub_output <- rbind(sub_output, c(output$topology[i],colnames(output[j]),output[i,j]))
+      sub_output <- rbind(sub_output, c(output$topology[k],colnames(output[j]),output[k,j]))
     }
   }
   colnames(sub_output) <- c("topology","sites","frequency")

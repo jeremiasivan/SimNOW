@@ -12,7 +12,7 @@ params:
   
   # masthmm
   mast_model: ""
-  mast_tops: 1
+  mast_tops: 0.95
 ---
 
 ```{r setup, include=FALSE}
