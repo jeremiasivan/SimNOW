@@ -14,6 +14,7 @@ library(RColorBrewer)
 ```
 
 ```{r setup, include=FALSE}
+fn_figs <- c()
 pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
 
 fn_hmmacc <- paste(params$outdir, "/", params$prefix, ".hmmacc", sep="")
@@ -120,10 +121,14 @@ print(ggplot(dfviz, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) +
 dev.off()
 
 # visualization for simulations per recombination rate
+fn_figs <- c(fn_figs, fn_hmmwfig)
 iterator <- 0
+
 for (i in unique(dfviz$r)) {
-  fn_simfig <- paste(params$outdir, "/", params$prefix, ".hmmwacc.r",i,".tiff", sep="")
   outperr <- subset(dfviz, dfviz$r == i)
+  
+  fn_simfig <- paste(params$outdir, "/", params$prefix, ".hmmwacc.r",i,".tiff", sep="")
+  fn_figs <- c(fn_figs, fn_simfig)
   iterator <- iterator + 1
   
   tiff(filename=fn_simfig, units="px", width=2880, height=1800)
@@ -152,7 +157,7 @@ for (i in unique(dfviz$r)) {
 ```{r hmmtruthset, eval=FALSE, include=FALSE}
 dfsets <- data.frame("topologies", "set", "simulation", "r")
 
-# naming benchmark for sets across runs
+# retrieve topology set and recombination rate for each simulation
 for (s in simulation) {
   dftmp <- read.table(paste(params$outdir, "/", s, "/masthmm/", s, ".topset", sep=""))
   colnames(dftmp) <- dftmp[1,]
@@ -169,6 +174,7 @@ for (s in simulation) {
 colnames(dfsets) <- dfsets[1,]
 dfsets <- dfsets[-1,]
 
+# calculate MAST-HMM accuracy for each topology set
 dfviz <- data.frame("accuracy","model","r","set")
 dfstop <- data.frame("set","topology")
 set_iterator <- 1
@@ -188,6 +194,7 @@ for (t in unique(dfsets$topologies)) {
       hmmsum <- read.table(fn_hmmsum)
       hmmsum <- sapply(hmmsum[-1,-1], as.numeric)
       
+      # calculate the accuracy with if conditional for one topology  
       acc <- 0
       if (is.null(nrow(hmmsum))) {
         acc <- hmmsum[1]
@@ -198,6 +205,7 @@ for (t in unique(dfsets$topologies)) {
       }
       acc <- round(acc / sum(hmmsum) * 100, 3)
       
+      # store the values in dataframe
       dfviz <- rbind(dfviz, c(acc, m, dfsubs$r[r], set_iterator))
     }
   }
@@ -218,7 +226,7 @@ dfviz$set <- factor(dfviz$set,levels = unique(dfviz$set),ordered = T)
 write.table(dfstop, fn_hmmtopset, quote = F, row.names = F, col.names = T)
 write.table(dfviz, fn_hmmacc, quote = F, row.names = F, col.names = T)
 
-# visualization
+# visualization for all simulations
 tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
 print(ggplot(dfviz, aes(y=as.numeric(accuracy), x=set, ymin=0, ymax=100)) + 
         geom_jitter(shape=16, width = 0.1, height = 0, aes(colour=r), size=5) +
@@ -239,11 +247,13 @@ print(ggplot(dfviz, aes(y=as.numeric(accuracy), x=set, ymin=0, ymax=100)) +
 dev.off()
 
 # visualization for simulations per recombination rate
-fn_figs <- c(fn_hmmfig)
+fn_figs <- c(fn_figs, fn_hmmfig)
 iterator <- 0
+
 for (i in unique(dfviz$r)) {
-  fn_hmmfig <- paste(params$outdir, "/", params$prefix, ".hmmacc.r",i,".tiff", sep="")
   outperr <- subset(dfviz, dfviz$r == i)
+  
+  fn_hmmfig <- paste(params$outdir, "/", params$prefix, ".hmmacc.r",i,".tiff", sep="")
   fn_figs <- c(fn_figs, fn_hmmfig)
   iterator <- iterator + 1
   
@@ -272,6 +282,6 @@ for (i in unique(dfviz$r)) {
 
 <br>
 
-```{r, fig.width=1, eval=FALSE, echo=FALSE}
+```{r, fig.width=1, echo=FALSE}
 knitr::include_graphics(fn_figs)
 ```
