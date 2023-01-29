@@ -1,8 +1,8 @@
 ---
 title: "Summary of MAST-HMM Analyses"
 params:
-  prefix: "hb"
-  outdir: "~/Documents/simulation/hb1"
+  prefix: ""
+  outdir: ""
   redo: TRUE
 ---
 
@@ -58,7 +58,7 @@ colnames(dfsets) <- dfsets[1,]
 dfsets <- dfsets[-1,]
 
 # calculate MAST-HMM accuracy for each window size
-dfviz <- data.frame("accuracy","model","r","wsize")
+dfviz <- data.frame("dir","accuracy","model","r","wsize")
 
 for (e in 1:nrow(dfsets)) {
   wstmp <- strsplit(dfsets$wsize[e],"_")[[1]]
@@ -86,7 +86,7 @@ for (e in 1:nrow(dfsets)) {
     
     # store the values in dataframe
     for (w in wstmp) {
-      dfviz <- rbind(dfviz, c(acc, m, dfsets$r[e], w))
+      dfviz <- rbind(dfviz, c(fn_hmmsum, acc, m, dfsets$r[e], w))
     }
   }
 }
@@ -279,8 +279,6 @@ for (i in unique(dfviz$r)) {
   dev.off()
 }
 ```
-
-<br>
 
 ```{r, fig.width=1, echo=FALSE}
 knitr::include_graphics(fn_figs)

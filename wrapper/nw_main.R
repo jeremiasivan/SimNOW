@@ -1,14 +1,14 @@
 library(doParallel)
 
 #################################
-ms_r <- c(10,30)
+ms_r <- c(30)
 nreps <- 2
-prefix <- "test"
-nthread <- 3
+prefix <- "mt"
+nthread <- 2
 
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
-outdir <- "~/Documents/simulation/rmd_test"
+outdir <- "~/Documents/simulation/mt"
 redo <- TRUE
   
 # sequence simulation

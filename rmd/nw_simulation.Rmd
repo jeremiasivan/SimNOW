@@ -18,6 +18,9 @@ ms_command <- paste(params$ms_params, "-r", params$ms_r, params$ms_l)
 if (file.exists(simulation_output) && params$redo == FALSE) {
   print("msfile already exists. Skipping this step...")
 } else {
+  randseed <- paste(sample(10000:99999,3), collapse=" ")
+  write.table(randseed, file="seedms", quote=F, row.names=F, col.names=F)
+  
   print("Generating ms trees...")
   system(paste(params$msdir,ms_command,">",simulation_output))
 }
