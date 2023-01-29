@@ -1,18 +1,18 @@
 library(doParallel)
 
 #################################
-prefix <- "wrap"
-nthread <- 2
+prefix <- "bt"
+nthread <- 4
 
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
-outdir <- "~/Documents/simulation/rmd_test"
+outdir <- "~/Documents/simulation/bt"
 redo <-  TRUE
 
 # mast and hmm
 iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
 mast_model <- c("JC+FO+T", "JC+T")
-mast_tops <- 1
+mast_tops <- 0.95
 
 #################################
 
@@ -51,5 +51,11 @@ cl <- parallel::makeCluster(nthread)
 doParallel::registerDoParallel(cl)
 
 foreach(r=reports, .errorhandling = 'pass') %dopar% make_report(r)
+
+# summary
+rmarkdown::render(input=paste(rmddir,"/summary_mh.Rmd", sep=""),
+                  output_file=paste(outdir, "/", prefix, ".mh.html", sep=""),
+                  params=list(prefix=prefix, outdir=outdir, redo=redo),
+                  quiet=TRUE)
 
 parallel::stopCluster(cl)

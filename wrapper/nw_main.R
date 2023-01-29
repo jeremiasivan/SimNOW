@@ -1,20 +1,20 @@
 library(doParallel)
 
 #################################
-ms_r <- c(30)
-nreps <- 2
-prefix <- "mt"
-nthread <- 2
+ms_r <- c(0,3,30,300)
+nreps <- 10
+prefix <- "bt"
+nthread <- 4
 
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
-outdir <- "~/Documents/simulation/mt"
+outdir <- "~/Documents/simulation/bt"
 redo <- TRUE
   
 # sequence simulation
 msdir <- "~/Documents/msdir/ms"
 ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 10 2 1 -ej 24 3 1 -ej 35 4 1 -ej 32 5 6 -ej 53 6 1 -ej 69 7 1 -es 1 2 0.25 -ej 1 8 1 -es 23 3 0.25 -ej 23 9 4 -es 34 6 0.25 -ej 34 10 4"
-ms_l <- 1000000
+ms_l <- 10000000
   
 iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
 alisim_model <- "JC"
@@ -22,7 +22,7 @@ alisim_scale <- 0.00029
 outgroup <- "7"
   
 # non-overlapping window analysis
-window_size <- c(50000,100000)
+window_size <- c(1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000)
 
 #################################
 
