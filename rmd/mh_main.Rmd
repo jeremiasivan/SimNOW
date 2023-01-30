@@ -2,29 +2,41 @@
 title: "MAST-HMM"
 params:
   # general
-  rmddir: ""
-  prefix: ""
-  outdir: ""
-  redo: TRUE
+  rmddir: "~/Documents/SimNOW/rmd"
+  prefix: "hb_1"
+  outdir: "~/Documents/simulation/hb1"
+  redo: FALSE
   
   # sequence simulation
   iqtree2dir: ""
   
   # masthmm
-  mast_model: ""
+  mast_model: "JC+FO+T"
   mast_tops: 0.95
 ---
 
 ```{r setup, include=FALSE}
-library(dplyr)
-library(data.table)
-library(ggplot2)
-library(forcats)
 library(ape)
+library(data.table)
+library(dplyr)
+library(forcats)
+library(ggplot2)
+library(log4r)
 
 currentdir <- paste(params$outdir, "/", params$prefix, sep="")
 if (!file.exists(currentdir)) {
   dir.create(currentdir, recursive = T)
+}
+
+fn_log <- paste(params$outdir, "/", params$prefix, "/", params$prefix, ".mh.log", sep="")
+log_appender <- file_appender(fn_log, append = TRUE, layout = default_log_layout())
+fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
+if (params$redo == TRUE) {
+  unlink(fn_log)
+}
+
+if (!file.exists(fn_log)) {
+  write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
 }
 
 knitr::opts_knit$set(root.dir = currentdir)
@@ -32,4 +44,8 @@ knitr::opts_knit$set(root.dir = currentdir)
 
 ## MAST-HMM Analysis
 ```{r child = paste(params$rmddir,"/mh_run.Rmd",sep=""), include=FALSE}
+```
+
+## Summary
+```{r child = paste(params$rmddir,"/mh_summary.Rmd",sep=""), include=FALSE}
 ```

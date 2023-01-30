@@ -2,8 +2,13 @@
 title: "MAST-HMM Analysis"
 ---
 
-### setup
-```{r setup, include=FALSE}
+```{r mhsetup, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####          MAST-HMM          ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
 mast_outdir <- paste(getwd(), "/masthmm/", sep="")
 if (!file.exists(mast_outdir)) {
   dir.create(mast_outdir, recursive = T)
@@ -16,11 +21,9 @@ window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
 fn_topset <- paste(mast_outdir, params$prefix, ".topset", sep="")
 fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
-fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
 ```
 
-### analysis
-```{r prehmm}
+```{r premh, include=FALSE}
 uq_tops <- data.frame()
 
 if (file.exists(fn_topset) && params$redo == FALSE){
@@ -28,13 +31,14 @@ if (file.exists(fn_topset) && params$redo == FALSE){
   colnames(uq_tops) <- uq_tops[1,]
   uq_tops <- uq_tops[-1,]
   
+  log4r::info(fn_logger, "File already exists: MAST-HMM topology sets. Skipped.")
+  
 } else {
   list_tops <- c("wsize","topologies")
 
-  # extract top % topologies
+  # extract top % topologies for each window size
   for (i in window_sizes) {
-    fn_tops <- paste(window_outdir, i, "/summary/", params$prefix, ".topsum", sep="")
-    topsum <- read.table(fn_tops)
+    topsum <- read.table(paste(window_outdir, i, "/summary/", params$prefix, ".topsum", sep=""))
     colnames(topsum) <- topsum[1,]
     topsum <- topsum[-1,]
     
@@ -62,26 +66,31 @@ if (file.exists(fn_topset) && params$redo == FALSE){
     summarise(wsizes = paste(wsize, collapse = "_"))
   
   write.table(uq_tops, file=fn_topset, quote=F, row.names=F, col.names=T)
+  log4r::info(fn_logger, paste("File created: MAST-HMM topology sets (",
+                               params$prefix, ".topset).", sep=""))
 }
 ```
 
 ```{r masthmm}
+log4r::info(fn_logger, paste(nrow(uq_tops), "topology sets found."))
+
+# iterate through topology sets
 for (k in 1:nrow(uq_tops)) {
+  topls <- strsplit(uq_tops$topologies[k],split = "&")[[1]]
+  if (length(topls) <= 1) {
+    log4r::info(fn_logger, paste(gsub("_",", ",uq_tops$wsizes[k]), "bp [set ", k, "] has one or less topology. Skipped.", sep=""))
+    next
+  }
+  
   setfn <- paste(mast_outdir,k,"/",sep="")
   if (!file.exists(setfn)) {
     dir.create(setfn, recursive = T)
   }
   
   # save the topologies in separate file
-  topls <- strsplit(uq_tops$topologies[k],split = "&")[[1]]
   fn_mast_tops <- paste(setfn, params$prefix, ".mast.tops", sep="")
   if (!file.exists(fn_mast_tops) || params$redo == TRUE) {
     write.table(topls, file = fn_mast_tops, quote = F, row.names = F, col.names = F)
-  }
-  
-  if (length(topls) <= 1) {
-    print(paste(uq_tops$wsizes[k], "bp window has only one or less tree. Moving on..."))
-    next
   }
   
   # create new directory based on the MAST model
@@ -92,124 +101,14 @@ for (k in 1:nrow(uq_tops)) {
   
   prefix <- paste(outdir, params$prefix, sep="")
   if (file.exists(paste(prefix,".hmm",sep="")) && params$redo == FALSE) {
-    print(paste(uq_tops$wsizes[k], "bp window MAST-HMM file already exists. Moving on..."))
+    log4r::info(fn_logger, paste("File exists: ", gsub("_",", ",uq_tops$wsizes[k]), "bp HMM file [set ", k, "]. Skipped.", sep=""))
     next
   }
   
-  # run MAST and HMM
-  mast_cl <- paste(params$iqtree2dir,"-s",fn_alisim,"-m",mast_model,"-blmin 0.0001 -te",fn_mast_tops,"-pre",prefix,"-hmm -wslm -wspm -alninfo")
+  # run MAST-HMM
+  log4r::info(fn_logger, paste("Run MAST-HMM [set ", k, "].", sep=""))
+  mast_cl <- paste(params$iqtree2dir,"-s",fn_alisim,"-m",mast_model,"-blmin 0.0001 -te",fn_mast_tops,"-pre",prefix,"-hmm -wslm -wspm -alninfo -redo")
   system(mast_cl)
-}
-```
-
-```{r posthmm}
-msfile <- read.table(fn_mstops)
-colnames(msfile) <- msfile[1,]
-msfile <- msfile[-1,]
-
-options(scipen=999)
-
-for (i in 1:nrow(uq_tops)) {
-  temp_outdir <- paste(mast_outdir,i,"/",sep="")
-  outdir <- paste(temp_outdir, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/", sep="")
- 
-  fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
-  fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
-  if (all(file.exists(fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
-    print("MAST-HMM summary file already exists. Moving on...")
-    next
-  }
-  
-  # read input files
-  fn_mast_tops <- paste(temp_outdir, params$prefix, ".mast.tops", sep="")
-  fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
-  if (!file.exists(fn_hmm)) {
-    print("HMM file is not found. Moving on...")
-    next
-  }
-  
-  tmfile <- readLines(fn_mast_tops)
-  hmmfile <- readLines(fn_hmm)
-  hmmtrees <- subset(hmmfile, grepl("^\\[", hmmfile))
-  
-  unique_topologies <- unique(tmfile)
-  
-  # convert rooted tree to unrooted tree
-  for (j in 1:nrow(msfile)) {
-    for (k in unique_topologies) {
-      if (all.equal.phylo(unroot(read.tree(text = msfile$topology[j])), read.tree(text = k))) {
-        msfile$topology[j] <- k
-        break
-      }
-    }
-  }
-  
-  trees <- data.frame(do.call('rbind', strsplit(as.character(hmmtrees),'\\[|,|\\]')))
-  trees[,1] <- NULL
-  colnames(trees) <- c("start","stop","tree")
-  
-  # extract per-site topology
-  dat <- apply(trees, 1,
-               function(x) data.table(bp = x["start"]:x["stop"], tree = x["tree"])) %>%
-    rbindlist()
-  
-  # create empty dataframe
-  empty_matrix <- as.data.frame(matrix(rep(0, length(tmfile)+1), nrow=length(tmfile), ncol=length(tmfile)+1))
-  names(empty_matrix) <- c(tmfile,"NT")
-  
-  output <- data.frame(topology = tmfile)
-  output <- cbind(output, empty_matrix)
-  
-  for (k in 1:nrow(msfile)){
-    sites <- dat[msfile$start[k]:msfile$stop[k],]
-    topology_idx <- which(output$topology==msfile$topology[k])
-    
-    # count number of sites that recovers the ms topology
-    sites_sum <- sites %>%
-      group_by(tree) %>%
-      summarise(n=n())
-    
-    for (j in 1:nrow(sites_sum)) {
-      window_idx <- which(colnames(output)==tmfile[as.numeric(sites_sum$tree[j])])
-      
-      if (length(window_idx) == 0) {
-        output$NT[topology_idx] = output$NT[topology_idx] + sites_sum$n[j]
-      } else {
-        output[topology_idx,window_idx] = output[topology_idx,window_idx] + sites_sum$n[j]
-      }
-    }
-  }
-  
-  write.table(output, file=fn_hmmsum, quote = F, row.names = F)
-  
-  # visualization
-  sub_output <- data.frame()
-  
-  for (k in 1:nrow(output)) {
-    for (j in 2:ncol(output)) {
-      sub_output <- rbind(sub_output, c(output$topology[k],colnames(output[j]),output[k,j]))
-    }
-  }
-  colnames(sub_output) <- c("topology","sites","frequency")
-  sub_output$sites <- factor(sub_output$sites,levels = unique(sub_output$sites),ordered = T)
-  
-  tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
-  print(ggplot(sub_output, aes(fill=sites, y=as.numeric(frequency), x=topology)) + 
-          geom_bar(position="dodge", stat="identity") +
-          aes(x = fct_inorder(topology)) +
-          ggtitle("Distribution of Sites from MAST-HMM in Simulated Dataset") + 
-          xlab("True topology from simulated data") +
-          ylab("Number of sites from MAST-HMM") +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            legend.title=element_blank(),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
-          ))
-  dev.off()
+  log4r::info(fn_logger, paste("File created: HMM file [set ", k, "].", sep=""))
 }
 ```
