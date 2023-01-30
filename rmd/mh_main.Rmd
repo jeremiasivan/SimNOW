@@ -2,16 +2,16 @@
 title: "MAST-HMM"
 params:
   # general
-  rmddir: "~/Documents/SimNOW/rmd"
-  prefix: "hb_1"
-  outdir: "~/Documents/simulation/hb1"
+  rmddir: ""
+  prefix: ""
+  outdir: ""
   redo: FALSE
   
   # sequence simulation
   iqtree2dir: ""
   
   # masthmm
-  mast_model: "JC+FO+T"
+  mast_model: ""
   mast_tops: 0.95
 ---
 
