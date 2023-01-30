@@ -5,13 +5,13 @@ params:
   rmddir: ""
   prefix: ""
   outdir: ""
-  redo: TRUE
+  redo: FALSE
   
   # sequence simulation
   msdir: ""
   ms_params: ""
   ms_r: 0
-  ms_l: 0
+  ms_l: 1000000
   
   iqtree2dir: ""
   alisim_model: ""
@@ -23,17 +23,29 @@ params:
 ---
 
 ```{r setup, include=FALSE}
-library(dplyr)
 library(ape)
-library(seqinr)
-library(hash)
 library(data.table)
-library(ggplot2)
+library(dplyr)
 library(forcats)
+library(ggplot2)
+library(hash)
+library(log4r)
+library(seqinr)
 
 currentdir <- paste(params$outdir, "/", params$prefix, sep="")
 if (!file.exists(currentdir)) {
   dir.create(currentdir, recursive = T)
+}
+
+fn_log <- paste(params$outdir, "/", params$prefix, "/", params$prefix, ".log", sep="")
+log_appender <- file_appender(fn_log, append = TRUE, layout = default_log_layout())
+fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
+if (params$redo == TRUE) {
+  unlink(fn_log)
+}
+
+if (!file.exists(fn_log)) {
+  write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
 }
 
 knitr::opts_knit$set(root.dir = currentdir)

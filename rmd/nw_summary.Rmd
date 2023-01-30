@@ -2,38 +2,47 @@
 title: "Summary of Non-overlapping Windows vs Truth"
 ---
 
-```{r mswindow}
+```{r sumsetup, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####         NOW vs Truth       ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
 fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
+fn_summary <- paste(window_outdir, params$prefix, ".sum", sep="")
+```
+
+```{r sumwindow, include=FALSE}
 msfile <- read.table(fn_mstops)
 colnames(msfile) <- msfile[1,]
 msfile <- msfile[-1,]
 
-# comparison between non-overlapping windows and ms topologies
+# iterate through window sizes
 for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/summary/",sep="")
   if (!file.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
   }
   
-  fn_summary <- paste(temp_outdir, params$prefix, ".atsum", sep="")
-  
   fn_cmp <- paste(temp_outdir, params$prefix, ".cmp", sep="")
   fn_figure <- paste(temp_outdir, params$prefix, ".cmp.tiff", sep="")
   if (all(file.exists(fn_cmp, fn_figure)) && params$redo == FALSE) {
-    print(paste(i, "bp window comparison already exists. Moving on...", sep=""))
+    log4r::info(fn_logger, paste("File already exists: ", i, "bp window comparison file. Skipped.", sep=""))
     next
   }
   
-  # reading annotation summary file
-  smfile <- read.table(fn_summary)
+  # read annotation summary file
+  smfile <- read.table(paste(temp_outdir, params$prefix, ".atsum", sep=""))
   colnames(smfile) <- smfile[1,]
   smfile <- smfile[-1,]
   
   unique_topologies <- unique(smfile$newick)
   
+  # match window topology with ms topology
   for (j in 1:nrow(msfile)) {
     for (k in unique_topologies) {
       if (all.equal.phylo(unroot(read.tree(text = msfile$topology[j])), read.tree(text = k))) {
@@ -43,7 +52,7 @@ for (i in window_sizes) {
     }
   }
   
-  # extracting essential columns
+  # extract essential columns
   dat <- apply(smfile, 1,
                function(x) data.table(bp = x["start"]:x["stop"], newick = x["newick"], topology = x["topology"])) %>%
     rbindlist()
@@ -57,7 +66,7 @@ for (i in window_sizes) {
   output <- data.frame(topology = tree_header)
   output <- cbind(output, empty_matrix)
   
-  # annotating
+  # iterate through ms topology file
   for (j in 1:nrow(msfile)){
     sites <- dat[msfile$start[j]:msfile$stop[j],]
     topology_idx <- which(output$topology==msfile$topology[j])
@@ -66,6 +75,7 @@ for (i in window_sizes) {
       group_by(newick) %>%
       summarise(n=n())
     
+    # add number of window sites for the respective ms topology
     for (k in 1:nrow(sites_sum)) {
       window_idx <- which(colnames(output)==sites_sum$newick[k])
       
@@ -76,8 +86,6 @@ for (i in window_sizes) {
       }
     }
   }
-  
-  write.table(output, file=fn_cmp, sep = "\t", quote = F, row.names = F)
   
   # visualization
   sub_output <- data.frame()
@@ -108,49 +116,48 @@ for (i in window_sizes) {
             legend.key.size=unit(2,"cm")
           ))
   dev.off()
+  
+  write.table(output, file=fn_cmp, sep = "\t", quote = F, row.names = F)
+  log4r::info(fn_logger, paste("Files created: ", i, "bp window comparison files (",
+                               params$prefix, ".cmp and ", params$prefix, ".cmp.tiff).", sep=""))
 }
 ```
 
-```{r sumtable}
-window_outdir <- paste(getwd(), "/windows/", sep="")
-window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
-
+```{r sumtable, include=FALSE}
 t_accuracy <- c("window_size","accuracy","aic","aicc","bic","bic_contiguous")
-fn_summary <- paste(window_outdir,params$prefix,".sum",sep="")
-if (file.exists(fn_summary) && params$redo == FALSE) {
-  print("Comparison between non-overlapping windows analysis and ms already exists. Moving on...")
-} else {
-  for (i in window_sizes) {
-    fn_cmp <- paste(window_outdir,i,"/summary/",params$prefix,".cmp", sep="")
-    fn_iqtree <- paste(window_outdir,i,"/trees/",params$prefix,".iqtree", sep="")
-    fn_contiguous <- paste(window_outdir,i,"/contiguous/trees/",params$prefix,".iqtree", sep="")
-    
-    # read and extract accuracy of each window
-    cmp <- read.table(fn_cmp)
-    cmp <- sapply(cmp[-1,-1], as.numeric)
-    
-    acc <- 0
-    if (is.null(nrow(cmp))) {
-      acc <- cmp[1]
-    } else {
-      for (j in 1:nrow(cmp)) {
-        acc <- acc + as.numeric(cmp[j,j])
-      }
+
+# iterate through window sizes
+for (i in window_sizes) {
+  fn_cmp <- paste(window_outdir,i,"/summary/",params$prefix,".cmp", sep="")
+  fn_iqtree <- paste(window_outdir,i,"/trees/",params$prefix,".iqtree", sep="")
+  fn_contiguous <- paste(window_outdir,i,"/contiguous/trees/",params$prefix,".iqtree", sep="")
+  
+  # read and extract accuracy of each window
+  cmp <- read.table(fn_cmp)
+  cmp <- sapply(cmp[-1,-1], as.numeric)
+  
+  acc <- 0
+  if (is.null(nrow(cmp))) {
+    acc <- cmp[1]
+  } else {
+    for (j in 1:nrow(cmp)) {
+      acc <- acc + as.numeric(cmp[j,j])
     }
-    acc <- round(acc / sum(cmp) * 100, 3)
-    
-    # extract information of interest
-    aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
-    aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
-    bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
-    cbic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_contiguous), intern = T))
-    
-    t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,cbic))
   }
+  acc <- round(acc / sum(cmp) * 100, 3)
   
-  colnames(t_accuracy) <- t_accuracy[1,]
-  t_accuracy <- t_accuracy[-1,]
+  # extract information of interest
+  aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
+  aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
+  bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
+  cbic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_contiguous), intern = T))
   
-  write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
+  t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,cbic))
 }
+
+colnames(t_accuracy) <- t_accuracy[1,]
+t_accuracy <- t_accuracy[-1,]
+
+write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
+log4r::info(fn_logger, paste("File created/modified: summary table of NOW and ms (", params$prefix, ".sum).", sep=""))
 ```

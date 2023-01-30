@@ -2,59 +2,73 @@
 title: "ms and AliSim Sequence Simulation"
 ---
 
-### ms
-```{r ms}
-simulation_outdir <- paste(getwd(), "/simulation", sep="")
-simulation_output <- paste(simulation_outdir, "/", params$prefix, ".ms", sep="")
+```{r simsetup, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####  ms and AliSim Simulation  ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
+simulation_outdir <- paste(getwd(), "/simulation", sep="")
 if (!file.exists(simulation_outdir)) {
   dir.create(simulation_outdir, recursive = T)
 }
 
-options(scipen=999)
-ms_command <- paste(params$ms_params, "-r", params$ms_r, params$ms_l)
-
-# skip this step if msfile exists
-if (file.exists(simulation_output) && params$redo == FALSE) {
-  print("msfile already exists. Skipping this step...")
-} else {
-  randseed <- paste(sample(10000:99999,3), collapse=" ")
-  write.table(randseed, file="seedms", quote=F, row.names=F, col.names=F)
-  
-  print("Generating ms trees...")
-  system(paste(params$msdir,ms_command,">",simulation_output))
-}
-```
-
-```{r postms}
-simulation_outdir <- paste(getwd(), "/simulation", sep="")
-msfile <- paste(simulation_outdir, "/", params$prefix, ".ms", sep="")
-
+fn_msfile <- paste(simulation_outdir, "/", params$prefix, ".ms", sep="")
 fn_mstrees <- paste(simulation_outdir, "/", params$prefix, ".mstrees", sep="")
 fn_mttrees <- paste(simulation_outdir, "/", params$prefix, ".multitree", sep="")
 fn_mstops <- paste(simulation_outdir, "/", params$prefix, ".mstops", sep="")
 fn_uqtops <- paste(simulation_outdir, "/", params$prefix, ".uqtops", sep="")
 
-# skip this step if all summary files exist
-if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && params$redo == FALSE) {
-  print("ms summary files already exist. Skipping this step...")
+fn_nexus <- paste(simulation_outdir, "/", params$prefix, ".nex", sep="")
+fn_alisim <- paste(simulation_outdir, "/", params$prefix, sep="")
+```
+
+```{r ms, include=FALSE}
+options(scipen=999)
+ms_command <- paste(params$ms_params, "-r", params$ms_r, params$ms_l)
+
+# generate seedms
+if (file.exists("seedms") && params$redo == FALSE) {
+  log4r::info(fn_logger, "File already exists: seedms. Skipped.")
 } else {
-  ms <- read.delim(msfile)
-  mstrees <- subset(ms, grepl("^\\[", ms[,1]))
-  options(scipen=999)
+  randseed <- paste(sample(10000:99999,3), collapse=" ")
+  write.table(randseed, file="seedms", quote=F, row.names=F, col.names=F)
+  log4r::info(fn_logger, "File created: seedms.")
+}
+
+# generate msfile
+if (file.exists(fn_msfile) && params$redo == FALSE) {
+  log4r::info(fn_logger, "File already exists: msfile. Skipped.")
+} else {
+  system(paste(params$msdir,ms_command,">",fn_msfile))
+  log4r::info(fn_logger, paste("File created: ", params$prefix, ".ms.", sep=""))
+}
+```
+
+```{r postms, include=FALSE}
+options(scipen=999)
+
+if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && params$redo == FALSE) {
+  log4r::info(fn_logger, "Files already exist: ms summary files. Skipped.")
   
+} else {
+  ms <- read.delim(fn_msfile)
+  mstrees <- subset(ms, grepl("^\\[", ms[,1]))
+  
+  # extract ms trees
   if (nrow(mstrees) == 0) {
     onlytree <- subset(ms, grepl("^\\(.+\\);$", ms[,1]))
     mstrees <- data.frame(paste("[",params$ms_l,"]",onlytree,sep=""))
   }
   
-  # convert msfile into dataframe
+  # convert ms trees into dataframe
   trees <- data.frame(do.call('rbind', strsplit(as.character(mstrees[,1]), '\\[|\\]')))
   trees[,1] <- NULL
   colnames(trees) <- c("length","tree")
   trees$length <- as.numeric(trees$length)
-    
-  print("Summarizing ms trees...")
+  
+  # combine contiguous trees together  
   summary <- trees %>%
     group_by(tree, group_run = data.table::rleid(tree)) %>%
     summarise_all(sum) %>%
@@ -83,11 +97,11 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && params$red
     
   summary <- cbind(summary,start=start,stop=stop,topology=topology)
   write.table(summary, fn_mstrees, sep="\t", quote=F, row.names=F)
-  
-  print("Summarizing multitrees...")
   write.table(summary$tree, file=fn_mttrees, sep="\t", quote=F, row.names=F, col.names=F)
+  log4r::info(fn_logger, paste(nrow(summary), " tree partition(s) found. Files created: ",
+                               params$prefix, ".mstrees and ", params$prefix, ".multitree", sep=""))
     
-  print("Summarizing ms topologies...")
+  # combine contiguous topologies together
   t_summary <- summary %>%
     group_by(topology, group_run = data.table::rleid(topology)) %>%
     summarise(length=sum(length)) %>%
@@ -106,27 +120,22 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && params$red
   
   t_summary <- cbind(t_summary,start=start,stop=stop)
   write.table(t_summary, file=fn_mstops, sep="\t", quote=F, row.names=F)
-  
-  print("Summarizing unique topologies...")
   write.table(data.frame(unique(t_summary$topology)), file=fn_uqtops, sep="\t", quote=F, row.names=F, col.names=F)
+  log4r::info(fn_logger, paste(nrow(t_summary), " topology partition(s) found. Files created: ", 
+                               params$prefix, ".mstops and ", params$prefix, ".uqtops", sep=""))
 }
 ```
 
-### alisim
-```{r prealisim}
-simulation_outdir <- paste(getwd(), "/simulation", sep="")
-fn_mstrees <- paste(simulation_outdir, "/", params$prefix, ".mstrees", sep="")
-
-fn_nexus <- paste(simulation_outdir, "/", params$prefix, ".nex", sep="")
-
+```{r prealisim, include=FALSE}
 if (file.exists(fn_nexus) && params$redo == FALSE) {
-  print("Nexus file already exists. Skipping this step...")
+  log4r::info(fn_logger, "File already exists: AliSim nexus file. Skipped.")
+  
 } else {
   mstrees <- read.table(fn_mstrees)
   colnames(mstrees) <- mstrees[1,]
   mstrees <- mstrees[-1,]
   
-  print("Writing Nexus file...")
+  # generating nexus file
   nexus_lines <- c("#nexus", "begin sets;")
   
   for (i in 1:nrow(mstrees)) {
@@ -138,24 +147,33 @@ if (file.exists(fn_nexus) && params$redo == FALSE) {
   fileConn<-file(fn_nexus)
   writeLines(nexus_lines, fileConn)
   close(fileConn)
+  
+  log4r::info(fn_logger, paste("File created: ", params$prefix, ".nex.", sep=""))
 }
 ```
 
-```{r alisim}
-simulation_outdir <- paste(getwd(), "/simulation", sep="")
-fn_nexus <- paste(simulation_outdir, "/", params$prefix, ".nex", sep="")
-fn_mttrees <- paste(simulation_outdir, "/", params$prefix, ".multitree", sep="")
-
-fn_alisim <- paste(simulation_outdir, "/", params$prefix, sep="")
-
+```{r alisim, include=FALSE}
 if (file.exists(paste(fn_alisim, ".fa", sep = "")) && params$redo == FALSE) {
-  print("AliSim simulated alignment already exists. Skipping this step...")
+  log4r::info(fn_logger, "File already exists: AliSim alignment file. Skipped.")
+  
 } else {
-  print("Generating AliSim alignment...")
   if (params$alisim_scale == 0 || is.null(params$alisim_scale)) {
-    system(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"-m",params$alisim_model,"-af fasta -redo", sep=" "))
+    system(paste(params$iqtree2dir,
+                 "--alisim",fn_alisim,
+                 "-Q",fn_nexus,
+                 "-t",fn_mttrees,
+                 "-m",params$alisim_model,
+                 "-af fasta -redo", sep=" "))
   } else {
-    system(paste(params$iqtree2dir,"--alisim",fn_alisim,"-Q",fn_nexus,"-t",fn_mttrees,"--branch-scale",params$alisim_scale,"-m",params$alisim_model,"-af fasta -redo", sep=" "))
+    system(paste(params$iqtree2dir,
+                 "--alisim",fn_alisim,
+                 "-Q",fn_nexus,
+                 "-t",fn_mttrees,
+                 "--branch-scale",params$alisim_scale,
+                 "-m",params$alisim_model,
+                 "-af fasta -redo", sep=" "))
   }
+  
+  log4r::info(fn_logger, paste("File created: ", params$prefix, ".fa.", sep=""))
 }
 ```
