@@ -11,20 +11,17 @@ Software incorporated in the pipeline:
 ---
 ### Notes
 1. Currently, you can only set `ms` recombination rate to vary between simulations via `wrapper/nw_main.R`
-2. Multiple MAST models should be manually specified in `wrapper/mh_main.R`
-3. Some parts of the codes have not been fully tested
+2. Multiple MAST models should be manually specified in `wrapper/mh_main.R` (complex models are unsupported)
 
 ---
 ### Considerations
-- Fix naming convention for file extension
 - Allow users to choose which analysis to run
-- Find a better way to _redo_ the analysis (e.g., delete all files within the directory, create a new directory, etc.)
 - Automate the selection of MAST model based on the number of topologies
 - Fix the summary report for the whole pipeline, including HTML template
 
 ---
 ### Future Work(s)
-- Incorporate other methods to assess (and improve) non-overlapping window accuracy
+- Incorporate other methods to assess (and improve) non-overlapping window accuracy (e.g., BIC, concordance factors, tree-likeness)
 
 ---
 ### References
