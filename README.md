@@ -6,7 +6,7 @@ Software incorporated in the pipeline:
 - <a href="http://home.uchicago.edu/~rhudson1/source/mksamples.html">ms</a>
 - <a href="http://www.iqtree.org/doc/AliSim">AliSim</a>
 - <a href="http://www.iqtree.org">IQ-TREE 2</a>
-- <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a>
+- <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a> - HMM
 
 ---
 ### Notes
@@ -21,7 +21,7 @@ Software incorporated in the pipeline:
 
 ---
 ### Future Work(s)
-- Incorporate other methods to assess (and improve) non-overlapping window accuracy (e.g., BIC, concordance factors, tree-likeness)
+- Incorporate other methods to assess (and improve) non-overlapping window accuracy (e.g., BIC, <a href="https://doi.org/10.1093/molbev/msaa106">gene</a> and <a href="https://doi.org/10.1093/bioinformatics/btac741">site concordance factor</a>, <a href="https://doi.org/10.1101/2021.02.16.431544">treelikeness</a>)
 
 ---
 ### References
