@@ -48,6 +48,8 @@ for (w in params$window_size) {
   } 
   
   # generate window alignments
+  unlink(paste(temp_outdir,"*.fa"))
+  
   start <- 1
   for (i in 1:floor(lens/w)) {
     subfasta <- lapply(s, function(x) x[seq(from = start, to = as.numeric(i*w))])

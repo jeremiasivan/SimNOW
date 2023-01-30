@@ -34,12 +34,17 @@ for (i in mast_dirs) {
   fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
   fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
   if (all(file.exists(fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
-    log4r::info(fn_logger, paste("Files exist: MAST-HMM summary files for set", i))
+    log4r::info(fn_logger, paste("Files exist: MAST-HMM summary files for set ", i, ". Skipped.", sep=""))
     next
   }
   
   # read input files
   fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
+  if (!file.exists(fn_hmm)) {
+    log4r::warn(fn_logger, paste("Warn: HMM file for set ", i, " is not found. Skipped.", sep=""))
+    next
+  }
+  
   hmmfile <- readLines(fn_hmm)
   hmmtrees <- subset(hmmfile, grepl("^\\[", hmmfile))
   
@@ -140,7 +145,13 @@ for (i in mast_dirs) {
   fn_iqtree <- paste(outdir, params$prefix, ".iqtree", sep="")
   fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
   
-  hmmsum <- read.table(paste(outdir, params$prefix, ".hmmsum", sep=""))
+  fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
+  if (!file.exists(fn_hmmsum)) {
+    log4r::warn(fn_logger, paste("Warn: HMM summary file for set ", i, " is not found. Skipped.", sep=""))
+    next
+  }
+  
+  hmmsum <- read.table(fn_hmmsum)
   hmmsum <- sapply(hmmsum[-1,-1], as.numeric)
     
   # calculate the accuracy with if conditional for one topology  
