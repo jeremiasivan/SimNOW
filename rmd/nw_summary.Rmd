@@ -14,6 +14,7 @@ window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
 fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
 fn_summary <- paste(window_outdir, params$prefix, ".sum", sep="")
+fn_sumfig <- paste(window_outdir, params$prefix, ".sum.tiff", sep="")
 ```
 
 ```{r sumwindow, include=FALSE}
@@ -124,7 +125,7 @@ for (i in window_sizes) {
 ```
 
 ```{r sumtable, include=FALSE}
-t_accuracy <- c("window_size","accuracy","aic","aicc","bic","bic_contiguous")
+t_accuracy <- c("window_size","accuracy","aic","aicc","bic","aic_ct","aicc_ct","bic_ct")
 
 # iterate through window sizes
 for (i in window_sizes) {
@@ -150,9 +151,11 @@ for (i in window_sizes) {
   aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
   aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
   bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
+  caic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_contiguous), intern = T))
+  caicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_contiguous), intern = T))
   cbic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_contiguous), intern = T))
   
-  t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,cbic))
+  t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,caic,caicc,cbic))
 }
 
 colnames(t_accuracy) <- t_accuracy[1,]
@@ -160,4 +163,32 @@ t_accuracy <- t_accuracy[-1,]
 
 write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
 log4r::info(fn_logger, paste("File created/modified: summary table of NOW and ms (", params$prefix, ".sum).", sep=""))
+
+# correlation plot
+tdata <- data.frame()
+for (r in 1:nrow(t_accuracy)) {
+  for (c in 3:ncol(t_accuracy)) {
+    tdata <- rbind(tdata, c(t_accuracy[r,2],t_accuracy[r,c],colnames(t_accuracy)[c]))
+  }
+}
+
+colnames(tdata) <- c("accuracy","value","type")
+
+tiff(filename=fn_sumfig, units="px", width=2880, height=1800)
+print(ggplot(tdata, aes(y=as.numeric(accuracy), x=as.numeric(value), ymin=0, ymax=100)) + 
+        geom_jitter(shape=16, width = 0.2, height = 0.2, aes(colour=type), size=5) +
+        ggtitle("Correlation of Information Criterion and NOW Accuracy") + 
+        xlab("Information criterion value") +
+        ylab("Accuracy (%)") +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 50),
+          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+          axis.text.y=element_text(size=30),
+          axis.text.x=element_text(size=30),
+          legend.title=element_blank(),
+          legend.text=element_text(size=30),
+          legend.key.size=unit(2,"cm")
+        ))
+dev.off()
 ```

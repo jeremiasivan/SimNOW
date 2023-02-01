@@ -1,0 +1,32 @@
+---
+title: "Treelikeness Analysis"
+---
+
+```{r tlsetup, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####        Treelikeness        ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+tl_outdir <- paste(getwd(), "/treelikeness/", sep="")
+if (!file.exists(tl_outdir)) {
+  dir.create(tl_outdir, recursive = T)
+}
+
+window_outdir <- paste(getwd(), "/windows/", sep="")
+window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
+
+```
+
+```{r tl, include=FALSE}
+for (w in window_sizes) {
+  alpath <- paste(getwd(), "/windows/", w, "/alignment/", sep="")
+  alfile <- list.files(alpath, pattern = "*.fa", full.names=T)
+  
+  for (f in alfile) {
+    tree.proportion(params$iqtree2dir, params$splittreedir, f, network_algorithm = "neighbournet", trimmed = TRUE, 
+                tree_path = FALSE, run_IQTREE = TRUE, "dna")
+  }
+}
+```

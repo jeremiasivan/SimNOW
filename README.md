@@ -6,12 +6,13 @@ Software incorporated in the pipeline:
 - <a href="http://home.uchicago.edu/~rhudson1/source/mksamples.html">ms</a>
 - <a href="http://www.iqtree.org/doc/AliSim">AliSim</a>
 - <a href="http://www.iqtree.org">IQ-TREE 2</a>
-- <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a> - HMM
+- <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a>+HMM
 
 ---
 ### Notes
 1. Currently, you can only set `ms` recombination rate to vary between simulations via `wrapper/nw_main.R`
 2. Multiple MAST models should be manually specified in `wrapper/mh_main.R` (complex models are unsupported)
+3. Treelikeness test has *not* been tested
 
 ---
 ### Considerations
