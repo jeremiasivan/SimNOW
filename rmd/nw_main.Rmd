@@ -2,9 +2,9 @@
 title: "Non-overlapping Windows Report"
 params:
   # general
-  rmddir: ""
-  prefix: ""
-  outdir: ""
+  rmddir: "~/Documents/SimNOW/rmd"
+  prefix: "db"
+  outdir: "~/Documents/simulation/db"
   redo: FALSE
   
   # sequence simulation
@@ -19,7 +19,7 @@ params:
   outgroup: ""
   
   # non-overlapping window analysis
-  window_size: !r c()
+  window_size: !r c(50000)
 ---
 
 ```{r setup, include=FALSE}

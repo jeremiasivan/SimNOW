@@ -164,12 +164,18 @@ write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
 log4r::info(fn_logger, paste("File created/modified: summary table of NOW and ms (", params$prefix, ".sum).", sep=""))
 
 # correlation plot
+t_accuracy <- as.data.frame(t_accuracy)
+pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
+iterator <- 0
+
 for (c in 3:ncol(t_accuracy)) {
   fn_sumfig <- paste(window_outdir, params$prefix, ".", colnames(t_accuracy)[c],".tiff", sep="")
+  iterator <- iterator + 1
   
   tiff(filename=fn_sumfig, units="px", width=2880, height=1800)
-  print(ggplot(t_accuracy, aes(y=as.numeric(t_accuracy[,2]), x=as.numeric(t_accuracy[,c]), ymin=0, ymax=100)) + 
-          geom_jitter(shape=16, width = 0.2, height = 0.2, aes(colour=type), size=5) +
+  print(ggplot(t_accuracy, aes(y=as.numeric(accuracy), x=as.numeric(t_accuracy[,c]), ymin=0, ymax=100)) + 
+          geom_jitter(shape=16, width = 0.2, height = 0.2, size=5) +
+          scale_colour_manual(values = pcolors[iterator]) +
           ggtitle("Correlation of Information Criterion and NOW Accuracy") + 
           xlab("Information criterion value") +
           ylab("Accuracy (%)") +
