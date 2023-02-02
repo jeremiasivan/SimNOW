@@ -192,5 +192,5 @@ for (c in 3:ncol(t_accuracy)) {
   dev.off()
 }
 
-log4r::info(fn_logger, paste("File created/modified: correlation plots.", sep=""))
+log4r::info(fn_logger, paste("Files created/modified: NOW accuracy vs NOW IC correlation plots.", sep=""))
 ```
