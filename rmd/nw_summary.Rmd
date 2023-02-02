@@ -14,7 +14,6 @@ window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
 fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
 fn_summary <- paste(window_outdir, params$prefix, ".sum", sep="")
-fn_sumfig <- paste(window_outdir, params$prefix, ".sum.tiff", sep="")
 ```
 
 ```{r sumwindow, include=FALSE}
@@ -165,30 +164,27 @@ write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
 log4r::info(fn_logger, paste("File created/modified: summary table of NOW and ms (", params$prefix, ".sum).", sep=""))
 
 # correlation plot
-tdata <- data.frame()
-for (r in 1:nrow(t_accuracy)) {
-  for (c in 3:ncol(t_accuracy)) {
-    tdata <- rbind(tdata, c(t_accuracy[r,2],t_accuracy[r,c],colnames(t_accuracy)[c]))
-  }
+for (c in 3:ncol(t_accuracy)) {
+  fn_sumfig <- paste(window_outdir, params$prefix, ".", colnames(t_accuracy)[c],".tiff", sep="")
+  
+  tiff(filename=fn_sumfig, units="px", width=2880, height=1800)
+  print(ggplot(t_accuracy, aes(y=as.numeric(t_accuracy[,2]), x=as.numeric(t_accuracy[,c]), ymin=0, ymax=100)) + 
+          geom_jitter(shape=16, width = 0.2, height = 0.2, aes(colour=type), size=5) +
+          ggtitle("Correlation of Information Criterion and NOW Accuracy") + 
+          xlab("Information criterion value") +
+          ylab("Accuracy (%)") +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=30),
+            axis.text.x=element_text(size=30),
+            legend.title=element_blank(),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+          ))
+  dev.off()
 }
 
-colnames(tdata) <- c("accuracy","value","type")
-
-tiff(filename=fn_sumfig, units="px", width=2880, height=1800)
-print(ggplot(tdata, aes(y=as.numeric(accuracy), x=as.numeric(value), ymin=0, ymax=100)) + 
-        geom_jitter(shape=16, width = 0.2, height = 0.2, aes(colour=type), size=5) +
-        ggtitle("Correlation of Information Criterion and NOW Accuracy") + 
-        xlab("Information criterion value") +
-        ylab("Accuracy (%)") +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 50),
-          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-          axis.text.y=element_text(size=30),
-          axis.text.x=element_text(size=30),
-          legend.title=element_blank(),
-          legend.text=element_text(size=30),
-          legend.key.size=unit(2,"cm")
-        ))
-dev.off()
+log4r::info(fn_logger, paste("File created/modified: correlation plots.", sep=""))
 ```
