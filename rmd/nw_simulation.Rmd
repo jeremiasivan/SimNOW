@@ -29,7 +29,7 @@ options(scipen=999)
 ms_command <- paste(params$ms_params, "-r", params$ms_r, params$ms_l)
 
 # generate seedms
-if (file.exists("seedms") && params$redo == FALSE) {
+if (file.exists("seedms") && !params$redo) {
   log4r::info(fn_logger, "File already exists: seedms. Skipped.")
 } else {
   randseed <- paste(sample(10000:99999,3), collapse=" ")
@@ -38,7 +38,7 @@ if (file.exists("seedms") && params$redo == FALSE) {
 }
 
 # generate msfile
-if (file.exists(fn_msfile) && params$redo == FALSE) {
+if (file.exists(fn_msfile) && !params$redo) {
   log4r::info(fn_logger, "File already exists: msfile. Skipped.")
 } else {
   system(paste(params$msdir,ms_command,">",fn_msfile))
@@ -49,7 +49,7 @@ if (file.exists(fn_msfile) && params$redo == FALSE) {
 ```{r postms, include=FALSE}
 options(scipen=999)
 
-if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && params$redo == FALSE) {
+if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$redo) {
   log4r::info(fn_logger, "Files already exist: ms summary files. Skipped.")
   
 } else {

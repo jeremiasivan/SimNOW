@@ -42,24 +42,26 @@ for (w in params$window_size) {
     dir.create(temp_outdir, recursive = T)
   }
   
-  if (sapply(temp_outdir,function(dir){length(list.files(dir,pattern='fa'))}) != 0 && params$redo == FALSE) {
+  if (length(list.files(temp_outdir, pattern='fa')) != 0 && !params$redo) {
     log4r::info(fn_logger, paste("File already exists: ", w, "bp window alignment. Skipped.", sep=""))
     next
   } 
   
-  # generate window alignments
-  unlink(paste(temp_outdir,"*.fa"))
+  # remove all alignments in the folder
+  unlink(paste0(temp_outdir,"*.fa"))
   
+  # generate window alignments
   start <- 1
+  wi <- floor(log(floor(lens/w)) / log(10)) + 1
+  
   for (i in 1:floor(lens/w)) {
     subfasta <- lapply(s, function(x) x[seq(from = start, to = as.numeric(i*w))])
     df <- do.call(rbind,subfasta)
       
-    wi <- floor(log(floor(lens/w)) / log(10)) + 1
-    li <- formatC(i, width = wi, format = "d", flag = "0")
-      
     subfasta <- setNames(split(df, seq(nrow(df))), rownames(df))
-    write.fasta(sequences=subfasta, names=names(subfasta), file.out=paste(temp_outdir,"window_",li,".fa",sep=""), nbchar = 100)
+    write.fasta(sequences=subfasta, names=names(subfasta),
+                file.out=paste0(temp_outdir,"window_",formatC(i,width=wi,format="d",flag="0"),".fa",sep=""),
+                nbchar = 100)
       
     start <- start + w
   }
