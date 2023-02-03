@@ -24,19 +24,19 @@ msfile <- msfile[-1,]
 # iterate through window sizes
 for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/summary/",sep="")
-  if (!file.exists(temp_outdir)) {
+  if (!dir.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
   }
   
   fn_cmp <- paste(temp_outdir, params$prefix, ".cmp", sep="")
   fn_figure <- paste(temp_outdir, params$prefix, ".cmp.tiff", sep="")
-  if (all(file.exists(fn_cmp, fn_figure)) && params$redo == FALSE) {
-    log4r::info(fn_logger, paste("File already exists: ", i, "bp window comparison file. Skipped.", sep=""))
+  if (all(file.exists(fn_cmp, fn_figure)) && !params$redo) {
+    log4r::info(fn_logger, paste0("File already exists: ", i, "bp window comparison file. Skipped.", sep=""))
     next
   }
   
   # read annotation summary file
-  smfile <- read.table(paste(temp_outdir, params$prefix, ".atsum", sep=""))
+  smfile <- read.table(paste0(temp_outdir, params$prefix, ".atsum", sep=""))
   colnames(smfile) <- smfile[1,]
   smfile <- smfile[-1,]
   
@@ -53,9 +53,8 @@ for (i in window_sizes) {
   }
   
   # extract essential columns
-  dat <- apply(smfile, 1,
-               function(x) data.table(bp = x["start"]:x["stop"], newick = x["newick"], topology = x["topology"])) %>%
-    rbindlist()
+  dat <- do.call(rbind, apply(smfile, 1,
+               function(x) data.table(bp = x["start"]:x["stop"], newick = x["newick"], topology = x["topology"])))
   
   # create empty dataframe
   tree_header <- unique(msfile$topology)
@@ -69,26 +68,24 @@ for (i in window_sizes) {
   # iterate through ms topology file
   for (j in 1:nrow(msfile)){
     sites <- dat[msfile$start[j]:msfile$stop[j],]
-    topology_idx <- which(output$topology==msfile$topology[j])
+    topology_idx <- match(msfile$topology[j], output$topology)
     
-    sites_sum <- sites %>%
-      group_by(newick) %>%
-      summarise(n=n())
+    sites_sum <- aggregate(bp ~ newick, data=sites, FUN=length)
     
     # add number of window sites for the respective ms topology
     for (k in 1:nrow(sites_sum)) {
-      window_idx <- which(colnames(output)==sites_sum$newick[k])
+      window_idx <- match(sites_sum$newick[k], colnames(output))
       
-      if (length(window_idx) == 0) {
-        output$NT[topology_idx] = output$NT[topology_idx] + sites_sum$n[k]
+      if (is.na(window_idx)) {
+        output$NT[topology_idx] = output$NT[topology_idx] + sites_sum$bp[k]
       } else {
-        output[topology_idx,window_idx] = output[topology_idx,window_idx] + sites_sum$n[k]
+        output[topology_idx,window_idx] = output[topology_idx,window_idx] + sites_sum$bp[k]
       }
     }
   }
   
   # visualization
-  sub_output <- data.frame()
+  sub_output <- data.frame(stringsAsFactors = FALSE)
   
   for (j in 1:nrow(output)) {
     for (k in 2:ncol(output)) {
@@ -118,7 +115,7 @@ for (i in window_sizes) {
   dev.off()
   
   write.table(output, file=fn_cmp, sep = "\t", quote = F, row.names = F)
-  log4r::info(fn_logger, paste("Files created: ", i, "bp window comparison files (",
+  log4r::info(fn_logger, paste0("Files created: ", i, "bp window comparison files (",
                                params$prefix, ".cmp and ", params$prefix, ".cmp.tiff).", sep=""))
 }
 ```
@@ -134,17 +131,10 @@ for (i in window_sizes) {
   
   # read and extract accuracy of each window
   cmp <- read.table(fn_cmp)
-  cmp <- sapply(cmp[-1,-1], as.numeric)
+  cmp <- as.matrix(cmp[-1,-1])
   
-  acc <- 0
-  if (is.null(nrow(cmp))) {
-    acc <- cmp[1]
-  } else {
-    for (j in 1:nrow(cmp)) {
-      acc <- acc + as.numeric(cmp[j,j])
-    }
-  }
-  acc <- round(acc / sum(cmp) * 100, 3)
+  acc <- sum(as.numeric(diag(cmp))) / sum(as.numeric(cmp)) * 100
+  acc <- round(acc, 3)
   
   # extract information of interest
   aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
