@@ -66,7 +66,7 @@ for (w in params$window_size) {
     start <- start + w
   }
   
-  log4r::info(fn_logger, paste("File created: ", w, "bp window alignment.", sep=""))
+  log4r::info(fn_logger, paste0("File created: ", w, "bp window alignment.", sep=""))
 }
 ```
 
@@ -80,8 +80,8 @@ for (i in window_sizes) {
     dir.create(temp_outdir, recursive = T)
   }
   
-  if (sapply(temp_outdir,function(dir){length(list.files(dir,pattern='treefile'))}) != 0 && params$redo == FALSE) {
-    log4r::info(fn_logger, paste("File already exists: ", i, "bp window treefile. Skipped.", sep=""))
+  if (length(list.files(temp_outdir,pattern='treefile')) != 0 && !params$redo) {
+    log4r::info(fn_logger, paste0("File already exists: ", i, "bp window treefile. Skipped.", sep=""))
     next
   }
   
@@ -95,7 +95,7 @@ for (i in window_sizes) {
     system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet -redo -o",params$outgroup, sep=" "))
   }
   
-  log4r::info(fn_logger, paste("File created: ", i, "bp window treefile.", sep=""))
+  log4r::info(fn_logger, paste0("File created: ", i, "bp window treefile.", sep=""))
 }
 ```
 
@@ -107,17 +107,12 @@ t_hash <- hash()
 t_count <- 1
 
 topology_file <- file(description=fn_uqtops, open="r", blocking = TRUE)
-repeat {
-  tl <- readLines(topology_file, n=1, warn=F)
-  if (identical(tl, character(0))) {
-    close(topology_file)
-    break
-  }
-  
+while (length(tl <- readLines(topology_file, n=1, warn=F))) {
   tl <- write.tree(unroot(read.tree(text=tl)))
-  t_hash[tl] = paste("T",t_count,sep="")
-  t_count <- t_count+1
+  t_hash[tl] = paste("T", t_count, sep="")
+  t_count <- t_count + 1
 }
+close(topology_file)
 
 # iterate through window sizes
 for (i in window_sizes) {
@@ -131,8 +126,8 @@ for (i in window_sizes) {
   fn_cnsum <- paste(temp_outdir, params$prefix, ".cnsum", sep="")
   fn_cnsumf <- paste(temp_outdir, params$prefix, ".cnsum.tiff", sep="")
   fn_tops <- paste(temp_outdir, params$prefix, ".topsum", sep="")
-  if (all(file.exists(fn_atsum, fn_atsumf, fn_cnsum, fn_cnsumf, fn_tops)) && params$redo == FALSE) {
-    log4r::info(fn_logger, paste("Files already exist: ", i, "bp window summary files. Skipped.", sep=""))
+  if (all(file.exists(fn_atsum, fn_atsumf, fn_cnsum, fn_cnsumf, fn_tops)) && !params$redo) {
+    log4r::info(fn_logger, paste0("Files already exist: ", i, "bp window summary files. Skipped.", sep=""))
     next
   }
   
@@ -140,64 +135,52 @@ for (i in window_sizes) {
   seq_list <- sort(list.files(paste(window_outdir, i, "/alignment/", sep="")))
   iqtree_file <- file(description = paste(window_outdir, i, "/trees/", params$prefix, ".treefile", sep=""), open="r", blocking = TRUE)
   
-  seq_len <- data.frame()
-  iterator <- 1
+  seq_len <- data.frame(stringsAsFactors = FALSE)
   start <- 0
   
-  repeat {
-    # read the treefile
+  while (length(trl <- readLines(iqtree_file, n=1))) {
     ttop <- "NT"
-    trl <- readLines(iqtree_file, n=1)
-    if (identical(trl, character(0))) {
-      colnames(seq_len) <- c("source","start","stop","length","newick","topology")
-      close(iqtree_file)
-      break
-    }
-    
     tl <- read.tree(text=trl)
     tl$edge.length <- NULL
     tree <- write.tree(tl)
     
-    # match the window topology with the ms topology
-    for (j in ls(t_hash)) {
+    for (j in names(t_hash)) {
       if (all.equal.phylo(read.tree(text = j), tl)) {
-        ttop <- as.character(values(t_hash[j]))
+        ttop <- as.character(t_hash[[j]])
+        break
       }
     }
     
     # store the values in dataframe
-    pl <- seq_list[iterator]
+    pl <- seq_list[start/i+1]
     seq_len <- rbind(seq_len, c(pl,start+1,start+as.numeric(i),as.numeric(i),tree, ttop))
     
     start <- start+as.numeric(i)
-    iterator <- iterator+1
   }
   
+  close(iqtree_file)
+  colnames(seq_len) <- c("source", "start", "stop", "length", "newick", "topology")
+  
   # extract essential columns
-  dat <- apply(seq_len, 1,
-               function(x) data.table(bp = x["start"]:x["stop"], topology = x["topology"])) %>%
-    rbindlist()
+  dat <- do.call(rbind, apply(seq_len, 1, 
+                               function(x) data.table(bp = x["start"]:x["stop"], topology = x["topology"])))
   
   # visualization of topology switching across chromosome
   tiff(file=fn_atsumf, units="px", width=250, height=2000)
   print(ggplot() +
-    geom_rect(data=dat,aes(fill=topology,ymin=bp-1,ymax=bp,xmin=0,xmax=1)) +
+    geom_rect(data=dat,aes(fill=topology,ymin=0,ymax=bp,xmin=0,xmax=1)) +
     labs(x=paste(i,"bp")) +
     scale_fill_brewer(palette="Set1") +
-    theme(panel.background = element_rect(fill = "white", colour = "white", size = 0.5, linetype = "solid")) +
+    theme_void() +
     theme(
-      axis.title.x=element_blank(),
-      axis.text.x=element_blank(),
-      axis.ticks.x=element_blank(),
       axis.text.y=element_text(size=20),
-      legend.title=element_blank(),
       legend.text=element_text(size=20),
       legend.key.size=unit(2,"cm")
       ))
   dev.off()
   
   write.table(seq_len, fn_atsum, quote=F, sep="\t", row.names=F, col.names=T)
-  log4r::info(fn_logger, paste("Files created: ", i, "bp annotation summary files (",
+  log4r::info(fn_logger, paste0("Files created: ", i, "bp annotation summary files (",
                                params$prefix, ".atsum and ", params$prefix, ".atsum.tiff).", sep=""))
   
   # extract top topologies
