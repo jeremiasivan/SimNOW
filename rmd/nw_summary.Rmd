@@ -36,7 +36,7 @@ for (i in window_sizes) {
   }
   
   # read annotation summary file
-  smfile <- read.table(paste0(temp_outdir, params$prefix, ".atsum", sep=""))
+  smfile <- read.table(paste(temp_outdir, params$prefix, ".atsum", sep=""))
   colnames(smfile) <- smfile[1,]
   smfile <- smfile[-1,]
   
@@ -151,7 +151,7 @@ colnames(t_accuracy) <- t_accuracy[1,]
 t_accuracy <- t_accuracy[-1,]
 
 write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
-log4r::info(fn_logger, paste("File created/modified: summary table of NOW and ms (", params$prefix, ".sum).", sep=""))
+log4r::info(fn_logger, paste0("File created/modified: summary table of NOW and ms (", params$prefix, ".sum).", sep=""))
 
 # correlation plot
 t_accuracy <- as.data.frame(t_accuracy)
@@ -182,5 +182,5 @@ for (c in 3:ncol(t_accuracy)) {
   dev.off()
 }
 
-log4r::info(fn_logger, paste("Files created/modified: NOW accuracy vs NOW IC correlation plots.", sep=""))
+log4r::info(fn_logger, paste0("Files created/modified: NOW accuracy vs NOW IC correlation plots.", sep=""))
 ```
