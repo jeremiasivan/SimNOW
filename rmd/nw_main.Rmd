@@ -2,24 +2,24 @@
 title: "Non-overlapping Windows Report"
 params:
   # general
-  rmddir: ""
-  prefix: ""
-  outdir: ""
+  rmddir: "~/Documents/SimNOW/rmd"
+  prefix: "yt"
+  outdir: "~/Documents/simulation/yt"
   redo: FALSE
   
   # sequence simulation
-  msdir: ""
-  ms_params: ""
-  ms_r: 0
-  ms_l: 1000000
+  msdir: "~/Documents/msdir/ms"
+  ms_params: "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 10 2 1 -ej 24 3 1 -ej 35 4 1 -ej 32 5 6 -ej 53 6 1 -ej 69 7 1 -es 1 2 0.25 -ej 1 8 1 -es 23 3 0.25 -ej 23 9 4 -es 34 6 0.25 -ej 34 10 4"
+  ms_r: 300
+  ms_l: 2000000
   
-  iqtree2dir: ""
-  alisim_model: ""
-  alisim_scale: 0
-  outgroup: ""
+  iqtree2dir: "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
+  alisim_model: "JC"
+  alisim_scale: 0.00029
+  outgroup: "7"
   
   # non-overlapping window analysis
-  window_size: !r c()
+  window_size: !r c(1000,5000,10000,50000,100000,500000,1000000)
 ---
 
 ```{r setup, include=FALSE}
