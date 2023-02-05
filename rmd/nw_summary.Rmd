@@ -166,8 +166,8 @@ for (c in 3:ncol(t_accuracy)) {
   print(ggplot(t_accuracy, aes(y=as.numeric(accuracy), x=as.numeric(t_accuracy[,c]), ymin=0, ymax=100)) + 
           geom_jitter(shape=16, width = 0.2, height = 0.2, size=5) +
           scale_colour_manual(values = pcolors[iterator]) +
-          ggtitle("Correlation of Information Criterion and NOW Accuracy") + 
-          xlab("Information criterion value") +
+          ggtitle("Correlation of NOW Information Criterion and NOW Accuracy") + 
+          xlab("Information criterion score") +
           ylab("Accuracy (%)") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
