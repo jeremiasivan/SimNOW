@@ -179,4 +179,35 @@ t_accuracy <- t_accuracy[-1,]
 
 write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
 log4r::info(fn_logger, paste("File created/modified: summary table of MAST-HMM and ms (", params$prefix, ".mh.sum).", sep=""))
+
+# correlation plot
+t_accuracy <- as.data.frame(t_accuracy)
+pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
+iterator <- 0
+
+for (c in 3:ncol(t_accuracy)) {
+  fn_sumfig <- paste(mast_outdir, params$prefix, ".", colnames(t_accuracy)[c],".mh.tiff", sep="")
+  iterator <- iterator + 1
+  
+  tiff(filename=fn_sumfig, units="px", width=2880, height=1800)
+  print(ggplot(t_accuracy, aes(y=as.numeric(accuracy), x=as.numeric(t_accuracy[,c]), ymin=0, ymax=100)) + 
+          geom_jitter(shape=16, width = 0.2, height = 0.2, size=5) +
+          scale_colour_manual(values = pcolors[iterator]) +
+          ggtitle("Correlation of MAST-HMM Information Criterion and NOW Accuracy") + 
+          xlab("Information criterion score") +
+          ylab("Accuracy (%)") +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=30),
+            axis.text.x=element_text(size=30),
+            legend.title=element_blank(),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+          ))
+  dev.off()
+}
+
+log4r::info(fn_logger, paste0("Files created/modified: NOW accuracy vs MASTHMM IC correlation plots.", sep=""))
 ```
