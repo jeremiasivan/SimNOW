@@ -31,14 +31,20 @@ for (i in mast_dirs) {
   temp_outdir <- paste(mast_outdir,i,"/",sep="")
   outdir <- paste(temp_outdir, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/", sep="")
  
+  fn_mastsum <- paste(outdir, params$prefix, ".mastsum", sep="")
   fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
   fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
-  if (all(file.exists(fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
+  if (all(file.exists(fn_mastsum, fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
     log4r::info(fn_logger, paste("Files exist: MAST-HMM summary files for set ", i, ". Skipped.", sep=""))
     next
   }
   
-  # read input files
+  # read MAST file
+  fn_mast <- paste(outdir, params$prefix, ".iqtree", sep="")
+  mast_tw <- gsub("^.*: ", "", system(paste("grep '^Tree weights'",fn_mast), intern = T))
+  ls_mast_tw <- strsplit(mast_tw, ", ")[[1]]
+  
+  # read HMM file
   fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
   if (!file.exists(fn_hmm)) {
     log4r::warn(fn_logger, paste("Warn: HMM file for set ", i, " is not found. Skipped.", sep=""))
@@ -62,11 +68,25 @@ for (i in mast_dirs) {
     }
   }
   
+  # tree weights comparison with ms topology
+  ms_tw <- msfile %>%
+    group_by(topology) %>%
+    summarise(topology = topology, ms=as.numeric(length)/sum(as.numeric(msfile$length)))
+  
+  mtw <- c()
+  for (j in 1:nrow(ms_tw)) {
+    top_idx <- match(ms_tw$topology[j], tmfile)
+    mtw <- c(mtw, round(as.numeric(ls_mast_tw[top_idx]), 4))
+  }
+  
+  ms_tw <- cbind(ms_tw, mast=mtw)
+  write.table(ms_tw, file=fn_mastsum, quote = F, row.names = F)
+  
+  # extract per-site topology
   trees <- data.frame(do.call('rbind', strsplit(as.character(hmmtrees),'\\[|,|\\]')))
   trees[,1] <- NULL
   colnames(trees) <- c("start","stop","tree")
   
-  # extract per-site topology
   dat <- apply(trees, 1,
                function(x) data.table(bp = x["start"]:x["stop"], tree = x["tree"])) %>%
     rbindlist()
@@ -131,7 +151,7 @@ for (i in mast_dirs) {
   
   write.table(output, file=fn_hmmsum, quote = F, row.names = F)
   log4r::info(fn_logger, paste("Files created: set ", i, "MAST-HMM summary files (",
-                               params$prefix, ".hmmsum and ", params$prefix, ".hmmsum.tiff).", sep=""))
+                               params$prefix, ".mastsum, ", params$prefix, ".hmmsum and ", params$prefix, ".hmmsum.tiff).", sep=""))
 }
 ```
 
