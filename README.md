@@ -19,10 +19,11 @@ Software incorporated in the pipeline:
 - Allow users to choose which analysis to run
 - Automate the selection of MAST model based on the number of topologies
 - Fix the summary report for the whole pipeline, including HTML template
+- Parallelization
 
 ---
 ### Future Work(s)
-- Incorporate other methods to assess (and improve) non-overlapping window accuracy (e.g., BIC, <a href="https://doi.org/10.1093/molbev/msaa106">gene</a> and <a href="https://doi.org/10.1093/bioinformatics/btac741">site concordance factor</a>, <a href="https://doi.org/10.1101/2021.02.16.431544">treelikeness</a>)
+- Incorporate other methods to find correlates with non-overlapping window accuracy (e.g., information criteria, <a href="https://doi.org/10.1186/s12862-016-0837-3">phylogenetic information</a>, <a href="https://doi.org/10.1093/molbev/msaa106">gene</a> and <a href="https://doi.org/10.1093/bioinformatics/btac741">site concordance factor</a>, <a href="https://doi.org/10.1101/2021.02.16.431544">treelikeness</a>)
 
 ---
 ### References
