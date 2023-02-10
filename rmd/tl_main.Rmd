@@ -14,6 +14,7 @@ params:
 ---
 
 ```{r setup, include=FALSE}
+library(ggplot2)
 library(log4r)
 
 source(paste(params$treelikenessdir, "/code/func_test_statistic.R", sep=""))
