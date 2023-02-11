@@ -3,28 +3,30 @@ title: "Non-overlapping Windows Report"
 params:
   # general
   rmddir: "~/Documents/SimNOW/rmd"
-  prefix: "yt"
-  outdir: "~/Documents/simulation/yt"
-  redo: FALSE
+  prefix: "db"
+  outdir: "~/Documents/simulation/debug"
+  thread: 4
+  redo: TRUE
   
   # sequence simulation
   msdir: "~/Documents/msdir/ms"
-  ms_params: "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 10 2 1 -ej 24 3 1 -ej 35 4 1 -ej 32 5 6 -ej 53 6 1 -ej 69 7 1 -es 1 2 0.25 -ej 1 8 1 -es 23 3 0.25 -ej 23 9 4 -es 34 6 0.25 -ej 34 10 4"
-  ms_r: 300
-  ms_l: 2000000
+  ms_params: ""
+  ms_r: 0
+  ms_l: 1000000
   
-  iqtree2dir: "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
+  iqtree2dir: "~/Documents/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
   alisim_model: "JC"
-  alisim_scale: 0.00029
-  outgroup: "7"
+  alisim_scale: 0.001
+  outgroup: ""
   
   # non-overlapping window analysis
-  window_size: !r c(1000,5000,10000,50000,100000,500000,1000000)
+  window_size: !r c()
 ---
 
 ```{r setup, include=FALSE}
 library(ape)
 library(data.table)
+library(doParallel)
 library(dplyr)
 library(forcats)
 library(ggplot2)
@@ -32,11 +34,13 @@ library(hash)
 library(log4r)
 library(seqinr)
 
+# create outdir
 currentdir <- paste(params$outdir, "/", params$prefix, sep="")
-if (!file.exists(currentdir)) {
+if (!dir.exists(currentdir)) {
   dir.create(currentdir, recursive = T)
 }
 
+# create log file
 fn_log <- paste(params$outdir, "/", params$prefix, "/", params$prefix, ".log", sep="")
 log_appender <- file_appender(fn_log, append = TRUE, layout = default_log_layout())
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)

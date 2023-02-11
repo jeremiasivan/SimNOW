@@ -9,11 +9,13 @@ write.table(c("",
               "####################################"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
+# create simulation dir
 simulation_outdir <- paste(getwd(), "/simulation", sep="")
-if (!file.exists(simulation_outdir)) {
+if (!dir.exists(simulation_outdir)) {
   dir.create(simulation_outdir, recursive = T)
 }
 
+# input/output filenames
 fn_msfile <- paste(simulation_outdir, "/", params$prefix, ".ms", sep="")
 fn_mstrees <- paste(simulation_outdir, "/", params$prefix, ".mstrees", sep="")
 fn_mttrees <- paste(simulation_outdir, "/", params$prefix, ".multitree", sep="")
@@ -163,6 +165,7 @@ if (file.exists(paste(fn_alisim, ".fa", sep = "")) && !params$redo) {
                  "-Q",fn_nexus,
                  "-t",fn_mttrees,
                  "-m",params$alisim_model,
+                 "-nt",params$thread,
                  "-af fasta -redo", sep=" "))
   } else {
     system(paste(params$iqtree2dir,
@@ -171,6 +174,7 @@ if (file.exists(paste(fn_alisim, ".fa", sep = "")) && !params$redo) {
                  "-t",fn_mttrees,
                  "--branch-scale",params$alisim_scale,
                  "-m",params$alisim_model,
+                 "-nt",params$thread,
                  "-af fasta -redo", sep=" "))
   }
   

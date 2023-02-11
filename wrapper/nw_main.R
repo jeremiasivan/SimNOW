@@ -3,13 +3,14 @@ library(doParallel)
 #################################
 ms_r <- c(0,3,30,300)
 nreps <- 10
-prefix <- "bt"
+prefix <- "hb"
 nthread <- 4
 
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
 outdir <- "~/Documents/simulation/bt"
-redo <- TRUE
+thread <- 4
+redo <- FALSE
   
 # sequence simulation
 msdir <- "~/Documents/msdir/ms"
@@ -22,9 +23,13 @@ alisim_scale <- 0.00029
 outgroup <- "7"
   
 # non-overlapping window analysis
-window_size <- c(1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000)
+window_size <- c(1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
 
 #################################
+
+if (nthread / thread < 1) {
+  stop("Invalid number of threads (nthread) vs thread per run (thread)")
+}
 
 temp_table <- expand.grid(seq = seq(1:nreps), rrate = ms_r)
 temp_table$id <- rownames(temp_table)
@@ -41,7 +46,7 @@ for (i in 1:nrow(temp_table)) {
   }
   
   templist <- list(out=out, params=list(prefix=prex,
-                                        rmddir=rmddir, outdir=outdir, redo=redo,
+                                        rmddir=rmddir, outdir=outdir, thread=thread, redo=redo,
                                         msdir=msdir, ms_params=ms_params, ms_r=temp_table$rrate[i], ms_l=ms_l,
                                         iqtree2dir=iqtree2dir, alisim_model=alisim_model, alisim_scale=alisim_scale, outgroup=outgroup,
                                         window_size=window_size
@@ -63,10 +68,12 @@ make_report <- function(r) {
   unlink(tf)
 }
 
-cl <- parallel::makeCluster(nthread)
+cl <- parallel::makeCluster(floor(nthread/thread))
 doParallel::registerDoParallel(cl)
 
 foreach(r=reports, .errorhandling = 'pass') %dopar% make_report(r)
+
+parallel::stopCluster(cl)
 
 # summary
 rmarkdown::render(input=paste(rmddir,"/summary_nw.Rmd", sep=""),
@@ -74,4 +81,4 @@ rmarkdown::render(input=paste(rmddir,"/summary_nw.Rmd", sep=""),
                   params=list(prefix=prefix, outdir=outdir, redo=redo),
                   quiet=TRUE)
 
-parallel::stopCluster(cl)
+#################################

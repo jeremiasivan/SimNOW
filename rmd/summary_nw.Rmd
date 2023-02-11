@@ -1,8 +1,8 @@
 ---
 title: "Summary of Multiple Non-overlapping Windows Analyses"
 params:
-  prefix: ""
-  outdir: ""
+  prefix: "db"
+  outdir: "~/Documents/simulation/debug"
   redo: TRUE
 ---
 
@@ -23,7 +23,7 @@ if (all(file.exists(fn_simsum,fn_simfig)) && params$redo == FALSE) {
 
 # extract row and column names
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
-simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""), allsims)]
+simulation <- allsims[grep(paste("^",params$prefix,sep=""), allsims)]
 
 window_sizes <- list.dirs(paste(params$outdir,"/",simulation[1],"/windows/",sep=""), full.names = F, recursive = F)
 window_sizes <- subset(window_sizes, window_sizes != paste(simulation[1],".summary",sep=""))
