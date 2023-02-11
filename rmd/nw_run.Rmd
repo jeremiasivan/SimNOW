@@ -9,6 +9,7 @@ write.table(c("",
               "####################################"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
+# create windows dir
 window_outdir <- paste(getwd(), "/windows/", sep="")
 if (!file.exists(window_outdir)) {
   dir.create(window_outdir, recursive = T)
@@ -19,6 +20,11 @@ if (length(params$window_size) == 0) {
   knitr::knit_exit()
 }
 
+# create doParallel cluster
+nwcl <- parallel::makeCluster(params$threads)
+doParallel::registerDoParallel(nwcl)
+
+# input/output filenames
 fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
 fn_uqtops <- paste(getwd(), "/simulation/", params$prefix, ".uqtops", sep="")
 ```
@@ -31,7 +37,7 @@ s <- read.fasta(fn_alisim, whole.header = T)
 lens <- getLength(s)[1]
 
 # iterate through window sizes
-for (w in params$window_size) {
+foreach (w = params$window_size, .errorhandling = 'pass') %dopar% {
   if (w == 0) {
     log4r::warn(fn_logger, "Warning: window size cannot be zero. Skipped.")
     next
@@ -74,7 +80,7 @@ for (w in params$window_size) {
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
 # iterate through window sizes
-for (i in window_sizes) {
+foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
   temp_outdir <- paste(window_outdir,i,"/trees/",sep="")
   if (!file.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
@@ -90,9 +96,18 @@ for (i in window_sizes) {
   prefix <- paste(temp_outdir,params$prefix,sep="")
 
   if (is.null(params$outgroup) || params$outgroup == ""){
-    system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet -redo", sep=" "))
+    system(paste(params$iqtree2dir,
+                 "-S",fastadir,
+                 "-m",params$alisim_model,
+                 "-pre",prefix,
+                 "--quiet -redo -nt 1", sep=" "))
   } else {
-    system(paste(params$iqtree2dir,"-S",fastadir,"-m",params$alisim_model,"-pre",prefix,"--quiet -redo -o",params$outgroup, sep=" "))
+    system(paste(params$iqtree2dir,
+                 "-S",fastadir,
+                 "-m",params$alisim_model,
+                 "-pre",prefix,
+                 "--quiet -redo -nt 1",
+                 "-o",params$outgroup, sep=" "))
   }
   
   log4r::info(fn_logger, paste0("File created: ", i, "bp window treefile.", sep=""))
@@ -115,7 +130,7 @@ while (length(tl <- readLines(topology_file, n=1, warn=F))) {
 close(topology_file)
 
 # iterate through window sizes
-for (i in window_sizes) {
+foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
   temp_outdir <- paste(window_outdir,i,"/summary/",sep="")
   if (!file.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
@@ -231,7 +246,7 @@ for (i in window_sizes) {
 sdf <- do.call(rbind,s)
 
 # iterate through window sizes
-for (i in window_sizes) {
+foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
   temp_outdir <- paste(window_outdir,i,"/contiguous/alignment/",sep="")
   if (!file.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
@@ -287,4 +302,8 @@ for (i in window_sizes) {
   
   log4r::info(fn_logger, paste0("File created: ", i, "bp contiguous window treefile.", sep=""))
 }
+```
+
+```{r stopcl, include=FALSE}
+parallel::stopCluster(nwcl)
 ```

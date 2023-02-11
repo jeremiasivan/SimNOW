@@ -5,6 +5,7 @@ params:
   rmddir: "~/Documents/SimNOW/rmd"
   prefix: "yt"
   outdir: "~/Documents/simulation/yt"
+  threads: 2
   redo: FALSE
   
   # sequence simulation
@@ -25,6 +26,7 @@ params:
 ```{r setup, include=FALSE}
 library(ape)
 library(data.table)
+library(doParallel)
 library(dplyr)
 library(forcats)
 library(ggplot2)
@@ -32,11 +34,13 @@ library(hash)
 library(log4r)
 library(seqinr)
 
+# create outdir
 currentdir <- paste(params$outdir, "/", params$prefix, sep="")
-if (!file.exists(currentdir)) {
+if (!dir.exists(currentdir)) {
   dir.create(currentdir, recursive = T)
 }
 
+# create log file
 fn_log <- paste(params$outdir, "/", params$prefix, "/", params$prefix, ".log", sep="")
 log_appender <- file_appender(fn_log, append = TRUE, layout = default_log_layout())
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
