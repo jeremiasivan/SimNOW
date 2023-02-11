@@ -130,7 +130,12 @@ while (length(tl <- readLines(topology_file, n=1, warn=F))) {
 close(topology_file)
 
 # iterate through window sizes
-for (i in window_sizes) {
+ls_seqlen <- foreach (i = window_sizes, .combine=c) %dopar% {
+  library(ape)
+  library(data.table)
+  library(dplyr)
+  library(ggplot2)
+  
   temp_outdir <- paste(window_outdir,i,"/summary/",sep="")
   if (!file.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
@@ -143,7 +148,7 @@ for (i in window_sizes) {
   fn_tops <- paste(temp_outdir, params$prefix, ".topsum", sep="")
   if (all(file.exists(fn_atsum, fn_atsumf, fn_cnsum, fn_cnsumf, fn_tops)) && !params$redo) {
     log4r::info(fn_logger, paste0("Files already exist: ", i, "bp window summary files. Skipped.", sep=""))
-    next
+    return()
   }
   
   # retrieve each fasta file and its respective topology
@@ -175,13 +180,11 @@ for (i in window_sizes) {
   close(iqtree_file)
   colnames(seq_len) <- c("source", "start", "stop", "length", "newick", "topology")
   
-  # extract essential columns
-  dat <- do.call(rbind, apply(seq_len, 1, 
-                               function(x) data.table(bp = x["start"]:x["stop"], topology = x["topology"])))
-  
   # visualization of topology switching across chromosome
-  tiff(file=fn_atsumf, units="px", width=250, height=2000)
-  print(ggplot(data=dat, aes(fill=topology, ymin=bp, ymax=bp+1, xmin=0, xmax=1)) +
+  dat <- do.call(rbind, apply(seq_len, 1,
+                              function(x) data.table(bp = x["start"]:x["stop"], topology = x["topology"])))
+  
+  gpl1 <- ggplot(data=dat, aes(fill=topology, ymin=bp, ymax=bp+1, xmin=0, xmax=1)) +
     geom_rect() +
     labs(x=paste(i,"bp")) +
     theme_void() +
@@ -190,56 +193,72 @@ for (i in window_sizes) {
       axis.text.y=element_text(size=20),
       legend.text=element_text(size=20),
       legend.key.size=unit(2,"cm")
-      ))
-  dev.off()
-  
-  write.table(seq_len, fn_atsum, quote=F, sep="\t", row.names=F, col.names=T)
-  log4r::info(fn_logger, paste0("Files created: ", i, "bp annotation summary files (",
-                               params$prefix, ".atsum and ", params$prefix, ".atsum.tiff).", sep=""))
+      )
   
   # extract top topologies
-  top_tops <- seq_len %>% 
-    group_by(newick) %>% 
-    summarise(count = n()) %>% 
+  top_tops <- seq_len %>%
+    group_by(newick) %>%
+    summarise(count = n()) %>%
     arrange(desc(count)) %>%
     mutate(cum.percentage = round(cumsum(count)/nrow(seq_len),3))
-  
-  write.table(top_tops, fn_tops, quote=F, sep="\t", row.names=F, col.names=T)
-  log4r::info(fn_logger, paste0("File created: ", i, "bp top topology file (", params$prefix, ".topsum).", sep=""))
-  
+
   # count consecutive/contiguous windows per topology
-  count_contiguous <- seq_len %>% 
+  count_contiguous <- seq_len %>%
     group_by(topology,
-             group_run = data.table::rleid(topology)) %>% 
-    summarise(count = n()) %>% 
+             group_run = data.table::rleid(topology)) %>%
+    summarise(count = n()) %>%
     arrange(group_run)
   count_contiguous$group_run <- NULL
   
+  # visualization of contiguous windows across chromosome
   cons_windows <- count_contiguous %>%
     group_by(topology, count) %>%
     summarise(total = n())
+
+  gpl2 <- ggplot(cons_windows, aes(fill=topology)) +
+    geom_bar(position="dodge", stat="identity", aes(y=total, x=count)) +
+    aes(x = fct_inorder(topology)) +
+    ggtitle("Distribution of Consecutive Windows Per Topology") +
+    facet_grid(~topology) +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      axis.title.x=element_blank(),
+      axis.title.y=element_blank(),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      legend.title=element_blank(),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+      )
   
-  tiff(filename=fn_cnsumf, units="px", width=2880, height=1800)
-  print(ggplot(cons_windows, aes(fill=topology)) + 
-        geom_bar(position="dodge", stat="identity", aes(y=total, x=count)) +
-        aes(x = fct_inorder(topology)) +
-        ggtitle("Distribution of Consecutive Windows Per Topology") + 
-        facet_grid(~topology) +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 50),
-          axis.title.x=element_blank(),
-          axis.title.y=element_blank(),
-          axis.text.y=element_text(size=30),
-          axis.text.x=element_text(size=30),
-          legend.title=element_blank(),
-          legend.text=element_text(size=30),
-          legend.key.size=unit(2,"cm")
-        ))
-  dev.off()
-  
-  write.table(count_contiguous, fn_cnsum, quote=F, row.names=F)
-  log4r::info(fn_logger, paste0("Files created: ", i, "bp consecutive summary files (",
-                               params$prefix, ".cnsum and ", params$prefix, ".cnsum.tiff).", sep=""))
+  list(list(i, seq_len, gpl1, top_tops, count_contiguous, gpl2))
+}
+
+if (length(ls_seqlen) > 0) {
+  for (i in 1:length(ls_seqlen)) {
+    ws <- ls_seqlen[[i]][[1]]
+    
+    temp_outdir <- paste(window_outdir,ws,"/summary/",sep="")
+    fn_atsum <- paste(temp_outdir, params$prefix, ".atsum", sep="")
+    fn_atsumf <- paste(temp_outdir, params$prefix, ".atsum.tiff", sep="")
+    fn_cnsum <- paste(temp_outdir, params$prefix, ".cnsum", sep="")
+    fn_cnsumf <- paste(temp_outdir, params$prefix, ".cnsum.tiff", sep="")
+    fn_tops <- paste(temp_outdir, params$prefix, ".topsum", sep="")
+    
+    write.table(ls_seqlen[[i]][[2]], file=fn_atsum, quote=FALSE, sep="\t", row.names=F, col.names=T)
+    write.table(ls_seqlen[[i]][[4]], file=fn_tops, quote=FALSE, sep="\t", row.names=F, col.names=T)
+    write.table(ls_seqlen[[i]][[5]], file=fn_cnsum, quote=FALSE, sep="\t", row.names=F, col.names=T)
+    
+    tiff(file=fn_atsumf, units="px", width=250, height=2000)
+    print(ls_seqlen[[i]][[3]])
+    dev.off()
+    
+    tiff(filename=fn_cnsumf, units="px", width=2880, height=1800)
+    print(ls_seqlen[[i]][[6]])
+    dev.off()
+    
+    log4r::info(fn_logger, paste0("Files created: ", ws, "bp summary files", sep=""))
+  }
 }
 ```
 
