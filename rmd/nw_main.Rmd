@@ -3,9 +3,9 @@ title: "Non-overlapping Windows Report"
 params:
   # general
   rmddir: "~/Documents/SimNOW/rmd"
-  prefix: "yt"
-  outdir: "~/Documents/simulation/yt"
-  threads: 2
+  prefix: "aa"
+  outdir: "~/Documents/simulation/debug"
+  threads: 4
   redo: FALSE
   
   # sequence simulation
@@ -20,7 +20,7 @@ params:
   outgroup: "7"
   
   # non-overlapping window analysis
-  window_size: !r c(1000,5000,10000,50000,100000,500000,1000000)
+  window_size: !r c(1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000,500000,1000000)
 ---
 
 ```{r setup, include=FALSE}

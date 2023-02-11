@@ -9,7 +9,7 @@ nthread <- 4
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
 outdir <- "~/Documents/simulation/bt"
-redo <- TRUE
+redo <- FALSE
   
 # sequence simulation
 msdir <- "~/Documents/msdir/ms"

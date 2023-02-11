@@ -37,14 +37,14 @@ s <- read.fasta(fn_alisim, whole.header = T)
 lens <- getLength(s)[1]
 
 # iterate through window sizes
-foreach (w = params$window_size, .errorhandling = 'pass') %dopar% {
+for (w in params$window_size) {
   if (w == 0) {
     log4r::warn(fn_logger, "Warning: window size cannot be zero. Skipped.")
     next
   }
   
   temp_outdir <- paste(window_outdir,w,"/alignment/",sep="")
-  if (!file.exists(temp_outdir)) {
+  if (!dir.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
   }
   
@@ -130,7 +130,7 @@ while (length(tl <- readLines(topology_file, n=1, warn=F))) {
 close(topology_file)
 
 # iterate through window sizes
-foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
+for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/summary/",sep="")
   if (!file.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
@@ -242,25 +242,20 @@ foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
 }
 ```
 
-```{r nowcontiguous, include=FALSE}
+```{r nowctalignment, include=FALSE}
 sdf <- do.call(rbind,s)
 
 # iterate through window sizes
-foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
+for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/contiguous/alignment/",sep="")
   if (!file.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
   }
   
-  treedir <- paste(window_outdir,i,"/contiguous/trees/",sep="")
-  if (!file.exists(treedir)) {
-    dir.create(treedir, recursive = T)
-  }
-  
+  fn_map <- paste(temp_outdir, "../", params$prefix, ".map", sep="")
   acount <- length(list.files(temp_outdir,pattern='fa'))
-  tcount <- length(list.files(treedir,pattern='iqtree'))
-  if (acount != 0 && tcount != 0 && !params$redo) {
-    log4r::info(fn_logger, paste0("Files already exist: ", i, "bp contiguous window alignment and treefile. Skipped.", sep=""))
+  if (file.exists(fn_map) && acount != 0 && !params$redo) {
+    log4r::info(fn_logger, paste0("Files already exist: ", i, "bp contiguous window alignment and map. Skipped.", sep=""))
     next
   }
   
@@ -288,16 +283,42 @@ foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
     count <- count + 1
   }
     
-  write.table(newick_map, paste(temp_outdir, "../", params$prefix, ".map", sep=""), quote = F, row.names = F, col.names = F)
+  write.table(newick_map, fn_map, quote = F, row.names = F, col.names = F)
   log4r::info(fn_logger, paste0("Files created: ", i, "bp contiguous window alignment files. File naming convention is available at ",
                                params$prefix, ".map.", sep=""))
+}
+```
+
+```{r nowcttree, include=FALSE}
+# iterate through window sizes
+foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
+  temp_outdir <- paste(window_outdir,i,"/contiguous/alignment/",sep="")
+  if (!file.exists(temp_outdir)) {
+    dir.create(temp_outdir, recursive = T)
+  }
+  
+  treedir <- paste(window_outdir,i,"/contiguous/trees/",sep="")
+  tcount <- length(list.files(treedir,pattern='iqtree'))
+  if (tcount != 0 && !params$redo) {
+    log4r::info(fn_logger, paste0("Files already exist: ", i, "bp contiguous window treefile. Skipped.", sep=""))
+    next
+  }
     
   # generate contiguous window tree
   prefix <- paste(treedir, params$prefix, sep="")
   if (is.null(params$outgroup) || params$outgroup == ""){
-    system(paste(params$iqtree2dir,"-S",temp_outdir,"-m",params$alisim_model,"-pre",prefix,"--quiet -redo", sep=" "))
+    system(paste(params$iqtree2dir,
+                 "-S",temp_outdir,
+                 "-m",params$alisim_model,
+                 "-pre",prefix,
+                 "--quiet -redo -nt 1", sep=" "))
   } else {
-    system(paste(params$iqtree2dir,"-S",temp_outdir,"-m",params$alisim_model,"-pre",prefix,"--quiet -redo -o",params$outgroup, sep=" "))
+    system(paste(params$iqtree2dir,
+                 "-S",temp_outdir,
+                 "-m",params$alisim_model,
+                 "-pre",prefix,
+                 "--quiet -redo -nt 1",
+                 "-o",params$outgroup, sep=" "))
   }
   
   log4r::info(fn_logger, paste0("File created: ", i, "bp contiguous window treefile.", sep=""))
