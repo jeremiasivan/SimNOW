@@ -5,7 +5,7 @@ params:
   rmddir: "~/Documents/SimNOW/rmd"
   prefix: "aa"
   outdir: "~/Documents/simulation/debug"
-  threads: 4
+  thread: 4
   redo: FALSE
   
   # sequence simulation

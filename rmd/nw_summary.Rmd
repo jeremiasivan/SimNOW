@@ -24,9 +24,6 @@ msfile <- msfile[-1,]
 # iterate through window sizes
 for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/summary/",sep="")
-  if (!dir.exists(temp_outdir)) {
-    dir.create(temp_outdir, recursive = T)
-  }
   
   fn_cmp <- paste(temp_outdir, params$prefix, ".cmp", sep="")
   fn_figure <- paste(temp_outdir, params$prefix, ".cmp.tiff", sep="")
@@ -69,6 +66,11 @@ for (i in window_sizes) {
   for (j in 1:nrow(msfile)){
     sites <- dat[msfile$start[j]:msfile$stop[j],]
     topology_idx <- match(msfile$topology[j], output$topology)
+    
+    if (all(is.na(sites))) {
+      log4r::warn(fn_logger, paste0("Total length of ", i, "bp window does not match with msfile.", sep=""))
+      break
+    }
     
     sites_sum <- aggregate(bp ~ newick, data=sites, FUN=length)
     

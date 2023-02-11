@@ -21,7 +21,7 @@ if (length(params$window_size) == 0) {
 }
 
 # create doParallel cluster
-nwcl <- parallel::makeCluster(params$threads)
+nwcl <- parallel::makeCluster(params$thread)
 doParallel::registerDoParallel(nwcl)
 
 # input/output filenames
@@ -248,7 +248,7 @@ sdf <- do.call(rbind,s)
 # iterate through window sizes
 for (i in window_sizes) {
   temp_outdir <- paste(window_outdir,i,"/contiguous/alignment/",sep="")
-  if (!file.exists(temp_outdir)) {
+  if (!dir.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
   }
   
@@ -293,11 +293,11 @@ for (i in window_sizes) {
 # iterate through window sizes
 foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
   temp_outdir <- paste(window_outdir,i,"/contiguous/alignment/",sep="")
-  if (!file.exists(temp_outdir)) {
-    dir.create(temp_outdir, recursive = T)
+  treedir <- paste(window_outdir,i,"/contiguous/trees/",sep="")
+  if (!dir.exists(treedir)) {
+    dir.create(treedir, recursive = T)
   }
   
-  treedir <- paste(window_outdir,i,"/contiguous/trees/",sep="")
   tcount <- length(list.files(treedir,pattern='iqtree'))
   if (tcount != 0 && !params$redo) {
     log4r::info(fn_logger, paste0("Files already exist: ", i, "bp contiguous window treefile. Skipped.", sep=""))
