@@ -3,7 +3,7 @@ library(doParallel)
 #################################
 ms_r <- c(0,3,30,300)
 nreps <- 10
-prefix <- "bt"
+prefix <- "hb"
 nthread <- 4
 
 # general
