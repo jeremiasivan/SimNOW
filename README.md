@@ -19,7 +19,7 @@ Software incorporated in the pipeline:
 - Allow users to choose which analysis to run
 - Automate the selection of MAST model based on the number of topologies
 - Fix the summary report for the whole pipeline, including HTML template
-- Parallelization
+- Parallelization, particularly for `nowsummary` block in `rmd/nw_run.Rmd`
 
 ---
 ### Future Work(s)

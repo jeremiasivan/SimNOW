@@ -1,7 +1,7 @@
 ---
 title: "Summary of Multiple Non-overlapping Windows Analyses"
 params:
-  prefix: "aa"
+  prefix: "ab"
   outdir: "~/Documents/simulation/debug"
   redo: TRUE
 ---

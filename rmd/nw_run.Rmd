@@ -181,11 +181,12 @@ for (i in window_sizes) {
   
   # visualization of topology switching across chromosome
   tiff(file=fn_atsumf, units="px", width=250, height=2000)
-  print(ggplot() +
-    geom_rect(data=dat,aes(fill=topology,ymin=0,ymax=bp,xmin=0,xmax=1)) +
+  print(ggplot(data=dat, aes(fill=topology, ymin=bp, ymax=bp+1, xmin=0, xmax=1)) +
+    geom_rect() +
     labs(x=paste(i,"bp")) +
     theme_void() +
     theme(
+      axis.title.x=element_text(size=20),
       axis.text.y=element_text(size=20),
       legend.text=element_text(size=20),
       legend.key.size=unit(2,"cm")
