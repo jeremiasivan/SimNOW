@@ -1,9 +1,11 @@
 ---
-title: "Summary of MAST-HMM Analyses"
+title: "Summary of MAST-HMM and HMMSTER Analyses"
 params:
   prefix: ""
   outdir: ""
   redo: TRUE
+  
+  analysis_type: "MASTHMM"
 ---
 
 ```{r library, include=FALSE}
@@ -11,6 +13,13 @@ library(dplyr)
 library(data.table)
 library(ggplot2)
 library(RColorBrewer)
+
+MASTHMM <- "MASTHMM"
+HMMSTER <- "HMMSTER"
+if (!params$analysis_type %in% c(MASTHMM,HMMSTER)) {
+  log4r::error(fn_logger, "Error: invalid type of analysis. Exited.")
+  knitr::knit_exit()
+}
 ```
 
 ```{r setup, include=FALSE}
@@ -23,7 +32,7 @@ fn_hmmfig <- paste(params$outdir, "/", params$prefix, ".hmmacc.tiff", sep="")
 fn_hmmwacc <- paste(params$outdir, "/", params$prefix, ".hmmwacc", sep="")
 fn_hmmwfig <- paste(params$outdir, "/", params$prefix, ".hmmwacc.tiff", sep="")
 if (all(file.exists(fn_hmmacc, fn_hmmtopset, fn_hmmfig, fn_hmmwacc, fn_hmmwfig)) && params$redo == FALSE) {
-  print("MAST-HMM summary files already exist. Stopping...")
+  print("MAST-HMM summary files already exist. Exited.")
   knitr::knit_exit()
 }
 
@@ -32,8 +41,8 @@ allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
 simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""), allsims)]
 
 # retrieve all MAST models
-top_sets <- list.dirs(paste(params$outdir, "/", simulation[1], "/masthmm/", sep=""), full.names = F, recursive = F)
-model_list <- list.dirs(paste(params$outdir, "/", simulation[1], "/masthmm/", top_sets[1], "/", sep=""), full.names = F, recursive = F)
+top_sets <- list.dirs(paste(params$outdir, "/", simulation[1], "/", tolower(params$analysis_type), "/", sep=""), full.names = F, recursive = F)
+model_list <- list.dirs(paste(params$outdir, "/", simulation[1], "/", tolower(params$analysis_type), "/", top_sets[1], "/", sep=""), full.names = F, recursive = F)
 model_list <- subset(model_list, model_list != paste(simulation[1], ".mast.tops", sep=""))
 ```
 
@@ -42,7 +51,7 @@ dfsets <- data.frame("wsize", "set", "simulation", "r")
 
 # retrieve topology set and recombination rate for each simulation
 for (s in simulation) {
-  dftmp <- read.table(paste(params$outdir, "/", s, "/masthmm/", s, ".topset", sep=""))
+  dftmp <- read.table(paste(params$outdir, "/", s, "/", tolower(params$analysis_type), "/", s, ".topset", sep=""))
   colnames(dftmp) <- dftmp[1,]
   dftmp <- dftmp[-1,]
   
@@ -62,7 +71,7 @@ dfviz <- data.frame("dir","accuracy","model","r","wsize")
 
 for (e in 1:nrow(dfsets)) {
   wstmp <- strsplit(dfsets$wsize[e],"_")[[1]]
-  mhtmp <- paste(params$outdir, "/", dfsets$simulation[e], "/masthmm/", dfsets$set[e], "/", sep="")
+  mhtmp <- paste(params$outdir, "/", dfsets$simulation[e], "/", tolower(params$analysis_type), "/", dfsets$set[e], "/", sep="")
     
   for (m in model_list) {
     fn_hmmsum <- paste(mhtmp, m, "/", dfsets$simulation[e], ".hmmsum", sep="")
@@ -159,7 +168,7 @@ dfsets <- data.frame("topologies", "set", "simulation", "r")
 
 # retrieve topology set and recombination rate for each simulation
 for (s in simulation) {
-  dftmp <- read.table(paste(params$outdir, "/", s, "/masthmm/", s, ".topset", sep=""))
+  dftmp <- read.table(paste(params$outdir, "/", s, "/", tolower(params$analysis_type), "/", s, ".topset", sep=""))
   colnames(dftmp) <- dftmp[1,]
   dftmp <- dftmp[-1,]
   
@@ -183,7 +192,7 @@ for (t in unique(dfsets$topologies)) {
   dfsubs <- subset(dfsets[dfsets$topologies == t,])
   
   for (r in 1:nrow(dfsubs)) {
-    mhtemp <- paste(params$outdir, "/", dfsubs$simulation[r], "/masthmm/", dfsubs$set[r], "/", sep="")
+    mhtemp <- paste(params$outdir, "/", dfsubs$simulation[r], "/", tolower(params$analysis_type), "/", dfsubs$set[r], "/", sep="")
     
     for (m in model_list) {
       fn_hmmsum <- paste(mhtemp, m, "/", dfsubs$simulation[r], ".hmmsum", sep="")

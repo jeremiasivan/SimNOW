@@ -1,5 +1,5 @@
 ---
-title: "MAST-HMM"
+title: "MAST-HMM and HMMSTER"
 params:
   # general
   rmddir: ""
@@ -11,6 +11,7 @@ params:
   iqtree2dir: ""
   
   # masthmm
+  analysis_type: "MASTHMM"
   mast_model: ""
   mast_tops: 0.95
 ---
@@ -39,10 +40,17 @@ if (!file.exists(fn_log)) {
   write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
 }
 
+MASTHMM <- "MASTHMM"
+HMMSTER <- "HMMSTER"
+if (!params$analysis_type %in% c(MASTHMM,HMMSTER)) {
+  log4r::error(fn_logger, "Error: invalid type of analysis. Exited.")
+  knitr::knit_exit()
+}
+
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-## MAST-HMM Analysis
+## Analysis
 ```{r child = paste(params$rmddir,"/mh_run.Rmd",sep=""), include=FALSE}
 ```
 
