@@ -84,6 +84,8 @@ for (i in window_sizes) {
         output[topology_idx,window_idx] = output[topology_idx,window_idx] + sites_sum$bp[k]
       }
     }
+    
+    rm(sites, sites_sum)
   }
   
   # visualization
@@ -119,7 +121,11 @@ for (i in window_sizes) {
   write.table(output, file=fn_cmp, sep = "\t", quote = F, row.names = F)
   log4r::info(fn_logger, paste0("Files created: ", i, "bp window comparison files (",
                                params$prefix, ".cmp and ", params$prefix, ".cmp.tiff).", sep=""))
+  
+  rm(smfile, dat, empty_matrix, output, sub_output)
 }
+
+rm(msfile)
 ```
 
 ```{r sumtable, include=FALSE}
@@ -147,6 +153,8 @@ for (i in window_sizes) {
   cbic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_contiguous), intern = T))
   
   t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,caic,caicc,cbic))
+  
+  rm(cmp, acc)
 }
 
 colnames(t_accuracy) <- t_accuracy[1,]
@@ -185,4 +193,6 @@ for (c in 3:ncol(t_accuracy)) {
 }
 
 log4r::info(fn_logger, paste0("Files created/modified: NOW accuracy vs NOW IC correlation plots.", sep=""))
+
+rm(t_accuracy)
 ```
