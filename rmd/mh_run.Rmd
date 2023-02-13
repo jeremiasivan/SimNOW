@@ -1,16 +1,25 @@
 ---
-title: "MAST-HMM Analysis"
+title: "MAST-HMM and HMMSTER Analysis"
 ---
 
 ```{r mhsetup, include=FALSE}
-write.table(c("",
-              "####################################",
-              "####          MAST-HMM          ####",
-              "####################################"),
-            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+if (params$analysis_type == MASTHMM) {
+  write.table(c("",
+                "####################################",
+                "####          MAST-HMM          ####",
+                "####################################"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
-mast_outdir <- paste(getwd(), "/masthmm/", sep="")
-if (!file.exists(mast_outdir)) {
+} else if (params$analysis_type == HMMSTER) {
+  write.table(c("",
+                "####################################",
+                "####           HMMSTER          ####",
+                "####################################"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+}
+
+mast_outdir <- paste(getwd(), "/", tolower(params$analysis_type), "/", sep="")
+if (!dir.exists(mast_outdir)) {
   dir.create(mast_outdir, recursive = T)
 }
 
@@ -31,7 +40,7 @@ if (file.exists(fn_topset) && params$redo == FALSE){
   colnames(uq_tops) <- uq_tops[1,]
   uq_tops <- uq_tops[-1,]
   
-  log4r::info(fn_logger, "File already exists: MAST-HMM topology sets. Skipped.")
+  log4r::info(fn_logger, paste0("File already exists: ", params$analysis_type, " topology sets. Skipped."))
   
 } else {
   list_tops <- c("wsize","topologies")
@@ -66,19 +75,18 @@ if (file.exists(fn_topset) && params$redo == FALSE){
     summarise(wsizes = paste(wsize, collapse = "_"))
   
   write.table(uq_tops, file=fn_topset, quote=F, row.names=F, col.names=T)
-  log4r::info(fn_logger, paste("File created: MAST-HMM topology sets (",
-                               params$prefix, ".topset).", sep=""))
+  log4r::info(fn_logger, paste0("File created: ", params$analysis_type, " topology sets (", params$prefix, ".topset)."))
 }
 ```
 
-```{r masthmm}
-log4r::info(fn_logger, paste(nrow(uq_tops), "topology sets found."))
+```{r mh}
+log4r::info(fn_logger, paste0(nrow(uq_tops), " topology sets found."))
 
 # iterate through topology sets
 for (k in 1:nrow(uq_tops)) {
   topls <- strsplit(uq_tops$topologies[k],split = "&")[[1]]
   if (length(topls) <= 1) {
-    log4r::info(fn_logger, paste(gsub("_",", ",uq_tops$wsizes[k]), "bp [set ", k, "] has one or less topology. Skipped.", sep=""))
+    log4r::info(fn_logger, paste0(gsub("_",", ",uq_tops$wsizes[k]), "bp [set ", k, "] has one or less topology. Skipped."))
     next
   }
   
@@ -101,14 +109,32 @@ for (k in 1:nrow(uq_tops)) {
   
   prefix <- paste(outdir, params$prefix, sep="")
   if (file.exists(paste(prefix,".hmm",sep="")) && params$redo == FALSE) {
-    log4r::info(fn_logger, paste("File exists: ", gsub("_",", ",uq_tops$wsizes[k]), "bp HMM file [set ", k, "]. Skipped.", sep=""))
+    log4r::info(fn_logger, paste0("File exists: ", gsub("_",", ",uq_tops$wsizes[k]), "bp HMM file [set ", k, "]. Skipped."))
     next
   }
   
-  # run MAST-HMM
-  log4r::info(fn_logger, paste("Run MAST-HMM [set ", k, "].", sep=""))
-  mast_cl <- paste(params$iqtree2dir,"-s",fn_alisim,"-m",mast_model,"-blmin 0.0001 -te",fn_mast_tops,"-pre",prefix,"-hmm -wslm -wspm -alninfo -redo")
+  # run MAST-HMM or HMMSTER
+  mast_cl <- ""
+  log4r::info(fn_logger, paste0("Run ", params$analysis_type, " [set ", k, "]."))
+  if (params$analysis_type == MASTHMM) {
+    mast_cl <- paste(params$iqtree2dir,
+                     "-s",fn_alisim,
+                     "-m",mast_model,
+                     "-blmin 0.0001",
+                     "-te",fn_mast_tops,
+                     "-pre",prefix,
+                     "-hmm -redo")
+    
+  } else if (params$analysis_type == HMMSTER) {
+    mast_cl <- paste(params$iqtree2dir,
+                     "-s",fn_alisim,
+                     "-m",mast_model,
+                     "-blmin 0.0001",
+                     "-te",fn_mast_tops,
+                     "-pre",prefix,
+                     "-hmmster -redo")
+  }
+  
   system(mast_cl)
-  log4r::info(fn_logger, paste("File created: HMM file [set ", k, "].", sep=""))
 }
 ```

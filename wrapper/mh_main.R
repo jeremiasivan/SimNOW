@@ -11,7 +11,8 @@ redo <-  TRUE
 
 # mast and hmm
 iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
-mast_model <- c("JC+FO+T", "JC+T")
+analysis_type: "HMMSTER"
+mast_model <- c("JC+T")
 mast_tops <- 0.95
 
 #################################
@@ -23,11 +24,11 @@ dirname <- grepl(paste("^",prefix,"_",sep=""), alldirs)
 reports <- list()
 for (i in alldirs[dirname]) {
   for (j in mast_model) {
-    out <- paste(outdir,"/",i,"/",gsub("[[:punct:]]","",j),".masthmm.html", sep="")
+    out <- paste(outdir,"/",i,"/",gsub("[[:punct:]]","",j),".",tolower(analysis_type),".html", sep="")
     templist <- list(out=out, params=list(prefix=i,
                                           rmddir=rmddir, outdir=outdir, redo=redo,
                                           iqtree2dir=iqtree2dir,
-                                          mast_model=j, mast_tops=mast_tops
+                                          analysis_type=analysis_type, mast_model=j, mast_tops=mast_tops
                                           ))
   
     reports <- append(reports, list(templist))
@@ -52,10 +53,10 @@ doParallel::registerDoParallel(cl)
 
 foreach(r=reports, .errorhandling = 'pass') %dopar% make_report(r)
 
+parallel::stopCluster(cl)
+
 # summary
 rmarkdown::render(input=paste(rmddir,"/summary_mh.Rmd", sep=""),
                   output_file=paste(outdir, "/", prefix, ".mh.html", sep=""),
-                  params=list(prefix=prefix, outdir=outdir, redo=redo),
+                  params=list(prefix=prefix, outdir=outdir, redo=redo, analysis_type=analysis_type),
                   quiet=TRUE)
-
-parallel::stopCluster(cl)

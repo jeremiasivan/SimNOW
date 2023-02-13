@@ -1,15 +1,24 @@
 ---
-title: "Summary of MAST-HMM Analysis vs Truth"
+title: "Summary of MAST-HMM and HMMSTER Analysis vs Truth"
 ---
 
 ```{r sumsetup, include=FALSE}
-write.table(c("",
-              "####################################",
-              "####      MAST-HMM vs Truth     ####",
-              "####################################"),
-            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+if (params$analysis_type == MASTHMM) {
+  write.table(c("",
+                "####################################",
+                "####      MAST-HMM vs Truth     ####",
+                "####################################"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+  
+} else if (params$analysis_type == HMMSTER) {
+  write.table(c("",
+                "####################################",
+                "####      HMMSTER vs Truth      ####",
+                "####################################"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+}
 
-mast_outdir <- paste(getwd(), "/masthmm/", sep="")
+mast_outdir <- paste(getwd(), "/", tolower(params$analysis_type), "/", sep="")
 mast_model <- paste("'", params$mast_model, "'", sep="")
 mast_dirs <- list.dirs(mast_outdir, full.names = F, recursive = F)
 
@@ -31,23 +40,18 @@ for (i in mast_dirs) {
   temp_outdir <- paste(mast_outdir,i,"/",sep="")
   outdir <- paste(temp_outdir, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/", sep="")
  
-  fn_mastsum <- paste(outdir, params$prefix, ".mastsum", sep="")
+  fn_hmmtw <- paste(outdir, params$prefix, ".hmmtw", sep="")
   fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
   fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
-  if (all(file.exists(fn_mastsum, fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
-    log4r::info(fn_logger, paste("Files exist: MAST-HMM summary files for set ", i, ". Skipped.", sep=""))
+  if (all(file.exists(fn_hmmtw, fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
+    log4r::info(fn_logger, paste0("Files exist: ",params$analysis_type," summary files for set ", i, ". Skipped."))
     next
   }
-  
-  # read MAST file
-  fn_mast <- paste(outdir, params$prefix, ".iqtree", sep="")
-  mast_tw <- gsub("^.*: ", "", system(paste("grep '^Tree weights'",fn_mast), intern = T))
-  ls_mast_tw <- strsplit(mast_tw, ", ")[[1]]
   
   # read HMM file
   fn_hmm <- paste(outdir, params$prefix, ".hmm", sep="")
   if (!file.exists(fn_hmm)) {
-    log4r::warn(fn_logger, paste("Warn: HMM file for set ", i, " is not found. Skipped.", sep=""))
+    log4r::warn(fn_logger, paste0("Warn: HMM file for set ", i, " is not found. Skipped."))
     next
   }
   
@@ -68,19 +72,43 @@ for (i in mast_dirs) {
     }
   }
   
-  # tree weights comparison with ms topology
+  # ms topology weights
   ms_tw <- msfile %>%
     group_by(topology) %>%
     summarise(topology = topology, ms=as.numeric(length)/sum(as.numeric(msfile$length)))
   
-  mtw <- c()
-  for (j in 1:nrow(ms_tw)) {
-    top_idx <- match(ms_tw$topology[j], tmfile)
-    mtw <- c(mtw, round(as.numeric(ls_mast_tw[top_idx]), 4))
-  }
+  # hmm topology weights
+  htw <- c()
+  hmm_tw <- gsub("^.*: ", "", system(paste("grep '^Ratio of sites for each category'",fn_hmm), intern = T))
+  ls_hmm_tw <- strsplit(hmm_tw, " ")[[1]]
   
-  ms_tw <- cbind(ms_tw, mast=mtw)
-  write.table(ms_tw, file=fn_mastsum, quote = F, row.names = F)
+  # MAST-HMM or HMMSTER topology weights
+  if (params$analysis_type == MASTHMM) {
+    fn_mast <- paste(outdir, params$prefix, ".iqtree", sep="")
+    mast_tw <- gsub("^.*: ", "", system(paste("grep '^Tree weights'",fn_mast), intern = T))
+    ls_mast_tw <- strsplit(mast_tw, ", ")[[1]]
+    
+    # MAST topology weights comparison with ms topology
+    mtw <- c()
+    
+    for (j in 1:nrow(ms_tw)) {
+      top_idx <- match(ms_tw$topology[j], tmfile)
+      mtw <- c(mtw, round(as.numeric(ls_mast_tw[top_idx]), 4))
+      htw <- c(htw, round(as.numeric(ls_hmm_tw[top_idx]), 4))
+    }
+    
+    ms_tw <- cbind(ms_tw, mast=mtw, hmm=htw)
+    write.table(ms_tw, file=fn_hmmtw, quote = F, row.names = F)
+  
+  } else if (params$analysis_type == HMMSTER) {
+    for (j in 1:nrow(ms_tw)) {
+      top_idx <- match(ms_tw$topology[j], tmfile)
+      htw <- c(htw, round(as.numeric(ls_hmm_tw[top_idx]), 4))
+    }
+    
+    ms_tw <- cbind(ms_tw, hmm=htw)
+    write.table(ms_tw, file=fn_hmmtw, quote = F, row.names = F)
+  }
   
   # extract per-site topology
   trees <- data.frame(do.call('rbind', strsplit(as.character(hmmtrees),'\\[|,|\\]')))
@@ -134,9 +162,9 @@ for (i in mast_dirs) {
   print(ggplot(sub_output, aes(fill=sites, y=as.numeric(frequency), x=topology)) + 
           geom_bar(position="dodge", stat="identity") +
           aes(x = fct_inorder(topology)) +
-          ggtitle("Distribution of Sites from MAST-HMM in Simulated Dataset") + 
+          ggtitle(paste("Distribution of Sites from", params$analysis_type, "in Simulated Dataset")) + 
           xlab("True topology from simulated data") +
-          ylab("Number of sites from MAST-HMM") +
+          ylab(paste("Number of sites from", params$analysis_type)) +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
             axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
@@ -150,8 +178,8 @@ for (i in mast_dirs) {
   dev.off()
   
   write.table(output, file=fn_hmmsum, quote = F, row.names = F)
-  log4r::info(fn_logger, paste("Files created: set ", i, "MAST-HMM summary files (",
-                               params$prefix, ".mastsum, ", params$prefix, ".hmmsum and ", params$prefix, ".hmmsum.tiff).", sep=""))
+  log4r::info(fn_logger, paste0("Files created: set ", i, " ", params$analysis_type, " summary files (",
+                               params$prefix, ".hmmtw, ", params$prefix, ".hmmsum and ", params$prefix, ".hmmsum.tiff)."))
 }
 ```
 
@@ -167,7 +195,7 @@ for (i in mast_dirs) {
   
   fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
   if (!file.exists(fn_hmmsum)) {
-    log4r::warn(fn_logger, paste("Warn: HMM summary file for set ", i, " is not found. Skipped.", sep=""))
+    log4r::warn(fn_logger, paste0("Warn: HMM summary file for set ", i, " is not found. Skipped."))
     next
   }
   
@@ -198,7 +226,7 @@ colnames(t_accuracy) <- t_accuracy[1,]
 t_accuracy <- t_accuracy[-1,]
 
 write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
-log4r::info(fn_logger, paste("File created/modified: summary table of MAST-HMM and ms (", params$prefix, ".mh.sum).", sep=""))
+log4r::info(fn_logger, paste0("File created/modified: summary table of ", params$analysis_type, " and ms (", params$prefix, ".mh.sum)."))
 
 # correlation plot
 t_accuracy <- as.data.frame(t_accuracy)
@@ -213,7 +241,7 @@ for (c in 3:ncol(t_accuracy)) {
   print(ggplot(t_accuracy, aes(y=as.numeric(accuracy), x=as.numeric(t_accuracy[,c]), ymin=0, ymax=100)) + 
           geom_jitter(shape=16, width = 0.2, height = 0.2, size=5) +
           scale_colour_manual(values = pcolors[iterator]) +
-          ggtitle("Correlation of MAST-HMM Information Criterion and NOW Accuracy") + 
+          ggtitle(paste("Correlation of", params$analysis_type, "Information Criterion and NOW Accuracy")) + 
           xlab("Information criterion score") +
           ylab("Accuracy (%)") +
           theme(
@@ -229,5 +257,5 @@ for (c in 3:ncol(t_accuracy)) {
   dev.off()
 }
 
-log4r::info(fn_logger, paste0("Files created/modified: NOW accuracy vs MASTHMM IC correlation plots.", sep=""))
+log4r::info(fn_logger, paste0("Files created/modified: NOW accuracy vs ", params$analysis_type, " IC correlation plots."))
 ```
