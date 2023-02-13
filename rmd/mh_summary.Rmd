@@ -145,6 +145,8 @@ for (i in mast_dirs) {
         output[topology_idx,window_idx] = output[topology_idx,window_idx] + sites_sum$n[j]
       }
     }
+    
+    rm(sites, sites_sum)
   }
   
   # visualization
@@ -180,7 +182,11 @@ for (i in mast_dirs) {
   write.table(output, file=fn_hmmsum, quote = F, row.names = F)
   log4r::info(fn_logger, paste0("Files created: set ", i, " ", params$analysis_type, " summary files (",
                                params$prefix, ".hmmtw, ", params$prefix, ".hmmsum and ", params$prefix, ".hmmsum.tiff)."))
+  
+  rm(hmmfile, hmmtrees, tmfile, ms_tw, trees, dat, empty_matrix, output, sub_output)
 }
+
+rm(msfile)
 ```
 
 ```{r sumtable, include=FALSE}
@@ -220,6 +226,8 @@ for (i in mast_dirs) {
   hmm <- gsub("^.* :", "", system(paste("grep '^BEST HMM SCORE'",fn_hmm), intern = T))
   
   t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,hmm))
+  
+  rm(hmmsum)
 }
 
 colnames(t_accuracy) <- t_accuracy[1,]
@@ -258,4 +266,6 @@ for (c in 3:ncol(t_accuracy)) {
 }
 
 log4r::info(fn_logger, paste0("Files created/modified: NOW accuracy vs ", params$analysis_type, " IC correlation plots."))
+
+rm(t_accuracy)
 ```

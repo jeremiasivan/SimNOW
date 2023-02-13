@@ -63,6 +63,8 @@ if (file.exists(fn_topset) && params$redo == FALSE){
     }
     
     list_tops <- rbind(list_tops, c(i,paste(sort(tmast),collapse="&")))
+    
+    rm(topsum)
   }
   
   list_tops <- as.data.frame(list_tops)
@@ -76,6 +78,8 @@ if (file.exists(fn_topset) && params$redo == FALSE){
   
   write.table(uq_tops, file=fn_topset, quote=F, row.names=F, col.names=T)
   log4r::info(fn_logger, paste0("File created: ", params$analysis_type, " topology sets (", params$prefix, ".topset)."))
+  
+  rm(list_tops)
 }
 ```
 
@@ -137,4 +141,6 @@ for (k in 1:nrow(uq_tops)) {
   
   system(mast_cl)
 }
+
+rm(uq_tops)
 ```
