@@ -20,9 +20,9 @@ if (length(params$window_size) == 0) {
   knitr::knit_exit()
 }
 
-# create doParallel cluster
-nwcl <- parallel::makeCluster(params$thread)
-doParallel::registerDoParallel(nwcl)
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+registerDoSNOW(nwcl)
 
 # input/output filenames
 fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
@@ -359,5 +359,5 @@ foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
 ```
 
 ```{r stopcl, include=FALSE}
-parallel::stopCluster(nwcl)
+stopCluster(nwcl)
 ```
