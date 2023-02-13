@@ -3,12 +3,12 @@ library(doParallel)
 #################################
 ms_r <- c(0,3,30,300)
 nreps <- 10
-prefix <- "hb"
+prefix <- "hl"
 nthread <- 4
 
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
-outdir <- "~/Documents/simulation/bt"
+outdir <- "~/Documents/simulation/hl"
 thread <- 4
 redo <- FALSE
   

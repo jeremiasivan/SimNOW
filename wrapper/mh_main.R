@@ -1,18 +1,18 @@
 library(doParallel)
 
 #################################
-prefix <- "bt"
+prefix <- "hl"
 nthread <- 4
 
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
-outdir <- "~/Documents/simulation/bt"
+outdir <- "~/Documents/simulation/hl"
 redo <-  TRUE
 
 # mast and hmm
 iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
-analysis_type: "HMMSTER"
-mast_model <- c("JC+T")
+analysis_type <- "HMMSTER"
+mast_model <- c("JC+T","JC+G+T")
 mast_tops <- 0.95
 
 #################################
