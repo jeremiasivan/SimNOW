@@ -5,7 +5,7 @@ params:
   rmddir: "~/Documents/SimNOW/rmd"
   prefix: "db"
   outdir: "~/Documents/simulation/debug"
-  thread: 4
+  thread: 1
   redo: TRUE
   
   # sequence simulation
@@ -26,7 +26,7 @@ params:
 ```{r setup, include=FALSE}
 library(ape)
 library(data.table)
-library(doParallel)
+library(doSNOW)
 library(dplyr)
 library(forcats)
 library(ggplot2)
