@@ -56,9 +56,9 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$re
   
 } else {
   ms <- read.delim(fn_msfile)
-  mstrees <- subset(ms, grepl("^\\[", ms[,1]))
   
   # extract ms trees
+  mstrees <- subset(ms, grepl("^\\[", ms[,1]))
   if (nrow(mstrees) == 0) {
     onlytree <- subset(ms, grepl("^\\(.+\\);$", ms[,1]))
     mstrees <- data.frame(paste("[",params$ms_l,"]",onlytree,sep=""))
@@ -127,6 +127,8 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$re
   write.table(data.frame(unique(t_summary$topology)), file=fn_uqtops, sep="\t", quote=F, row.names=F, col.names=F)
   log4r::info(fn_logger, paste0(nt, " topology partition(s) found. Files created: ", 
                                params$prefix, ".mstops and ", params$prefix, ".uqtops", sep=""))
+  
+  rm(ms, mstrees, trees, summary, t_summary, start, stop, topology)
 }
 ```
 
@@ -151,6 +153,8 @@ if (file.exists(fn_nexus) && !params$redo) {
   close(fileConn)
   
   log4r::info(fn_logger, paste0("File created: ", params$prefix, ".nex.", sep=""))
+  
+  rm(mstrees, res)
 }
 ```
 

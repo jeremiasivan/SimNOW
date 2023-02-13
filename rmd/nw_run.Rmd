@@ -70,10 +70,14 @@ for (w in params$window_size) {
                 nbchar = 100)
       
     start <- start + w
+    
+    rm(subfasta, df)
   }
   
   log4r::info(fn_logger, paste0("File created: ", w, "bp window alignment.", sep=""))
 }
+
+rm(s, lens)
 ```
 
 ```{r nowtree, include=FALSE}
@@ -260,9 +264,12 @@ if (length(ls_seqlen) > 0) {
     log4r::info(fn_logger, paste0("Files created: ", ws, "bp summary files", sep=""))
   }
 }
+
+rm(t_hash, ls_seqlen)
 ```
 
 ```{r nowctalignment, include=FALSE}
+s <- read.fasta(fn_alisim, whole.header = T)
 sdf <- do.call(rbind,s)
 
 # iterate through window sizes
@@ -301,12 +308,18 @@ for (i in window_sizes) {
     write.fasta(sequences=subfasta, names=names(subfasta), file.out=paste(temp_outdir,"G",count,".fa",sep=""), nbchar = 100)
     newick_map <- rbind(newick_map, c(t, paste("G",count,sep="")))
     count <- count + 1
+    
+    rm(sub_sw, align_idx, alignment, subfasta)
   }
     
   write.table(newick_map, fn_map, quote = F, row.names = F, col.names = F)
   log4r::info(fn_logger, paste0("Files created: ", i, "bp contiguous window alignment files. File naming convention is available at ",
                                params$prefix, ".map.", sep=""))
+  
+  rm(smfile, unique_topology, newick_map)
 }
+
+rm(s, sdf)
 ```
 
 ```{r nowcttree, include=FALSE}
