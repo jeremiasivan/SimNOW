@@ -9,11 +9,12 @@ write.table(c("",
               "####################################"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
-window_outdir <- paste(getwd(), "/windows/", sep="")
+window_outdir <- paste0(getwd(), "/windows/")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
-fn_mstops <- paste(getwd(), "/simulation/", params$prefix, ".mstops", sep="")
-fn_summary <- paste(window_outdir, params$prefix, ".sum", sep="")
+# input/output files
+fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
+fn_summary <- paste0(window_outdir, params$prefix, ".sum")
 ```
 
 ```{r sumwindow, include=FALSE}
@@ -23,17 +24,17 @@ msfile <- msfile[-1,]
 
 # iterate through window sizes
 for (i in window_sizes) {
-  temp_outdir <- paste(window_outdir,i,"/summary/",sep="")
+  temp_outdir <- paste0(window_outdir,i,"/summary/")
   
-  fn_cmp <- paste(temp_outdir, params$prefix, ".cmp", sep="")
-  fn_figure <- paste(temp_outdir, params$prefix, ".cmp.tiff", sep="")
+  fn_cmp <- paste0(temp_outdir, params$prefix, ".cmp")
+  fn_figure <- paste0(temp_outdir, params$prefix, ".cmp.tiff")
   if (all(file.exists(fn_cmp, fn_figure)) && !params$redo) {
-    log4r::info(fn_logger, paste0("File already exists: ", i, "bp window comparison file. Skipped.", sep=""))
+    log4r::info(fn_logger, paste0("File found: ", i, "bp window comparison file."))
     next
   }
   
   # read annotation summary file
-  smfile <- read.table(paste(temp_outdir, params$prefix, ".atsum", sep=""))
+  smfile <- read.table(paste0(temp_outdir, params$prefix, ".atsum"))
   colnames(smfile) <- smfile[1,]
   smfile <- smfile[-1,]
   
@@ -68,7 +69,7 @@ for (i in window_sizes) {
     topology_idx <- match(msfile$topology[j], output$topology)
     
     if (all(is.na(sites))) {
-      log4r::warn(fn_logger, paste0("Total length of ", i, "bp window does not match with msfile.", sep=""))
+      log4r::warn(fn_logger, paste0("Total length of ", i, "bp window does not match with msfile."))
       break
     }
     
@@ -119,8 +120,8 @@ for (i in window_sizes) {
   dev.off()
   
   write.table(output, file=fn_cmp, sep = "\t", quote = F, row.names = F)
-  log4r::info(fn_logger, paste0("Files created: ", i, "bp window comparison files (",
-                               params$prefix, ".cmp and ", params$prefix, ".cmp.tiff).", sep=""))
+  log4r::info(fn_logger, paste0("File created: ", i, "bp window comparison files (",
+                               params$prefix, ".cmp and ", params$prefix, ".cmp.tiff)."))
   
   rm(smfile, dat, empty_matrix, output, sub_output)
 }
@@ -133,9 +134,9 @@ t_accuracy <- c("window_size","accuracy","aic","aicc","bic","aic_ct","aicc_ct","
 
 # iterate through window sizes
 for (i in window_sizes) {
-  fn_cmp <- paste(window_outdir,i,"/summary/",params$prefix,".cmp", sep="")
-  fn_iqtree <- paste(window_outdir,i,"/trees/",params$prefix,".iqtree", sep="")
-  fn_contiguous <- paste(window_outdir,i,"/contiguous/trees/",params$prefix,".iqtree", sep="")
+  fn_cmp <- paste0(window_outdir,i,"/summary/",params$prefix,".cmp")
+  fn_iqtree <- paste0(window_outdir,i,"/trees/",params$prefix,".iqtree")
+  fn_contiguous <- paste0(window_outdir,i,"/contiguous/trees/",params$prefix,".iqtree")
   
   # read and extract accuracy of each window
   cmp <- read.table(fn_cmp)
@@ -161,7 +162,7 @@ colnames(t_accuracy) <- t_accuracy[1,]
 t_accuracy <- t_accuracy[-1,]
 
 write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
-log4r::info(fn_logger, paste0("File created/modified: summary table of NOW and ms (", params$prefix, ".sum).", sep=""))
+log4r::info(fn_logger, paste0("File created/modified: summary table of NOW and ms (", params$prefix, ".sum)."))
 
 # correlation plot
 t_accuracy <- as.data.frame(t_accuracy)
@@ -169,7 +170,7 @@ pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
 iterator <- 0
 
 for (c in 3:ncol(t_accuracy)) {
-  fn_sumfig <- paste(window_outdir, params$prefix, ".", colnames(t_accuracy)[c],".tiff", sep="")
+  fn_sumfig <- paste0(window_outdir, params$prefix, ".", colnames(t_accuracy)[c],".tiff")
   iterator <- iterator + 1
   
   tiff(filename=fn_sumfig, units="px", width=2880, height=1800)
@@ -192,7 +193,7 @@ for (c in 3:ncol(t_accuracy)) {
   dev.off()
 }
 
-log4r::info(fn_logger, paste0("Files created/modified: NOW accuracy vs NOW IC correlation plots.", sep=""))
+log4r::info(fn_logger, paste0("File created/modified: NOW accuracy vs NOW IC correlation plots."))
 
 rm(t_accuracy)
 ```

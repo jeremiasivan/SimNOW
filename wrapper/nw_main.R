@@ -1,4 +1,4 @@
-library(doParallel)
+library(doSNOW)
 
 #################################
 ms_r <- c(0,3,30,300)
@@ -8,8 +8,8 @@ nthread <- 4
 
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
-outdir <- "~/Documents/simulation/hl"
-thread <- 4
+outdir <- "~/Documents/simulation/debug/hl"
+thread <- 2
 redo <- FALSE
   
 # sequence simulation
@@ -68,17 +68,18 @@ make_report <- function(r) {
   unlink(tf)
 }
 
-cl <- parallel::makeCluster(floor(nthread/thread))
-doParallel::registerDoParallel(cl)
+# run parallelized simulations
+cl <- makeCluster(floor(nthread/thread))
+registerDoSNOW(cl)
 
 foreach(r=reports, .errorhandling = 'pass') %dopar% make_report(r)
 
-parallel::stopCluster(cl)
+stopCluster(cl)
 
 # summary
 rmarkdown::render(input=paste(rmddir,"/summary_nw.Rmd", sep=""),
                   output_file=paste(outdir, "/", prefix, ".html", sep=""),
-                  params=list(prefix=prefix, outdir=outdir, redo=redo),
+                  params=list(prefix=prefix, outdir=outdir),
                   quiet=TRUE)
 
 #################################
