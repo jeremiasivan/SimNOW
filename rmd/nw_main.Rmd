@@ -8,12 +8,13 @@ params:
   thread: 1
   redo: TRUE
   
-  # sequence simulation
+  # ms
   msdir: "~/Documents/msdir/ms"
   ms_params: ""
   ms_r: 0
   ms_l: 1000000
   
+  # AliSim
   iqtree2dir: "~/Documents/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
   alisim_model: "JC"
   alisim_scale: 0.001
@@ -35,16 +36,16 @@ library(log4r)
 library(seqinr)
 
 # create outdir
-currentdir <- paste(params$outdir, "/", params$prefix, sep="")
+currentdir <- paste0(params$outdir, "/", params$prefix)
 if (!dir.exists(currentdir)) {
   dir.create(currentdir, recursive = T)
 }
 
 # create log file
-fn_log <- paste(params$outdir, "/", params$prefix, "/", params$prefix, ".log", sep="")
+fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".log")
 log_appender <- file_appender(fn_log, append = TRUE, layout = default_log_layout())
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
-if (params$redo == TRUE) {
+if (params$redo) {
   unlink(fn_log)
 }
 

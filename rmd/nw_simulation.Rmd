@@ -10,12 +10,12 @@ write.table(c("",
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 # create simulation dir
-simulation_outdir <- paste(getwd(), "/simulation", sep="")
+simulation_outdir <- paste0(getwd(), "/simulation")
 if (!dir.exists(simulation_outdir)) {
   dir.create(simulation_outdir, recursive = T)
 }
 
-# input/output filenames
+# input/output files
 fn_msfile <- paste0(simulation_outdir, "/", params$prefix, ".ms")
 fn_mstrees <- paste0(simulation_outdir, "/", params$prefix, ".mstrees")
 fn_mttrees <- paste0(simulation_outdir, "/", params$prefix, ".multitree")
@@ -65,7 +65,7 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$re
   mstrees <- subset(ms, grepl("^\\[", ms[,1]))
   if (nrow(mstrees) == 0) {
     onlytree <- subset(ms, grepl("^\\(.+\\);$", ms[,1]))
-    mstrees <- data.frame(paste("[",params$ms_l,"]",onlytree,sep=""))
+    mstrees <- data.frame(paste0("[",params$ms_l,"]",onlytree))
   }
   
   # convert ms trees into dataframe
@@ -151,17 +151,16 @@ if (file.exists(fn_nexus) && !params$redo) {
   
   # generate nexus file
   res <- lapply(1:nrow(mstrees), function(i) {
-    paste("    charset gene_",i," = DNA, ",mstrees$start[i],"-",mstrees$stop[i],";",sep="")
+    paste0("    charset gene_",i," = DNA, ",mstrees$start[i],"-",mstrees$stop[i],";")
   })
   
   nexus_lines <- c("#nexus", "begin sets;", unlist(res), "end;")
   
-  fileConn<-file(fn_nexus)
+  fileConn <- file(fn_nexus)
   writeLines(nexus_lines, fileConn)
   close(fileConn)
   
   log4r::info(fn_logger, paste0("File created: ", params$prefix, ".nex."))
-  
   rm(mstrees, res)
 }
 ```
@@ -178,7 +177,7 @@ if (file.exists(paste0(fn_alisim, ".fa")) && !params$redo) {
                  "-t",fn_mttrees,
                  "-m",params$alisim_model,
                  "-nt",params$thread,
-                 "-af fasta -redo", sep=" "))
+                 "-af fasta -redo"))
   } else {
     system(paste(params$iqtree2dir,
                  "--alisim",fn_alisim,
@@ -187,7 +186,7 @@ if (file.exists(paste0(fn_alisim, ".fa")) && !params$redo) {
                  "--branch-scale",params$alisim_scale,
                  "-m",params$alisim_model,
                  "-nt",params$thread,
-                 "-af fasta -redo", sep=" "))
+                 "-af fasta -redo"))
   }
   
   log4r::info(fn_logger, paste0("File created: ", params$prefix, ".fa."))

@@ -10,7 +10,7 @@ write.table(c("",
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 # create windows dir
-window_outdir <- paste(getwd(), "/windows/", sep="")
+window_outdir <- paste0(getwd(), "/windows/")
 if (!dir.exists(window_outdir)) {
   dir.create(window_outdir, recursive = T)
 }
@@ -25,8 +25,8 @@ nwcl <- makeCluster(params$thread)
 registerDoSNOW(nwcl)
 
 # input/output filenames
-fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
-fn_uqtops <- paste(getwd(), "/simulation/", params$prefix, ".uqtops", sep="")
+fn_alisim <- paste0(getwd(), "/simulation/", params$prefix, ".fa")
+fn_uqtops <- paste0(getwd(), "/simulation/", params$prefix, ".uqtops")
 ```
 
 ```{r nowalignment, include=FALSE}
@@ -47,7 +47,7 @@ for (w in params$window_size) {
     next
   }
   
-  temp_outdir <- paste(window_outdir,w,"/alignment/",sep="")
+  temp_outdir <- paste0(window_outdir,w,"/alignment/")
   if (!dir.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
   }
@@ -71,11 +71,10 @@ for (w in params$window_size) {
       
     subfasta <- setNames(split(df, seq(nrow(df))), rownames(df))
     write.fasta(sequences=subfasta, names=names(subfasta),
-                file.out=paste(temp_outdir,"window_",formatC(i,width=wi,format="d",flag="0"),".fa",sep=""),
+                file.out=paste0(temp_outdir,"window_",formatC(i,width=wi,format="d",flag="0"),".fa"),
                 nbchar = 100)
       
     start <- start + w
-    
     rm(subfasta, df)
   }
   
@@ -137,7 +136,7 @@ t_count <- 1
 topology_file <- file(description=fn_uqtops, open="r", blocking = TRUE)
 while (length(tl <- readLines(topology_file, n=1, warn=F))) {
   tl <- write.tree(unroot(read.tree(text=tl)))
-  t_hash[tl] = paste("T", t_count, sep="")
+  t_hash[tl] = paste0("T", t_count)
   t_count <- t_count + 1
 }
 close(topology_file)
@@ -149,16 +148,16 @@ ls_seqlen <- foreach (i = window_sizes, .combine=c) %dopar% {
   library(dplyr)
   library(ggplot2)
   
-  temp_outdir <- paste(window_outdir,i,"/summary/",sep="")
+  temp_outdir <- paste0(window_outdir,i,"/summary/")
   if (!dir.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
   }
   
-  fn_atsum <- paste(temp_outdir, params$prefix, ".atsum", sep="")
-  fn_atsumf <- paste(temp_outdir, params$prefix, ".atsum.tiff", sep="")
-  fn_cnsum <- paste(temp_outdir, params$prefix, ".cnsum", sep="")
-  fn_cnsumf <- paste(temp_outdir, params$prefix, ".cnsum.tiff", sep="")
-  fn_tops <- paste(temp_outdir, params$prefix, ".topsum", sep="")
+  fn_atsum <- paste0(temp_outdir, params$prefix, ".atsum")
+  fn_atsumf <- paste0(temp_outdir, params$prefix, ".atsum.tiff")
+  fn_cnsum <- paste0(temp_outdir, params$prefix, ".cnsum")
+  fn_cnsumf <- paste0(temp_outdir, params$prefix, ".cnsum.tiff")
+  fn_tops <- paste0(temp_outdir, params$prefix, ".topsum")
   if (all(file.exists(fn_atsum, fn_atsumf, fn_cnsum, fn_cnsumf, fn_tops)) && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", i, "bp window summary files."))
     return()
@@ -251,12 +250,12 @@ if (length(ls_seqlen) > 0) {
   for (i in 1:length(ls_seqlen)) {
     ws <- ls_seqlen[[i]][[1]]
     
-    temp_outdir <- paste(window_outdir,ws,"/summary/",sep="")
-    fn_atsum <- paste(temp_outdir, params$prefix, ".atsum", sep="")
-    fn_atsumf <- paste(temp_outdir, params$prefix, ".atsum.tiff", sep="")
-    fn_cnsum <- paste(temp_outdir, params$prefix, ".cnsum", sep="")
-    fn_cnsumf <- paste(temp_outdir, params$prefix, ".cnsum.tiff", sep="")
-    fn_tops <- paste(temp_outdir, params$prefix, ".topsum", sep="")
+    temp_outdir <- paste0(window_outdir,ws,"/summary/")
+    fn_atsum <- paste0(temp_outdir, params$prefix, ".atsum")
+    fn_atsumf <- paste0(temp_outdir, params$prefix, ".atsum.tiff")
+    fn_cnsum <- paste0(temp_outdir, params$prefix, ".cnsum")
+    fn_cnsumf <- paste0(temp_outdir, params$prefix, ".cnsum.tiff")
+    fn_tops <- paste0(temp_outdir, params$prefix, ".topsum")
     
     write.table(ls_seqlen[[i]][[2]], file=fn_atsum, quote=FALSE, sep="\t", row.names=F, col.names=T)
     write.table(ls_seqlen[[i]][[4]], file=fn_tops, quote=FALSE, sep="\t", row.names=F, col.names=T)
@@ -287,13 +286,13 @@ sdf <- do.call(rbind,s)
 
 # iterate through window sizes
 for (i in window_sizes) {
-  temp_outdir <- paste(window_outdir,i,"/contiguous/alignment/",sep="")
+  temp_outdir <- paste0(window_outdir,i,"/contiguous/alignment/")
   if (!dir.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
   }
   
   # read annotation summary file
-  smfile <- read.table(paste(window_outdir,i,"/summary/",params$prefix,".atsum", sep=""))
+  smfile <- read.table(paste0(window_outdir,i,"/summary/",params$prefix,".atsum"))
   colnames(smfile) <- smfile[1,]
   smfile <- smfile[-1,]
     
@@ -301,7 +300,7 @@ for (i in window_sizes) {
   newick_map <- data.frame(stringsAsFactors = FALSE)
   count <- 1
   
-  fn_map <- paste(temp_outdir, "../", params$prefix, ".map", sep="")
+  fn_map <- paste0(temp_outdir, "../", params$prefix, ".map")
   acount <- length(list.files(temp_outdir,pattern='fa'))
   if (file.exists(fn_map) && acount != length(unique_topology) && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", i, "bp contiguous window alignment and map."))
@@ -318,8 +317,8 @@ for (i in window_sizes) {
     alignment <- sdf[,align_idx]
     subfasta <- setNames(split(alignment, seq(nrow(alignment))), rownames(alignment))
       
-    write.fasta(sequences=subfasta, names=names(subfasta), file.out=paste(temp_outdir,"G",count,".fa",sep=""), nbchar = 100)
-    newick_map <- rbind(newick_map, c(t, paste("G",count,sep="")))
+    write.fasta(sequences=subfasta, names=names(subfasta), file.out=paste0(temp_outdir,"G",count,".fa"), nbchar = 100)
+    newick_map <- rbind(newick_map, c(t, paste0("G",count)))
     count <- count + 1
     
     rm(sub_sw, align_idx, alignment, subfasta)
@@ -342,8 +341,8 @@ write.table(c("",
 
 # iterate through window sizes
 foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
-  temp_outdir <- paste(window_outdir,i,"/contiguous/alignment/",sep="")
-  treedir <- paste(window_outdir,i,"/contiguous/trees/",sep="")
+  temp_outdir <- paste0(window_outdir,i,"/contiguous/alignment/")
+  treedir <- paste0(window_outdir,i,"/contiguous/trees/")
   if (!dir.exists(treedir)) {
     dir.create(treedir, recursive = T)
   }
@@ -355,20 +354,20 @@ foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
   }
     
   # generate contiguous window tree
-  prefix <- paste(treedir, params$prefix, sep="")
+  prefix <- paste0(treedir, params$prefix)
   if (is.null(params$outgroup) || params$outgroup == ""){
     system(paste(params$iqtree2dir,
                  "-S",temp_outdir,
                  "-m",params$alisim_model,
                  "-pre",prefix,
-                 "--quiet -redo -nt 1", sep=" "))
+                 "--quiet -redo -nt 1"))
   } else {
     system(paste(params$iqtree2dir,
                  "-S",temp_outdir,
                  "-m",params$alisim_model,
                  "-pre",prefix,
                  "--quiet -redo -nt 1",
-                 "-o",params$outgroup, sep=" "))
+                 "-o",params$outgroup))
   }
   
   log4r::info(fn_logger, paste0("File created: ", i, "bp contiguous window treefile."))

@@ -79,7 +79,7 @@ stopCluster(cl)
 # summary
 rmarkdown::render(input=paste(rmddir,"/summary_nw.Rmd", sep=""),
                   output_file=paste(outdir, "/", prefix, ".html", sep=""),
-                  params=list(prefix=prefix, outdir=outdir, redo=redo),
+                  params=list(prefix=prefix, outdir=outdir),
                   quiet=TRUE)
 
 #################################
