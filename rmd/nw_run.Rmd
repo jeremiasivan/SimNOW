@@ -31,8 +31,8 @@ fn_uqtops <- paste0(getwd(), "/simulation/", params$prefix, ".uqtops")
 
 ```{r nowalignment, include=FALSE}
 write.table(c("",
-              "---------- Window Alignment --------",
-              file=fn_log, quote=F, row.names=F, col.names=F, append=T))
+              "---------- Window Alignment --------"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 options(scipen=999)
 
@@ -86,8 +86,8 @@ rm(s, lens)
 
 ```{r nowtree, include=FALSE}
 write.table(c("",
-              "------------ Window Tree -----------",
-              file=fn_log, quote=F, row.names=F, col.names=F, append=T))
+              "------------ Window Tree -----------"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
@@ -278,8 +278,8 @@ rm(t_hash, ls_seqlen)
 
 ```{r nowctalignment, include=FALSE}
 write.table(c("",
-              "---- Contiguous Window Alignment ---",
-              file=fn_log, quote=F, row.names=F, col.names=F, append=T))
+              "---- Contiguous Window Alignment ---"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 s <- read.fasta(fn_alisim, whole.header = T)
 sdf <- do.call(rbind,s)
@@ -336,8 +336,8 @@ rm(s, sdf)
 
 ```{r nowcttree, include=FALSE}
 write.table(c("",
-              "------ Contiguous Window Tree ------",
-              file=fn_log, quote=F, row.names=F, col.names=F, append=T))
+              "------ Contiguous Window Tree ------"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 # iterate through window sizes
 foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
