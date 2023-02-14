@@ -1,5 +1,5 @@
 ---
-title: "Non-overlapping Windows Report"
+title: "Non-overlapping Windows Analysis"
 params:
   # general
   rmddir: "~/Documents/SimNOW/rmd"
