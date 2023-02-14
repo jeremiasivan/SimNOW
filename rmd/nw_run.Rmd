@@ -21,10 +21,10 @@ if (length(params$window_size) == 0) {
 }
 
 # create doSNOW cluster
-nwcl <- makeCluster(params$thread)
+nwcl <- makeCluster(params$thread, type = "SOCK", port = 0)
 registerDoSNOW(nwcl)
 
-# input/output filenames
+# input/output files
 fn_alisim <- paste0(getwd(), "/simulation/", params$prefix, ".fa")
 fn_uqtops <- paste0(getwd(), "/simulation/", params$prefix, ".uqtops")
 ```
@@ -302,7 +302,7 @@ for (i in window_sizes) {
   
   fn_map <- paste0(temp_outdir, "../", params$prefix, ".map")
   acount <- length(list.files(temp_outdir,pattern='fa'))
-  if (file.exists(fn_map) && acount != length(unique_topology) && !params$redo) {
+  if (file.exists(fn_map) && acount == length(unique_topology) && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", i, "bp contiguous window alignment and map."))
     next
   }

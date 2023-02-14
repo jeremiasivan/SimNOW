@@ -8,8 +8,8 @@ nthread <- 4
 
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
-outdir <- "~/Documents/simulation/hl"
-thread <- 4
+outdir <- "~/Documents/simulation/debug/hl"
+thread <- 2
 redo <- FALSE
   
 # sequence simulation

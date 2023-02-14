@@ -12,6 +12,7 @@ write.table(c("",
 window_outdir <- paste0(getwd(), "/windows/")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
+# input/output files
 fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
 fn_summary <- paste0(window_outdir, params$prefix, ".sum")
 ```

@@ -10,11 +10,16 @@ library(data.table)
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
+
+simsumdir <- paste0(params$outdir, "/simsum/")
+if (!dir.exists(simsumdir)) {
+  dir.create(simsumdir, recursive = T)
+}
 ```
 
 ```{r sim_summary, include=FALSE}
-fn_simsum <- paste0(params$outdir, "/", params$prefix, ".simsum")
-fn_simfig <- paste0(params$outdir, "/", params$prefix, ".simsum.tiff")
+fn_simsum <- paste0(simsumdir, params$prefix, ".simsum")
+fn_simfig <- paste0(simsumdir, params$prefix, ".simsum.tiff")
 
 # extract row and column names
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
@@ -88,9 +93,9 @@ dev.off()
 fn_figs <- c(fn_simfig)
 iterator <- 0
 for (i in unique(sub_output$r)) {
-  fn_simfig <- paste0(params$outdir, "/", params$prefix, ".simsum.r",i,".tiff")
-  outperr <- subset(sub_output, sub_output$r == i)
+  fn_simfig <- paste0(simsumdir, params$prefix, ".simsum.r",i,".tiff")
   fn_figs <- c(fn_figs, fn_simfig)
+  outperr <- subset(sub_output, sub_output$r == i)
   iterator <- iterator + 1
   
   tiff(filename=fn_simfig, units="px", width=2880, height=1800)
