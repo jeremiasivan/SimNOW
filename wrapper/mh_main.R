@@ -49,7 +49,7 @@ make_report <- function(r) {
 }
 
 # run parallelized simulations
-cl <- makeCluster(nthread)
+cl <- makeCluster(nthread, outfile="")
 registerDoSNOW(cl)
 
 foreach(r=reports, .errorhandling = 'pass') %dopar% make_report(r)
