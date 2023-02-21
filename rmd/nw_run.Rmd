@@ -21,7 +21,7 @@ if (length(params$window_size) == 0) {
 }
 
 # create doSNOW cluster
-nwcl <- makeCluster(params$thread, type = "SOCK", port = 0)
+nwcl <- makeCluster(params$thread)
 registerDoSNOW(nwcl)
 
 # input/output files
@@ -47,12 +47,17 @@ for (w in params$window_size) {
     next
   }
   
+  numw <- lens/w
+  if (!numw%%1==0) {
+    log4r::warn(fn_logger, paste0("Warning: ", w, "bp window does not cover the whole alignment. Skipped."))
+    next
+  }
+  
   temp_outdir <- paste0(window_outdir,w,"/alignment/")
   if (!dir.exists(temp_outdir)) {
     dir.create(temp_outdir, recursive = T)
   }
   
-  numw <- floor(lens/w)
   if (length(list.files(temp_outdir, pattern='fa')) == numw && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", w, "bp window alignment."))
     next
@@ -276,7 +281,7 @@ if (length(ls_seqlen) > 0) {
 rm(t_hash, ls_seqlen)
 ```
 
-```{r nowctalignment, include=FALSE}
+```{r nowctalignment, include=FALSE, eval=FALSE}
 write.table(c("",
               "---- Contiguous Window Alignment ---"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
@@ -334,7 +339,7 @@ for (i in window_sizes) {
 rm(s, sdf)
 ```
 
-```{r nowcttree, include=FALSE}
+```{r nowcttree, include=FALSE, eval=FALSE}
 write.table(c("",
               "------ Contiguous Window Tree ------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)

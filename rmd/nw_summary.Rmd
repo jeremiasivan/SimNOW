@@ -27,8 +27,8 @@ for (i in window_sizes) {
   temp_outdir <- paste0(window_outdir,i,"/summary/")
   
   fn_cmp <- paste0(temp_outdir, params$prefix, ".cmp")
-  fn_figure <- paste0(temp_outdir, params$prefix, ".cmp.tiff")
-  if (all(file.exists(fn_cmp, fn_figure)) && !params$redo) {
+  # fn_figure <- paste0(temp_outdir, params$prefix, ".cmp.tiff")
+  if (file.exists(fn_cmp) && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", i, "bp window comparison file."))
     next
   }
@@ -90,40 +90,39 @@ for (i in window_sizes) {
   }
   
   # visualization
-  sub_output <- data.frame(stringsAsFactors = FALSE)
-  
-  for (j in 1:nrow(output)) {
-    for (k in 2:ncol(output)) {
-      sub_output <- rbind(sub_output, c(output$topology[j],colnames(output[k]),output[j,k]))
-    }
-  }
-  colnames(sub_output) <- c("topology","sites","frequency")
-  sub_output$sites <- factor(sub_output$sites,levels = unique(sub_output$sites),ordered = T)
-  
-  tiff(filename=fn_figure, units="px", width=2880, height=1800)
-  print(ggplot(sub_output, aes(fill=sites, y=as.numeric(frequency), x=topology)) + 
-          geom_bar(position="dodge", stat="identity") +
-          aes(x = fct_inorder(topology)) +
-          ggtitle("Distribution of Sites from Non-Overlapping Window Analysis in Simulated Dataset") + 
-          xlab("True topology from simulated data") +
-          ylab("Number of sites from non-overlapping window analysis") +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            legend.title=element_blank(),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
-          ))
-  dev.off()
+  # sub_output <- data.frame(stringsAsFactors = FALSE)
+  # 
+  # for (j in 1:nrow(output)) {
+  #   for (k in 2:ncol(output)) {
+  #     sub_output <- rbind(sub_output, c(output$topology[j],colnames(output[k]),output[j,k]))
+  #   }
+  # }
+  # colnames(sub_output) <- c("topology","sites","frequency")
+  # sub_output$sites <- factor(sub_output$sites,levels = unique(sub_output$sites),ordered = T)
+  # 
+  # tiff(filename=fn_figure, units="px", width=2880, height=1800)
+  # print(ggplot(sub_output, aes(fill=sites, y=as.numeric(frequency), x=topology)) + 
+  #         geom_bar(position="dodge", stat="identity") +
+  #         aes(x = fct_inorder(topology)) +
+  #         ggtitle("Distribution of Sites from Non-Overlapping Window Analysis in Simulated Dataset") + 
+  #         xlab("True topology from simulated data") +
+  #         ylab("Number of sites from non-overlapping window analysis") +
+  #         theme(
+  #           plot.title = element_text(hjust = 0.5, size = 50),
+  #           axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+  #           axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+  #           axis.text.y=element_text(size=30),
+  #           axis.text.x=element_text(size=30),
+  #           legend.title=element_blank(),
+  #           legend.text=element_text(size=30),
+  #           legend.key.size=unit(2,"cm")
+  #         ))
+  # dev.off()
   
   write.table(output, file=fn_cmp, sep = "\t", quote = F, row.names = F)
-  log4r::info(fn_logger, paste0("File created: ", i, "bp window comparison files (",
-                               params$prefix, ".cmp and ", params$prefix, ".cmp.tiff)."))
+  log4r::info(fn_logger, paste0("File created: ", i, "bp window comparison files (", params$prefix, ".cmp)."))
   
-  rm(smfile, dat, empty_matrix, output, sub_output)
+  rm(smfile, dat, empty_matrix, output)
 }
 
 rm(msfile)
@@ -153,11 +152,17 @@ for (i in window_sizes) {
   caicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_contiguous), intern = T))
   cbic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_contiguous), intern = T))
   
+  # change empty character to NA
+  caic <- ifelse(!length(caic), NA, caic)
+  caicc <- ifelse(!length(caicc), NA, caicc)
+  cbic <- ifelse(!length(cbic), NA, cbic)
+  
   t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,caic,caicc,cbic))
   
   rm(cmp, acc)
 }
 
+t_accuracy <- as.data.frame(t_accuracy)
 colnames(t_accuracy) <- t_accuracy[1,]
 t_accuracy <- t_accuracy[-1,]
 
@@ -165,7 +170,8 @@ write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
 log4r::info(fn_logger, paste0("File created/modified: summary table of NOW and ms (", params$prefix, ".sum)."))
 
 # correlation plot
-t_accuracy <- as.data.frame(t_accuracy)
+t_accuracy <- t_accuracy[, colSums(is.na(t_accuracy))==0]
+
 pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
 iterator <- 0
 
