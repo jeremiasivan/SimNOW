@@ -6,7 +6,7 @@ Software incorporated in the pipeline:
 - <a href="http://home.uchicago.edu/~rhudson1/source/mksamples.html">ms</a>
 - <a href="http://www.iqtree.org/doc/AliSim">AliSim</a>
 - <a href="http://www.iqtree.org">IQ-TREE 2</a>
-- <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a>+HMM
+- <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a>-HMM
 
 ---
 ### Notes
