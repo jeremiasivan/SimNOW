@@ -3,25 +3,25 @@ title: "Non-overlapping Windows Analysis"
 params:
   # general
   rmddir: "~/Documents/SimNOW/rmd"
-  prefix: "ag"
+  prefix: "db"
   outdir: "~/Documents/simulation/debug"
-  thread: 2
-  redo: FALSE
+  thread: 1
+  redo: TRUE
   
   # ms
   msdir: "~/Documents/msdir/ms"
-  ms_params: "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 10 2 1 -ej 24 3 1 -ej 35 4 1 -ej 32 5 6 -ej 53 6 1 -ej 69 7 1 -es 1 2 0.25 -ej 1 8 1 -es 23 3 0.25 -ej 23 9 4 -es 34 6 0.25 -ej 34 10 4"
-  ms_r: 30
-  ms_l: 100000
+  ms_params: ""
+  ms_r: 0
+  ms_l: 1000000
   
   # AliSim
-  iqtree2dir: "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
+  iqtree2dir: "~/Documents/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
   alisim_model: "JC"
   alisim_scale: 0.001
-  outgroup: "7"
+  outgroup: ""
   
   # non-overlapping window analysis
-  window_size: !r c(20000,30000)
+  window_size: !r c()
 ---
 
 ```{r setup, include=FALSE}
