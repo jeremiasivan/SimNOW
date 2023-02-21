@@ -74,8 +74,9 @@ for (i in mast_dirs) {
   
   # ms topology weights
   ms_tw <- msfile %>%
+    summarise(topology = topology, ms=as.numeric(length)/sum(as.numeric(msfile$length))) %>%
     group_by(topology) %>%
-    summarise(topology = topology, ms=as.numeric(length)/sum(as.numeric(msfile$length)))
+    summarise_all(sum)
   
   # hmm topology weights
   htw <- c()
@@ -129,7 +130,7 @@ for (i in mast_dirs) {
   # iterate through ms topology file
   for (k in 1:nrow(msfile)){
     sites <- dat[msfile$start[k]:msfile$stop[k],]
-    topology_idx <- which(output$topology==msfile$topology[k])
+    topology_idx <- which(colnames(output)==msfile$topology[k])
     
     sites_sum <- sites %>%
       group_by(tree) %>%
@@ -137,12 +138,12 @@ for (i in mast_dirs) {
     
     # add number of HMM sites for the respective ms topology
     for (j in 1:nrow(sites_sum)) {
-      window_idx <- which(colnames(output)==tmfile[as.numeric(sites_sum$tree[j])])
+      window_idx <- which(output$topology==tmfile[as.numeric(sites_sum$tree[j])])
       
-      if (length(window_idx) == 0) {
-        output$NT[topology_idx] = output$NT[topology_idx] + sites_sum$n[j]
+      if (length(topology_idx) == 0) {
+        output$NT[window_idx] = output$NT[window_idx] + sites_sum$n[j]
       } else {
-        output[topology_idx,window_idx] = output[topology_idx,window_idx] + sites_sum$n[j]
+        output[window_idx,topology_idx] = output[window_idx,topology_idx] + sites_sum$n[j]
       }
     }
     
