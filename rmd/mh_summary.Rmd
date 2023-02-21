@@ -42,8 +42,8 @@ for (i in mast_dirs) {
  
   fn_hmmtw <- paste(outdir, params$prefix, ".hmmtw", sep="")
   fn_hmmsum <- paste(outdir, params$prefix, ".hmmsum", sep="")
-  fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
-  if (all(file.exists(fn_hmmtw, fn_hmmsum, fn_hmmfig)) && params$redo == FALSE) {
+  # fn_hmmfig <- paste(outdir, params$prefix, ".hmmsum.tiff", sep="")
+  if (all(file.exists(fn_hmmtw, fn_hmmsum)) && params$redo == FALSE) {
     log4r::info(fn_logger, paste0("Files exist: ",params$analysis_type," summary files for set ", i, ". Skipped."))
     next
   }
@@ -150,40 +150,40 @@ for (i in mast_dirs) {
   }
   
   # visualization
-  sub_output <- data.frame()
-  
-  for (k in 1:nrow(output)) {
-    for (j in 2:ncol(output)) {
-      sub_output <- rbind(sub_output, c(output$topology[k],colnames(output[j]),output[k,j]))
-    }
-  }
-  colnames(sub_output) <- c("topology","sites","frequency")
-  sub_output$sites <- factor(sub_output$sites,levels = unique(sub_output$sites),ordered = T)
-  
-  tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
-  print(ggplot(sub_output, aes(fill=sites, y=as.numeric(frequency), x=topology)) + 
-          geom_bar(position="dodge", stat="identity") +
-          aes(x = fct_inorder(topology)) +
-          ggtitle(paste("Distribution of Sites from", params$analysis_type, "in Simulated Dataset")) + 
-          xlab("True topology from simulated data") +
-          ylab(paste("Number of sites from", params$analysis_type)) +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            legend.title=element_blank(),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
-          ))
-  dev.off()
+  # sub_output <- data.frame()
+  # 
+  # for (k in 1:nrow(output)) {
+  #   for (j in 2:ncol(output)) {
+  #     sub_output <- rbind(sub_output, c(output$topology[k],colnames(output[j]),output[k,j]))
+  #   }
+  # }
+  # colnames(sub_output) <- c("topology","sites","frequency")
+  # sub_output$sites <- factor(sub_output$sites,levels = unique(sub_output$sites),ordered = T)
+  # 
+  # tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
+  # print(ggplot(sub_output, aes(fill=sites, y=as.numeric(frequency), x=topology)) + 
+  #         geom_bar(position="dodge", stat="identity") +
+  #         aes(x = fct_inorder(topology)) +
+  #         ggtitle(paste("Distribution of Sites from", params$analysis_type, "in Simulated Dataset")) + 
+  #         xlab("True topology from simulated data") +
+  #         ylab(paste("Number of sites from", params$analysis_type)) +
+  #         theme(
+  #           plot.title = element_text(hjust = 0.5, size = 50),
+  #           axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+  #           axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+  #           axis.text.y=element_text(size=30),
+  #           axis.text.x=element_text(size=30),
+  #           legend.title=element_blank(),
+  #           legend.text=element_text(size=30),
+  #           legend.key.size=unit(2,"cm")
+  #         ))
+  # dev.off()
   
   write.table(output, file=fn_hmmsum, quote = F, row.names = F)
   log4r::info(fn_logger, paste0("Files created: set ", i, " ", params$analysis_type, " summary files (",
-                               params$prefix, ".hmmtw, ", params$prefix, ".hmmsum and ", params$prefix, ".hmmsum.tiff)."))
+                               params$prefix, ".hmmtw, ", params$prefix, ".hmmsum)."))
   
-  rm(hmmfile, hmmtrees, tmfile, ms_tw, trees, dat, empty_matrix, output, sub_output)
+  rm(hmmfile, hmmtrees, tmfile, ms_tw, trees, dat, empty_matrix, output)
 }
 
 rm(msfile)
