@@ -52,7 +52,10 @@ make_report <- function(r) {
 cl <- makeCluster(nthread, outfile="")
 registerDoSNOW(cl)
 
-foreach(r=reports, .errorhandling = 'pass') %dopar% make_report(r)
+foreach(r=reports, .errorhandling = 'pass') %dopar% {
+  make_report(r)
+  NULL
+}
 
 stopCluster(cl)
 

@@ -11,19 +11,18 @@ if (params$analysis_type == HMMSTER) {
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 }
 
+# extract MAST run directories
 mast_outdir <- paste0(getwd(), "/", tolower(params$analysis_type), "/")
 mast_model <- paste0("'", params$mast_model, "'")
 mast_dirs <- list.dirs(mast_outdir, full.names = F, recursive = F)
 
+# input / output files
 fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
 fn_topset <- paste0(mast_outdir, params$prefix, ".topset")
 fn_summary <- paste0(mast_outdir, params$prefix, ".mh.sum")
 ```
 
 ```{r postmh, include=FALSE}
-sys_tic <- Sys.time()
-sys_imy <- pryr::mem_used()
-
 # read input files
 msfile <- data.table::fread(fn_mstops)
 options(scipen=999)
@@ -33,6 +32,7 @@ for (i in mast_dirs) {
   temp_outdir <- paste0(mast_outdir,i,"/")
   outdir <- paste0(temp_outdir, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/")
  
+  # skip this step if files exist
   fn_hmmtw <- paste0(outdir, params$prefix, ".hmmtw")
   fn_hmmsum <- paste0(outdir, params$prefix, ".hmmsum")
   if (all(file.exists(fn_hmmtw, fn_hmmsum)) && !params$redo) {
@@ -40,7 +40,7 @@ for (i in mast_dirs) {
     next
   }
   
-  # read HMM file
+  # skip this step if HMM file does not exist
   fn_mast_tops <- paste0(temp_outdir, params$prefix, ".mast.tops")
   fn_hmm <- paste0(outdir, params$prefix, ".hmm")
   if (!file.exists(fn_hmm)) {
@@ -48,11 +48,12 @@ for (i in mast_dirs) {
     next
   }
   
+  # read HMM file and MAST input topologies
   uq_tmtrees <- readLines(fn_mast_tops)
   uq_mstrees <- unique(msfile$topology)
   uq_mstrees_ln <- length(uq_mstrees)
   
-  # match window topology with ms topology
+  # match MAST topology with ms topology
   for (j in uq_mstrees) {
     for (k in uq_tmtrees) {
       if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::read.tree(text = k))) {
@@ -73,7 +74,7 @@ for (i in mast_dirs) {
   hmm_tw <- gsub("^.*: ", "", system(paste("grep '^Ratio of sites for each category'",fn_hmm), intern = T))
   ls_hmm_tw <- strsplit(hmm_tw, " ")[[1]]
   
-  # HMMSTER topology weights
+  # extract the weights for each topology
   if (params$analysis_type == HMMSTER) {
     write.table(paste("topology", "ms", "hmm", sep="\t"), file=fn_hmmtw, quote = F, col.names = F, row.names = F)
     
@@ -84,7 +85,7 @@ for (i in mast_dirs) {
     }
   }
   
-  # extract per-site topology
+  # extract HMM per-site topology
   hmmtrees <- system(paste("grep '^\\['", fn_hmm), intern=TRUE)
   trees <- data.table::data.table(do.call('rbind', strsplit(as.character(hmmtrees),'\\[|,|\\]')))
   trees[,1] <- NULL
@@ -93,15 +94,17 @@ for (i in mast_dirs) {
   trees$start <- as.numeric(trees$start)
   trees$stop <- as.numeric(trees$stop)
   
-  # create empty dataframe
+  # create empty data.table
   output <- data.table::data.table(c(uq_mstrees, "NT"), matrix(0, nrow=uq_mstrees_ln+1, ncol=uq_mstrees_ln))
   data.table::setnames(output, c("topology", uq_mstrees))
   
   # iterate through ms topology file
   for (k in 1:nrow(msfile)){
+    # extract the hmm topology based on ms topology switching
     start_idx <- tail(which(trees$start <= msfile$start[k]), 1)
     stop_idx <- head(which(trees$stop >= msfile$stop[k]), 1)
     
+    # update lengths
     sites <- trees[start_idx:stop_idx,]
     sites$start[1] <- msfile$start[k]
     sites$length[1] <- sites$stop[1] - sites$start[1] + 1
@@ -128,6 +131,7 @@ for (i in mast_dirs) {
     rm(sites)
   }
   
+  # write the data.table into file
   data.table::fwrite(output, file=fn_hmmsum, quote=F, sep="\t")
   log4r::info(fn_logger, paste0("Files created: set ", i, " ", params$analysis_type, " summary files (",
                                params$prefix, ".hmmtw, ", params$prefix, ".hmmsum)."))
@@ -136,20 +140,12 @@ for (i in mast_dirs) {
 }
 
 rm(msfile)
-
-sys_toc <- Sys.time()
-sys_omy <- pryr::mem_used()
-
-write.table(c("", sys_toc - sys_tic), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-write.table(c(paste0("Total memory consumption: ", sys_omy - sys_imy)), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
 ```{r sumtable, include=FALSE}
-sys_tic <- Sys.time()
-sys_imy <- pryr::mem_used()
+accuracy <- c()
 
-t_accuracy <- c()
-
+# iterate through MAST directories
 for (i in mast_dirs) {
   temp_outdir <- paste0(mast_outdir,i,"/")
   outdir <- paste0(temp_outdir, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/")
@@ -157,16 +153,18 @@ for (i in mast_dirs) {
   fn_iqtree <- paste0(outdir, params$prefix, ".iqtree")
   fn_hmm <- paste0(outdir, params$prefix, ".hmm")
   
+  # skip this step if HMM summary file does not exist
   fn_hmmsum <- paste0(outdir, params$prefix, ".hmmsum")
   if (!file.exists(fn_hmmsum)) {
     log4r::warn(fn_logger, paste0("Warn: HMM summary file for set ", i, " is not found. Skipped."))
     next
   }
   
+  # read HMM summary file
   hmmsum <- data.table::fread(fn_hmmsum)
-  hmmsum <- as.matrix(hmmsum[-nrow(hmmsum),-1])
+  hmmsum <- as.matrix(hmmsum[,-1])
     
-  # calculate the accuracy with if conditional for one topology  
+  # calculate the accuracy 
   acc <- sum(as.numeric(diag(hmmsum))) / sum(as.numeric(hmmsum)) * 100
   acc <- round(acc, 3)
   
@@ -180,6 +178,7 @@ for (i in mast_dirs) {
   rm(hmmsum, acc)
 }
 
+# write the data.table into file
 t_accuracy <- data.table::as.data.table(t_accuracy)
 data.table::setnames(t_accuracy, c("set","accuracy","aic","aicc","bic","hmm"))
 
@@ -189,9 +188,12 @@ log4r::info(fn_logger, paste0("File created/modified: summary table of ", params
 # correlation plot
 library(ggplot2)
 pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
-t_accuracy <- as.data.frame(t_accuracy)
 iterator <- 0
 
+# convert to data.frame for ggplot2
+t_accuracy <- as.data.frame(t_accuracy)
+
+# plot each information criterion score
 for (c in 3:ncol(t_accuracy)) {
   fn_sumfig <- paste0(mast_outdir, params$prefix, ".", colnames(t_accuracy)[c], ".mh.tiff")
   iterator <- iterator + 1
@@ -217,12 +219,5 @@ for (c in 3:ncol(t_accuracy)) {
 }
 
 log4r::info(fn_logger, paste0("Files created/modified: NOW accuracy vs ", params$analysis_type, " IC correlation plots."))
-
 rm(t_accuracy)
-
-sys_toc <- Sys.time()
-sys_omy <- pryr::mem_used()
-
-write.table(c("", sys_toc - sys_tic), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-write.table(c(paste0("Total memory consumption: ", sys_omy - sys_imy)), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```

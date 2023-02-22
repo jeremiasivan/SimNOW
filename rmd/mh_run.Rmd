@@ -11,27 +11,29 @@ if (params$analysis_type == HMMSTER) {
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 }
 
+# set up MAST output directory
 mast_outdir <- paste0(getwd(), "/", tolower(params$analysis_type), "/")
 if (!dir.exists(mast_outdir)) {
   dir.create(mast_outdir, recursive = T)
 }
 
-mast_model <- paste("'", params$mast_model, "'", sep="")
+# add single quote for MAST model
+mast_model <- paste0("'", params$mast_model, "'")
 
-window_outdir <- paste(getwd(), "/windows/", sep="")
+# extract window sizes
+window_outdir <- paste0(getwd(), "/windows/")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
-fn_topset <- paste0(mast_outdir, params$prefix, ".topset")
+# input / output files
 fn_alisim <- paste0(getwd(), "/simulation/", params$prefix, ".fa")
+fn_topset <- paste0(mast_outdir, params$prefix, ".topset")
 ```
 
 ```{r premh, include=FALSE}
-sys_tic <- Sys.time()
-sys_imy <- pryr::mem_used()
-
 uq_tops <- data.table::data.table()
 
-if (file.exists(fn_topset) && params$redo == FALSE){
+# load the topology set if file exists
+if (file.exists(fn_topset) && !params$redo){
   uq_tops <- data.table::fread(fn_topset)
   log4r::info(fn_logger, paste0("File found: ", params$analysis_type, " topology sets."))
   
@@ -70,18 +72,9 @@ if (file.exists(fn_topset) && params$redo == FALSE){
   
   rm(list_tops)
 }
-
-sys_toc <- Sys.time()
-sys_omy <- pryr::mem_used()
-
-write.table(c("", sys_toc - sys_tic), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-write.table(c(paste0("Total memory consumption: ", sys_omy - sys_imy)), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
 ```{r mh, include=FALSE}
-sys_tic <- Sys.time()
-sys_imy <- pryr::mem_used()
-
 log4r::info(fn_logger, paste0(nrow(uq_tops), " topology sets found."))
 
 # iterate through topology sets
@@ -104,6 +97,7 @@ for (k in 1:nrow(uq_tops)) {
     dir.create(outdir, recursive = T)
   }
   
+  # skip this step if HMM file exists
   prefix <- paste0(outdir, params$prefix)
   if (file.exists(paste0(prefix,".hmm")) && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", gsub("_",", ",uq_tops$wsizes[k]), "bp HMM file [set ", k, "]."))
@@ -133,10 +127,4 @@ for (k in 1:nrow(uq_tops)) {
 }
 
 rm(uq_tops)
-
-sys_toc <- Sys.time()
-sys_omy <- pryr::mem_used()
-
-write.table(c("", sys_toc - sys_tic), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-write.table(c(paste0("Total memory consumption: ", sys_omy - sys_imy)), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```

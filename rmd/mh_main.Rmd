@@ -16,24 +16,31 @@ params:
   mast_tops: 0.95
 ---
 
-```{r setup, include=FALSE}
+```{r, include=FALSE}
 # install.packages("ape")
 # install.packages("ggplot2")
 # install.packages("log4r")
 # install.packages("pryr")
 
+# store initial system time and memory
+sys_tic <- Sys.time()
+sys_imy <- pryr::mem_used()
+
+# load libraries
 library(data.table)
 library(dplyr)
 
+# set up working directory
 currentdir <- paste0(params$outdir, "/", params$prefix)
 if (!dir.exists(currentdir)) {
   dir.create(currentdir, recursive = T)
 }
 
+# set up logger
 fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".mh.log")
 log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
-if (params$redo == TRUE) {
+if (params$redo) {
   unlink(fn_log)
 }
 
@@ -41,19 +48,31 @@ if (!file.exists(fn_log)) {
   write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
 }
 
+# select analysis type
 HMMSTER <- "HMMSTER"
 if (!params$analysis_type %in% c(HMMSTER)) {
   log4r::error(fn_logger, "Error: invalid type of analysis. Exited.")
   knitr::knit_exit()
 }
 
+# switch to working directory
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-## Analysis
 ```{r child = paste(params$rmddir,"/mh_run.Rmd",sep=""), include=FALSE}
 ```
 
-## Summary
 ```{r child = paste(params$rmddir,"/mh_summary.Rmd",sep=""), include=FALSE}
+```
+
+```{r, include=FALSE}
+# store final system time and memory
+sys_toc <- Sys.time()
+sys_omy <- pryr::mem_used()
+
+# write the system time and memory in log file
+write.table(c("", paste0("Total elapsed time: ", sys_toc - sys_tic, " seconds")),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+write.table(c(paste0("Total memory consumption: ", sys_omy - sys_imy, "MB")),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
