@@ -31,7 +31,7 @@ if (!dir.exists(currentdir)) {
 }
 
 fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".mh.log")
-log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = default_log_layout())
+log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
 if (params$redo == TRUE) {
   unlink(fn_log)

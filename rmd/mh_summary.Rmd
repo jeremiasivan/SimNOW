@@ -189,10 +189,11 @@ log4r::info(fn_logger, paste0("File created/modified: summary table of ", params
 # correlation plot
 library(ggplot2)
 pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
+t_accuracy <- as.data.frame(t_accuracy)
 iterator <- 0
 
 for (c in 3:ncol(t_accuracy)) {
-  fn_sumfig <- paste0(mast_outdir, params$prefix, ".", colnames(t_accuracy)[c],".mh.tiff")
+  fn_sumfig <- paste0(mast_outdir, params$prefix, ".", colnames(t_accuracy)[c], ".mh.tiff")
   iterator <- iterator + 1
   
   tiff(filename=fn_sumfig, units="px", width=2880, height=1800)
