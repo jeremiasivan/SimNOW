@@ -1,5 +1,5 @@
 ---
-title: "MAST-HMM and HMMSTER"
+title: "HMMSTER"
 params:
   # general
   rmddir: ""
@@ -7,30 +7,31 @@ params:
   outdir: ""
   redo: FALSE
   
-  # sequence simulation
+  # software
   iqtree2dir: ""
   
   # masthmm
-  analysis_type: "MASTHMM"
+  analysis_type: "HMMSTER"
   mast_model: ""
   mast_tops: 0.95
 ---
 
 ```{r setup, include=FALSE}
-library(ape)
+# install.packages("ape")
+# install.packages("ggplot2")
+# install.packages("log4r")
+# install.packages("pryr")
+
 library(data.table)
 library(dplyr)
-library(forcats)
-library(ggplot2)
-library(log4r)
 
-currentdir <- paste(params$outdir, "/", params$prefix, sep="")
-if (!file.exists(currentdir)) {
+currentdir <- paste0(params$outdir, "/", params$prefix)
+if (!dir.exists(currentdir)) {
   dir.create(currentdir, recursive = T)
 }
 
-fn_log <- paste(params$outdir, "/", params$prefix, "/", params$prefix, ".mh.log", sep="")
-log_appender <- file_appender(fn_log, append = TRUE, layout = default_log_layout())
+fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".mh.log")
+log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = default_log_layout())
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
 if (params$redo == TRUE) {
   unlink(fn_log)
@@ -40,9 +41,8 @@ if (!file.exists(fn_log)) {
   write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
 }
 
-MASTHMM <- "MASTHMM"
 HMMSTER <- "HMMSTER"
-if (!params$analysis_type %in% c(MASTHMM,HMMSTER)) {
+if (!params$analysis_type %in% c(HMMSTER)) {
   log4r::error(fn_logger, "Error: invalid type of analysis. Exited.")
   knitr::knit_exit()
 }
