@@ -116,9 +116,8 @@ for (i in mast_dirs) {
   trees[,1] <- NULL
   colnames(trees) <- c("start","stop","tree")
   
-  dat <- apply(trees, 1,
-               function(x) data.table(bp = x["start"]:x["stop"], tree = x["tree"])) %>%
-    rbindlist()
+  dat <- do.call(rbind, apply(trees, 1,
+               function(x) data.table(bp = x["start"]:x["stop"], tree = x["tree"])))
   
   # create empty dataframe
   empty_matrix <- as.data.frame(matrix(rep(0, length(tmfile)+1), nrow=length(tmfile), ncol=length(tmfile)+1))
@@ -207,18 +206,11 @@ for (i in mast_dirs) {
   }
   
   hmmsum <- read.table(fn_hmmsum)
-  hmmsum <- sapply(hmmsum[-1,-1], as.numeric)
+  hmmsum <- as.matrix(hmmsum[-1,-1])
     
   # calculate the accuracy with if conditional for one topology  
-  acc <- 0
-  if (is.null(nrow(hmmsum))) {
-    acc <- hmmsum[1]
-  } else {
-    for (k in 1:nrow(hmmsum)) {
-      acc <- acc + as.numeric(hmmsum[k,k])
-    }
-  }
-  acc <- round(acc / sum(hmmsum) * 100, 3)
+  acc <- sum(as.numeric(diag(hmmsum))) / sum(as.numeric(hmmsum)) * 100
+  acc <- round(acc, 3)
   
   # extract information of interest
   aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
@@ -228,9 +220,10 @@ for (i in mast_dirs) {
   
   t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,hmm))
   
-  rm(hmmsum)
+  rm(hmmsum, acc)
 }
 
+t_accuracy <- as.data.frame(t_accuracy)
 colnames(t_accuracy) <- t_accuracy[1,]
 t_accuracy <- t_accuracy[-1,]
 
@@ -238,7 +231,6 @@ write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
 log4r::info(fn_logger, paste0("File created/modified: summary table of ", params$analysis_type, " and ms (", params$prefix, ".mh.sum)."))
 
 # correlation plot
-t_accuracy <- as.data.frame(t_accuracy)
 pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
 iterator <- 0
 
