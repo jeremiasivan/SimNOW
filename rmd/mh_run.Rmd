@@ -1,16 +1,9 @@
 ---
-title: "MAST-HMM and HMMSTER Analysis"
+title: "HMMSTER Analysis"
 ---
 
 ```{r mhsetup, include=FALSE}
-if (params$analysis_type == MASTHMM) {
-  write.table(c("",
-                "####################################",
-                "####          MAST-HMM          ####",
-                "####################################"),
-              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-
-} else if (params$analysis_type == HMMSTER) {
+if (params$analysis_type == HMMSTER) {
   write.table(c("",
                 "####################################",
                 "####           HMMSTER          ####",
@@ -18,7 +11,7 @@ if (params$analysis_type == MASTHMM) {
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 }
 
-mast_outdir <- paste(getwd(), "/", tolower(params$analysis_type), "/", sep="")
+mast_outdir <- paste0(getwd(), "/", tolower(params$analysis_type), "/")
 if (!dir.exists(mast_outdir)) {
   dir.create(mast_outdir, recursive = T)
 }
@@ -28,28 +21,26 @@ mast_model <- paste("'", params$mast_model, "'", sep="")
 window_outdir <- paste(getwd(), "/windows/", sep="")
 window_sizes <- list.dirs(window_outdir, full.names = F, recursive = F)
 
-fn_topset <- paste(mast_outdir, params$prefix, ".topset", sep="")
-fn_alisim <- paste(getwd(), "/simulation/", params$prefix, ".fa", sep="")
+fn_topset <- paste0(mast_outdir, params$prefix, ".topset")
+fn_alisim <- paste0(getwd(), "/simulation/", params$prefix, ".fa")
 ```
 
 ```{r premh, include=FALSE}
-uq_tops <- data.frame()
+sys_tic <- Sys.time()
+sys_imy <- pryr::mem_used()
+
+uq_tops <- data.table::data.table()
 
 if (file.exists(fn_topset) && params$redo == FALSE){
-  uq_tops <- read.table(fn_topset)
-  colnames(uq_tops) <- uq_tops[1,]
-  uq_tops <- uq_tops[-1,]
-  
-  log4r::info(fn_logger, paste0("File already exists: ", params$analysis_type, " topology sets. Skipped."))
+  uq_tops <- data.table::fread(fn_topset)
+  log4r::info(fn_logger, paste0("File found: ", params$analysis_type, " topology sets."))
   
 } else {
-  list_tops <- c("wsize","topologies")
+  list_tops <- c()
 
   # extract top % topologies for each window size
   for (i in window_sizes) {
-    topsum <- read.table(paste(window_outdir, i, "/summary/", params$prefix, ".topsum", sep=""))
-    colnames(topsum) <- topsum[1,]
-    topsum <- topsum[-1,]
+    topsum <- data.table::fread(paste0(window_outdir, i, "/summary/", params$prefix, ".topsum"))
     
     tpercent <- 0
     tmast <- c()
@@ -63,73 +54,72 @@ if (file.exists(fn_topset) && params$redo == FALSE){
     }
     
     list_tops <- rbind(list_tops, c(i,paste(sort(tmast),collapse="&")))
-    
     rm(topsum)
   }
   
-  list_tops <- as.data.frame(list_tops)
-  colnames(list_tops) <- list_tops[1,]
-  list_tops <- list_tops[-1,]
+  list_tops <- data.table::as.data.table(list_tops)
+  colnames(list_tops) <- c("wsize","topologies")
   
   # extract unique set of topologies
   uq_tops <- list_tops %>%
     group_by(topologies) %>% 
     summarise(wsizes = paste(wsize, collapse = "_"))
   
-  write.table(uq_tops, file=fn_topset, quote=F, row.names=F, col.names=T)
+  data.table::fwrite(uq_tops, file=fn_topset, quote=F, sep="\t")
   log4r::info(fn_logger, paste0("File created: ", params$analysis_type, " topology sets (", params$prefix, ".topset)."))
   
   rm(list_tops)
 }
+
+sys_toc <- Sys.time()
+sys_omy <- pryr::mem_used()
+
+write.table(c("", sys_toc - sys_tic), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+write.table(c(paste0("Total memory consumption: ", sys_omy - sys_imy)), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
-```{r mh}
+```{r mh, include=FALSE}
+sys_tic <- Sys.time()
+sys_imy <- pryr::mem_used()
+
 log4r::info(fn_logger, paste0(nrow(uq_tops), " topology sets found."))
 
 # iterate through topology sets
 for (k in 1:nrow(uq_tops)) {
+  setfn <- paste0(mast_outdir,k,"/")
+  if (!dir.exists(setfn)) {
+    dir.create(setfn, recursive = T)
+  }
+  
+  # check number of topology
   topls <- strsplit(uq_tops$topologies[k],split = "&")[[1]]
   if (length(topls) <= 1) {
     log4r::info(fn_logger, paste0(gsub("_",", ",uq_tops$wsizes[k]), "bp [set ", k, "] has one or less topology. Skipped."))
     next
   }
   
-  setfn <- paste(mast_outdir,k,"/",sep="")
-  if (!file.exists(setfn)) {
-    dir.create(setfn, recursive = T)
-  }
-  
-  # save the topologies in separate file
-  fn_mast_tops <- paste(setfn, params$prefix, ".mast.tops", sep="")
-  if (!file.exists(fn_mast_tops) || params$redo == TRUE) {
-    write.table(topls, file = fn_mast_tops, quote = F, row.names = F, col.names = F)
-  }
-  
   # create new directory based on the MAST model
-  outdir <- paste(setfn, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/", sep="")
-  if (!file.exists(outdir)) {
+  outdir <- paste0(setfn, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/")
+  if (!dir.exists(outdir)) {
     dir.create(outdir, recursive = T)
   }
   
-  prefix <- paste(outdir, params$prefix, sep="")
-  if (file.exists(paste(prefix,".hmm",sep="")) && params$redo == FALSE) {
-    log4r::info(fn_logger, paste0("File exists: ", gsub("_",", ",uq_tops$wsizes[k]), "bp HMM file [set ", k, "]. Skipped."))
+  prefix <- paste0(outdir, params$prefix)
+  if (file.exists(paste0(prefix,".hmm")) && !params$redo) {
+    log4r::info(fn_logger, paste0("File found: ", gsub("_",", ",uq_tops$wsizes[k]), "bp HMM file [set ", k, "]."))
     next
   }
   
-  # run MAST-HMM or HMMSTER
+  # save the topologies in separate file
+  fn_mast_tops <- paste0(setfn, params$prefix, ".mast.tops")
+  if (!file.exists(fn_mast_tops) || params$redo) {
+    write.table(topls, file = fn_mast_tops, quote = F, row.names = F, col.names = F)
+  }
+  
+  # run HMMSTER
   mast_cl <- ""
   log4r::info(fn_logger, paste0("Run ", params$analysis_type, " [set ", k, "]."))
-  if (params$analysis_type == MASTHMM) {
-    mast_cl <- paste(params$iqtree2dir,
-                     "-s",fn_alisim,
-                     "-m",mast_model,
-                     "-blmin 0.0001",
-                     "-te",fn_mast_tops,
-                     "-pre",prefix,
-                     "-hmm -redo")
-    
-  } else if (params$analysis_type == HMMSTER) {
+  if (params$analysis_type == HMMSTER) {
     mast_cl <- paste(params$iqtree2dir,
                      "-s",fn_alisim,
                      "-m",mast_model,
@@ -143,4 +133,10 @@ for (k in 1:nrow(uq_tops)) {
 }
 
 rm(uq_tops)
+
+sys_toc <- Sys.time()
+sys_omy <- pryr::mem_used()
+
+write.table(c("", sys_toc - sys_tic), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+write.table(c(paste0("Total memory consumption: ", sys_omy - sys_imy)), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
