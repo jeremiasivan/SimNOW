@@ -17,6 +17,7 @@ mast_model <- paste0("'", params$mast_model, "'")
 fn_mast_model <- gsub('^\\_+|\\_+$', '', tolower(gsub("[[:punct:]]", "_", mast_model)))
 
 mast_dirs <- list.dirs(mast_outdir, full.names = F, recursive = F)
+mast_dirs <- mast_dirs[mast_dirs != "summary"]
 
 # input / output files
 fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")

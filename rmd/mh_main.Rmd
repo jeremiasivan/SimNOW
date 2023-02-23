@@ -37,7 +37,9 @@ if (!dir.exists(currentdir)) {
 }
 
 # set up logger
-fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".mh.log")
+fn_mast_model <- gsub('^\\_+|\\_+$', '', tolower(gsub("[[:punct:]]", "_", params$mast_model)))
+
+fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".", fn_mast_model, ".mh.log")
 log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
 if (params$redo) {
