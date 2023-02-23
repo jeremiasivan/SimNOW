@@ -8,90 +8,79 @@ params:
   analysis_type: "MASTHMM"
 ---
 
-```{r library, include=FALSE}
+```{r setup, include=FALSE}
 library(dplyr)
 library(data.table)
 library(ggplot2)
-library(RColorBrewer)
 
-MASTHMM <- "MASTHMM"
+# select analysis type
 HMMSTER <- "HMMSTER"
-if (!params$analysis_type %in% c(MASTHMM,HMMSTER)) {
-  log4r::error(fn_logger, "Error: invalid type of analysis. Exited.")
+if (!params$analysis_type %in% c(HMMSTER)) {
+  print("Error: invalid type of analysis. Exited.")
   knitr::knit_exit()
 }
-```
 
-```{r setup, include=FALSE}
+# set up working directory
+hmmsumdir <- paste0(params$outdir, "/simsum/", tolower(params$analysis_type), "/")
+if (!dir.exists(hmmsumdir)) {
+  dir.create(hmmsumdir, recursive = T)
+}
+
+# output files
+fn_hmmacc <- paste0(hmmsumdir, "/", params$prefix, ".hmmacc")
+fn_hmmtopset <- paste0(hmmsumdir, "/", params$prefix, ".hmmtopset")
+fn_hmmfig <- paste0(hmmsumdir, "/", params$prefix, ".hmmacc.tiff")
+fn_hmmwacc <- paste0(hmmsumdir, "/", params$prefix, ".hmmwacc")
+fn_hmmwfig <- paste0(hmmsumdir, "/", params$prefix, ".hmmwacc.tiff")
+if (all(file.exists(fn_hmmacc, fn_hmmtopset, fn_hmmfig, fn_hmmwacc, fn_hmmwfig)) && !params$redo) {
+  print("File found: HMM summary files. Exited.")
+  knitr::knit_exit()
+}
+
 fn_figs <- c()
 pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
-
-fn_hmmacc <- paste(params$outdir, "/", params$prefix, ".hmmacc", sep="")
-fn_hmmtopset <- paste(params$outdir, "/", params$prefix, ".hmmtopset", sep="")
-fn_hmmfig <- paste(params$outdir, "/", params$prefix, ".hmmacc.tiff", sep="")
-fn_hmmwacc <- paste(params$outdir, "/", params$prefix, ".hmmwacc", sep="")
-fn_hmmwfig <- paste(params$outdir, "/", params$prefix, ".hmmwacc.tiff", sep="")
-if (all(file.exists(fn_hmmacc, fn_hmmtopset, fn_hmmfig, fn_hmmwacc, fn_hmmwfig)) && params$redo == FALSE) {
-  print("MAST-HMM summary files already exist. Exited.")
-  knitr::knit_exit()
-}
 
 # retrieve all simulations
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
 simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""), allsims)]
 
 # retrieve all MAST models
-top_sets <- list.dirs(paste(params$outdir, "/", simulation[1], "/", tolower(params$analysis_type), "/", sep=""), full.names = F, recursive = F)
-model_list <- list.dirs(paste(params$outdir, "/", simulation[1], "/", tolower(params$analysis_type), "/", top_sets[1], "/", sep=""), full.names = F, recursive = F)
+hmmdir <- paste0(params$outdir, "/", simulation[1], "/", tolower(params$analysis_type), "/")
+top_sets <- list.dirs(hmmdir, full.names = F, recursive = F)
+model_list <- list.dirs(paste0(hmmdir, top_sets[1], "/"), full.names = F, recursive = F)
 model_list <- subset(model_list, model_list != paste(simulation[1], ".mast.tops", sep=""))
 ```
 
 ```{r hmmtruthwindow, include=FALSE}
-dfsets <- data.frame("wsize", "set", "simulation", "r")
+dfsets <- c()
 
 # retrieve topology set and recombination rate for each simulation
 for (s in simulation) {
-  dftmp <- read.table(paste(params$outdir, "/", s, "/", tolower(params$analysis_type), "/", s, ".topset", sep=""))
-  colnames(dftmp) <- dftmp[1,]
-  dftmp <- dftmp[-1,]
-  
-  fn_ms <- paste(params$outdir, "/", s, "/simulation/", s, ".ms", sep="")
+  dftmp <- data.table::fread(paste0(params$outdir, "/", s, "/", tolower(params$analysis_type), "/", s, ".topset"))
+
+  fn_ms <- paste0(params$outdir, "/", s, "/simulation/", s, ".ms")
   command <- strsplit(system(paste("grep 'ms'", fn_ms), intern=T), " ")
   
   for (r in 1:nrow(dftmp)) {
-    dfsets <- rbind(dfsets, c(dftmp$wsizes[r], as.numeric(rownames(dftmp)[r])-1, s, command[[1]][length(command[[1]])-1]))
+    dfsets <- rbind(dfsets, c(dftmp$wsizes[r], r, s, command[[1]][length(command[[1]])-1]))
   }
 }
 
-colnames(dfsets) <- dfsets[1,]
-dfsets <- dfsets[-1,]
+dfsets <- data.table::as.data.table(dfsets)
+data.table::setnames(dfsets, c("wsize", "set", "simulation", "r"))
 
 # calculate MAST-HMM accuracy for each window size
-dfviz <- data.frame("dir","accuracy","model","r","wsize")
+dfviz <- c()
 
 for (e in 1:nrow(dfsets)) {
   wstmp <- strsplit(dfsets$wsize[e],"_")[[1]]
-  mhtmp <- paste(params$outdir, "/", dfsets$simulation[e], "/", tolower(params$analysis_type), "/", dfsets$set[e], "/", sep="")
+  mhtmp <- paste0(params$outdir, "/", dfsets$simulation[e], "/", tolower(params$analysis_type), "/summary/")
     
   for (m in model_list) {
-    fn_hmmsum <- paste(mhtmp, m, "/", dfsets$simulation[e], ".hmmsum", sep="")
-    if (!file.exists(fn_hmmsum)) {
-      next
-    }
-      
-    hmmsum <- read.table(fn_hmmsum)
-    hmmsum <- sapply(hmmsum[-1,-1], as.numeric)
+    fn_hmmsum <- paste0(mhtmp, m, "/", dfsets$simulation[e], ".mh.sum")
     
-    # calculate the accuracy with if conditional for one topology  
-    acc <- 0
-    if (is.null(nrow(hmmsum))) {
-      acc <- hmmsum[1]
-    } else {
-      for (k in 1:nrow(hmmsum)) {
-        acc <- acc + as.numeric(hmmsum[k,k])
-      }
-    }
-    acc <- round(acc / sum(hmmsum) * 100, 3)
+    hmmsum <- data.table::fread(fn_hmmsum)
+    acc <- hmmsum[set == dfsets$set[e], accuracy]
     
     # store the values in dataframe
     for (w in wstmp) {
@@ -100,8 +89,8 @@ for (e in 1:nrow(dfsets)) {
   }
 }
 
-colnames(dfviz) <- dfviz[1,]
-dfviz <- dfviz[-1,]
+dfviz <- as.data.frame(dfviz)
+colnames(dfviz) <- c("dir","accuracy","model","r","wsize")
 
 dfviz$model <- gsub("\\_","+",toupper(dfviz$model))
 dfviz$wsize <- factor(as.numeric(dfviz$wsize)/1000)
@@ -136,7 +125,7 @@ iterator <- 0
 for (i in unique(dfviz$r)) {
   outperr <- subset(dfviz, dfviz$r == i)
   
-  fn_simfig <- paste(params$outdir, "/", params$prefix, ".hmmwacc.r",i,".tiff", sep="")
+  fn_simfig <- paste(hmmsumdir, "/", params$prefix, ".hmmwacc.r",i,".tiff", sep="")
   fn_figs <- c(fn_figs, fn_simfig)
   iterator <- iterator + 1
   

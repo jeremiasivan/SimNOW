@@ -14,12 +14,21 @@ if (params$analysis_type == HMMSTER) {
 # extract MAST run directories
 mast_outdir <- paste0(getwd(), "/", tolower(params$analysis_type), "/")
 mast_model <- paste0("'", params$mast_model, "'")
+fn_mast_model <- gsub('^\\_+|\\_+$', '', tolower(gsub("[[:punct:]]", "_", mast_model)))
+
 mast_dirs <- list.dirs(mast_outdir, full.names = F, recursive = F)
 
 # input / output files
 fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
 fn_topset <- paste0(mast_outdir, params$prefix, ".topset")
-fn_summary <- paste0(mast_outdir, params$prefix, ".mh.sum")
+
+# set up output directory
+mast_sumdir <- paste0(mast_outdir, "summary/", fn_mast_model, "/")
+if (!dir.exists(mast_sumdir)) {
+  dir.create(mast_sumdir, recursive = T)
+}
+
+fn_summary <- paste0(mast_sumdir, params$prefix, ".mh.sum")
 ```
 
 ```{r postmh, include=FALSE}
@@ -30,7 +39,7 @@ options(scipen=999)
 # iterate through topology sets
 for (i in mast_dirs) {
   temp_outdir <- paste0(mast_outdir,i,"/")
-  outdir <- paste0(temp_outdir, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/")
+  outdir <- paste0(temp_outdir, fn_mast_model, "/")
  
   # skip this step if files exist
   fn_hmmtw <- paste0(outdir, params$prefix, ".hmmtw")
@@ -148,7 +157,7 @@ t_accuracy <- c()
 # iterate through MAST directories
 for (i in mast_dirs) {
   temp_outdir <- paste0(mast_outdir,i,"/")
-  outdir <- paste0(temp_outdir, gsub('^\\_+|\\_+$','', tolower(gsub("[[:punct:]]","_",mast_model))), "/")
+  outdir <- paste0(temp_outdir, fn_mast_model, "/")
   
   fn_iqtree <- paste0(outdir, params$prefix, ".iqtree")
   fn_hmm <- paste0(outdir, params$prefix, ".hmm")
@@ -195,7 +204,7 @@ t_accuracy <- as.data.frame(t_accuracy)
 
 # plot each information criterion score
 for (c in 3:ncol(t_accuracy)) {
-  fn_sumfig <- paste0(mast_outdir, params$prefix, ".", colnames(t_accuracy)[c], ".mh.tiff")
+  fn_sumfig <- paste0(mast_sumdir, params$prefix, ".", colnames(t_accuracy)[c], ".mh.tiff")
   iterator <- iterator + 1
   
   tiff(filename=fn_sumfig, units="px", width=2880, height=1800)
