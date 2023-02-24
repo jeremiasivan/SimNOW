@@ -59,51 +59,51 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$re
   log4r::info(fn_logger, "File found: ms summary files.")
   
 } else {
-  ms <- read.delim(fn_msfile)
+  ms <- data.table::fread(fn_msfile, col.names="cmd", sep="")
   
   # extract ms trees
-  mstrees <- subset(ms, grepl("^\\[", ms[,1]))
+  mstrees <- ms[grepl("^\\[", cmd)]
   if (nrow(mstrees) == 0) {
-    onlytree <- subset(ms, grepl("^\\(.+\\);$", ms[,1]))
-    mstrees <- data.frame(paste0("[",params$ms_l,"]",onlytree))
+    mstrees <- ms[grepl("^\\(.+\\);$", cmd)]
+    mstrees[1, cmd := paste0("[", params$ms_l, "]", mstrees[1, cmd])]
   }
   
-  # convert ms trees into dataframe
-  trees <- data.frame(do.call('rbind', strsplit(as.character(mstrees[,1]), '\\[|\\]')))
-  trees[,1] <- NULL
-  colnames(trees) <- c("length","tree")
-  trees$length <- as.numeric(trees$length)
+  # convert ms trees into data.table
+  mstrees[, c("empty","length","tree") := data.table::tstrsplit(cmd, '\\[|\\]', fixed = FALSE)]
+  mstrees[, c("cmd", "empty") := NULL]
+  mstrees$length <- as.numeric(mstrees$length)
   
   # combine contiguous trees together  
-  summary <- trees %>%
+  summary <- mstrees %>%
     group_by(tree, group_run = data.table::rleid(tree)) %>%
     summarise_all(sum) %>%
     arrange(group_run)
   summary$group_run <- NULL
+  summary <- data.table::as.data.table(summary)
     
-  n <- nrow(summary)
-  start <- c(1)
-  stop <- c(summary$length[1])
-  
   # store first tree without branch lengths  
-  first_tree <- read.tree(text=summary$tree[1])
+  n <- nrow(summary)
+  start <- 1
+  stop <- summary$length[1]
+  
+  first_tree <- ape::read.tree(text=summary$tree[1])
   first_tree$edge.length <- NULL
-  topology <- c(write.tree(first_tree))
+  topology <- ape::write.tree(first_tree)
     
+  # store subsequent trees without branch lengths
   if (n > 1) {
     for (i in 2:n){
       start <- c(start,stop[length(stop)]+1)
       stop <- c(stop,stop[length(stop)]+summary$length[i])
-        
-      # store trees without branch lengths
-      temp_tree <- read.tree(text=summary$tree[i])
+
+      temp_tree <- ape::read.tree(text=summary$tree[i])
       temp_tree$edge.length <- NULL
-      topology <- c(topology,write.tree(temp_tree))
+      topology <- c(topology, ape::write.tree(temp_tree))
     }
   }
     
-  summary <- cbind(summary,start=start,stop=stop,topology=topology)
-  write.table(summary, fn_mstrees, sep="\t", quote=F, row.names=F)
+  summary[, c("start", "stop", "topology") := list(start, stop, topology)]
+  data.table::fwrite(summary, file=fn_mstrees, sep="\t", quote=F)
   write.table(summary$tree, file=fn_mttrees, sep="\t", quote=F, row.names=F, col.names=F)
   log4r::info(fn_logger, paste0(n, " tree partition(s) found. File created: ",
                                params$prefix, ".mstrees and ", params$prefix, ".multitree"))
@@ -114,10 +114,12 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$re
     summarise(length=sum(length)) %>%
     arrange(group_run)
   t_summary$group_run <- NULL
-    
+  t_summary <- as.data.table(t_summary)
+   
+  # store the boundary of each topology 
   nt <- nrow(t_summary)
-  start <- c(1)
-  stop <- c(t_summary$length[1])
+  start <- 1
+  stop <- t_summary$length[1]
 
   if (nt > 1) {
     for (i in 2:nt){
@@ -126,13 +128,13 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$re
     }
   }    
   
-  t_summary <- cbind(t_summary,start=start,stop=stop)
-  write.table(t_summary, file=fn_mstops, sep="\t", quote=F, row.names=F)
-  write.table(data.frame(unique(t_summary$topology)), file=fn_uqtops, sep="\t", quote=F, row.names=F, col.names=F)
+  t_summary[, c("start", "stop") := list(start, stop)]
+  data.table::fwrite(t_summary, file=fn_mstops, sep="\t", quote=F)
+  write.table(unique(t_summary$topology), file=fn_uqtops, sep="\t", quote=F, row.names=F, col.names=F)
   log4r::info(fn_logger, paste0(nt, " topology partition(s) found. File created: ", 
                                params$prefix, ".mstops and ", params$prefix, ".uqtops"))
   
-  rm(ms, mstrees, trees, summary, t_summary, start, stop, topology)
+  rm(ms, mstrees, summary, t_summary, start, stop, topology)
 }
 ```
 
@@ -145,9 +147,7 @@ if (file.exists(fn_nexus) && !params$redo) {
   log4r::info(fn_logger, paste0("File found: ", params$prefix, ".nex."))
   
 } else {
-  mstrees <- read.table(fn_mstrees)
-  colnames(mstrees) <- mstrees[1,]
-  mstrees <- mstrees[-1,]
+  mstrees <- data.table::fread(fn_mstrees)
   
   # generate nexus file
   res <- lapply(1:nrow(mstrees), function(i) {

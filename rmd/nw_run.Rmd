@@ -22,7 +22,7 @@ if (length(params$window_size) == 0) {
 
 # create doSNOW cluster
 nwcl <- makeCluster(params$thread)
-registerDoSNOW(nwcl)
+doSNOW::registerDoSNOW(nwcl)
 
 # input/output files
 fn_alisim <- paste0(getwd(), "/simulation/", params$prefix, ".fa")
@@ -37,8 +37,8 @@ write.table(c("",
 options(scipen=999)
 
 # read fasta file
-s <- read.fasta(fn_alisim, whole.header = T)
-lens <- getLength(s)[1]
+s <- seqinr::read.fasta(fn_alisim, whole.header = T)
+lens <- seqinr::getLength(s)[1]
 
 # iterate through window sizes
 for (w in params$window_size) {
@@ -47,6 +47,7 @@ for (w in params$window_size) {
     next
   }
   
+  # total alignment length should be divisible by the window size
   numw <- lens/w
   if (!numw%%1==0) {
     log4r::warn(fn_logger, paste0("Warning: ", w, "bp window does not cover the whole alignment. Skipped."))
@@ -75,7 +76,7 @@ for (w in params$window_size) {
     df <- do.call(rbind,subfasta)
       
     subfasta <- setNames(split(df, seq(nrow(df))), rownames(df))
-    write.fasta(sequences=subfasta, names=names(subfasta),
+    seqinr::write.fasta(sequences=subfasta, names=names(subfasta),
                 file.out=paste0(temp_outdir,"window_",formatC(i,width=wi,format="d",flag="0"),".fa"),
                 nbchar = 100)
       
@@ -103,15 +104,14 @@ foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
     dir.create(temp_outdir, recursive = T)
   }
   
-  if (length(list.files(temp_outdir,pattern='treefile')) != 0 && !params$redo) {
+  fastadir <- paste0(window_outdir,i,"/alignment/")
+  prefix <- paste0(temp_outdir,params$prefix)
+  if (file.exists(paste0(prefix, ".treefile")) && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", i, "bp window treefile."))
     next
   }
   
   # generate window treefile
-  fastadir <- paste0(window_outdir,i,"/alignment/")
-  prefix <- paste0(temp_outdir,params$prefix)
-
   if (is.null(params$outgroup) || params$outgroup == ""){
     system(paste(params$iqtree2dir,
                  "-S",fastadir,
@@ -128,6 +128,7 @@ foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
   }
   
   log4r::info(fn_logger, paste0("File created: ", i, "bp window treefile."))
+  NULL
 }
 ```
 
@@ -135,12 +136,12 @@ foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
 options(scipen=999)
 
 # read unique topology files
-t_hash <- hash()
+t_hash <- hash::hash()
 t_count <- 1
 
 topology_file <- file(description=fn_uqtops, open="r", blocking = TRUE)
 while (length(tl <- readLines(topology_file, n=1, warn=F))) {
-  tl <- write.tree(unroot(read.tree(text=tl)))
+  tl <- ape::write.tree(ape::unroot(ape::read.tree(text=tl)))
   t_hash[tl] = paste0("T", t_count)
   t_count <- t_count + 1
 }
@@ -148,10 +149,11 @@ close(topology_file)
 
 # iterate through window sizes
 ls_seqlen <- foreach (i = window_sizes, .combine=c) %dopar% {
-  library(ape)
   library(data.table)
   library(dplyr)
   library(ggplot2)
+  
+  options(scipen=999)
   
   temp_outdir <- paste0(window_outdir,i,"/summary/")
   if (!dir.exists(temp_outdir)) {
@@ -165,24 +167,24 @@ ls_seqlen <- foreach (i = window_sizes, .combine=c) %dopar% {
   fn_tops <- paste0(temp_outdir, params$prefix, ".topsum")
   if (all(file.exists(fn_atsum, fn_atsumf, fn_cnsum, fn_cnsumf, fn_tops)) && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", i, "bp window summary files."))
-    return()
+    return(NULL)
   }
   
   # retrieve each fasta file and its respective topology
   seq_list <- sort(list.files(paste0(window_outdir, i, "/alignment/")))
   iqtree_file <- file(description = paste0(window_outdir, i, "/trees/", params$prefix, ".treefile"), open="r", blocking = TRUE)
   
-  seq_len <- data.frame(stringsAsFactors = FALSE)
+  seq_len <- c()
   start <- 0
   
   while (length(trl <- readLines(iqtree_file, n=1))) {
     ttop <- "NT"
-    tl <- read.tree(text=trl)
+    tl <- ape::read.tree(text=trl)
     tl$edge.length <- NULL
-    tree <- write.tree(tl)
+    tree <- ape::write.tree(tl)
     
     for (j in names(t_hash)) {
-      if (all.equal.phylo(read.tree(text = j), tl)) {
+      if (ape::all.equal.phylo(ape::read.tree(text = j), tl)) {
         ttop <- as.character(t_hash[[j]])
         break
       }
@@ -195,7 +197,9 @@ ls_seqlen <- foreach (i = window_sizes, .combine=c) %dopar% {
     start <- start+as.numeric(i)
   }
   close(iqtree_file)
-  colnames(seq_len) <- c("source", "start", "stop", "length", "newick", "topology")
+  
+  seq_len <- data.table::as.data.table(seq_len)
+  data.table::setnames(seq_len, c("source", "start", "stop", "length", "newick", "topology"))
   
   # visualization of topology switching across chromosome
   dat <- do.call(rbind, apply(seq_len, 1,
@@ -234,7 +238,7 @@ ls_seqlen <- foreach (i = window_sizes, .combine=c) %dopar% {
 
   gpl2 <- ggplot(cons_windows, aes(fill=topology)) +
     geom_bar(position="dodge", stat="identity", aes(y=total, x=count)) +
-    aes(x = fct_inorder(topology)) +
+    aes(x = forcats::fct_inorder(topology)) +
     ggtitle("Distribution of Consecutive Windows Per Topology") +
     facet_grid(~topology) +
     theme(
@@ -262,9 +266,9 @@ if (length(ls_seqlen) > 0) {
     fn_cnsumf <- paste0(temp_outdir, params$prefix, ".cnsum.tiff")
     fn_tops <- paste0(temp_outdir, params$prefix, ".topsum")
     
-    write.table(ls_seqlen[[i]][[2]], file=fn_atsum, quote=FALSE, sep="\t", row.names=F, col.names=T)
-    write.table(ls_seqlen[[i]][[4]], file=fn_tops, quote=FALSE, sep="\t", row.names=F, col.names=T)
-    write.table(ls_seqlen[[i]][[5]], file=fn_cnsum, quote=FALSE, sep="\t", row.names=F, col.names=T)
+    data.table::fwrite(ls_seqlen[[i]][[2]], file=fn_atsum, quote=F, sep="\t")
+    data.table::fwrite(ls_seqlen[[i]][[4]], file=fn_tops, quote=F, sep="\t")
+    data.table::fwrite(ls_seqlen[[i]][[5]], file=fn_cnsum, quote=F, sep="\t")
     
     tiff(file=fn_atsumf, units="px", width=250, height=2000)
     print(ls_seqlen[[i]][[3]])
@@ -286,7 +290,7 @@ write.table(c("",
               "---- Contiguous Window Alignment ---"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
-s <- read.fasta(fn_alisim, whole.header = T)
+s <- seqinr::read.fasta(fn_alisim, whole.header = T)
 sdf <- do.call(rbind,s)
 
 # iterate through window sizes
@@ -297,14 +301,13 @@ for (i in window_sizes) {
   }
   
   # read annotation summary file
-  smfile <- read.table(paste0(window_outdir,i,"/summary/",params$prefix,".atsum"))
-  colnames(smfile) <- smfile[1,]
-  smfile <- smfile[-1,]
-    
+  smfile <- data.table::fread(paste0(window_outdir,i,"/summary/",params$prefix,".atsum"))
+
   unique_topology <- sort(unique(smfile$newick))
-  newick_map <- data.frame(stringsAsFactors = FALSE)
+  newick_map <- c()
   count <- 1
   
+  # skip this step if output file exists
   fn_map <- paste0(temp_outdir, "../", params$prefix, ".map")
   acount <- length(list.files(temp_outdir,pattern='fa'))
   if (file.exists(fn_map) && acount == length(unique_topology) && !params$redo) {
@@ -322,14 +325,14 @@ for (i in window_sizes) {
     alignment <- sdf[,align_idx]
     subfasta <- setNames(split(alignment, seq(nrow(alignment))), rownames(alignment))
       
-    write.fasta(sequences=subfasta, names=names(subfasta), file.out=paste0(temp_outdir,"G",count,".fa"), nbchar = 100)
+    seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=paste0(temp_outdir,"G",count,".fa"), nbchar = 100)
     newick_map <- rbind(newick_map, c(t, paste0("G",count)))
     count <- count + 1
     
     rm(sub_sw, align_idx, alignment, subfasta)
   }
     
-  write.table(newick_map, fn_map, quote = F, row.names = F, col.names = F)
+  data.table::fwrite(data.table::as.data.table(newick_map), file=fn_map, quote = F, col.names = F, sep = "\t")
   log4r::info(fn_logger, paste0("File created: ", i, "bp contiguous window alignment files. ",
                                 "File naming convention is available at ", params$prefix, ".map."))
   
@@ -376,6 +379,7 @@ foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
   }
   
   log4r::info(fn_logger, paste0("File created: ", i, "bp contiguous window treefile."))
+  NULL
 }
 ```
 

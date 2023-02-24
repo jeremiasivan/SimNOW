@@ -20,11 +20,9 @@ params:
 # install.packages("ape")
 # install.packages("ggplot2")
 # install.packages("log4r")
-# install.packages("pryr")
 
-# store initial system time and memory
+# store initial system time
 sys_tic <- Sys.time()
-sys_imy <- pryr::mem_used()
 
 # load libraries
 library(data.table)
@@ -68,13 +66,10 @@ knitr::opts_knit$set(root.dir = currentdir)
 ```
 
 ```{r, include=FALSE}
-# store final system time and memory
+# store final system time
 sys_toc <- Sys.time()
-sys_omy <- pryr::mem_used()
 
-# write the system time and memory in log file
-write.table(c("", paste0("Total elapsed time: ", sys_toc - sys_tic, " seconds")),
-            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-write.table(c(paste0("Total memory consumption: ", sys_omy - sys_imy, "MB")),
+# write the system time in log file
+write.table(c("", paste0("Total elapsed time: ", round(as.numeric(sys_toc - sys_tic) / 60, 3), " mins")),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```

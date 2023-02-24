@@ -18,9 +18,7 @@ fn_summary <- paste0(window_outdir, params$prefix, ".sum")
 ```
 
 ```{r sumwindow, include=FALSE}
-msfile <- read.table(fn_mstops)
-colnames(msfile) <- msfile[1,]
-msfile <- msfile[-1,]
+msfile <- data.table::fread(fn_mstops)
 
 # iterate through window sizes
 for (i in window_sizes) {
@@ -34,59 +32,60 @@ for (i in window_sizes) {
   }
   
   # read annotation summary file
-  smfile <- read.table(paste0(temp_outdir, params$prefix, ".atsum"))
-  colnames(smfile) <- smfile[1,]
-  smfile <- smfile[-1,]
+  smfile <- data.table::fread(paste0(temp_outdir, params$prefix, ".atsum"))
+  smfile$start <- as.numeric(smfile$start)
+  smfile$stop <- as.numeric(smfile$stop)
   
-  unique_topologies <- unique(smfile$newick)
+  mstree_uq <- unique(msfile$topology)
+  smtree_uq <- unique(smfile$newick)
   
   # match window topology with ms topology
-  for (j in 1:nrow(msfile)) {
-    for (k in unique_topologies) {
-      if (all.equal.phylo(unroot(read.tree(text = msfile$topology[j])), read.tree(text = k))) {
-        msfile$topology[j] <- k
+  for (j in mstree_uq) {
+    for (k in smtree_uq) {
+      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::read.tree(text = k))) {
+        smfile[, newick := gsub(k, j, newick, fixed = TRUE)]
         break
       }
     }
   }
   
-  # extract essential columns
-  dat <- do.call(rbind, apply(smfile, 1,
-               function(x) data.table(bp = x["start"]:x["stop"], newick = x["newick"], topology = x["topology"])))
-  
   # create empty dataframe
-  tree_header <- unique(msfile$topology)
+  mstree_uq_ln <- length(mstree_uq)
   
-  empty_matrix <- as.data.frame(matrix(rep(0, length(tree_header)+1), nrow=length(tree_header), ncol=length(tree_header)+1))
-  names(empty_matrix) <- c(tree_header,"NT")
-  
-  output <- data.frame(topology = tree_header)
-  output <- cbind(output, empty_matrix)
+  output <- data.table::data.table(c(mstree_uq,"NT"), matrix(0, nrow=mstree_uq_ln+1, ncol=mstree_uq_ln))
+  data.table::setnames(output, c("topology", mstree_uq))
   
   # iterate through ms topology file
-  for (j in 1:nrow(msfile)){
-    sites <- dat[msfile$start[j]:msfile$stop[j],]
-    topology_idx <- match(msfile$topology[j], output$topology)
+  for (k in 1:nrow(msfile)){
+    # extract the hmm topology based on ms topology switching
+    start_idx <- tail(which(smfile$start <= msfile$start[k]), 1)
+    stop_idx <- head(which(smfile$stop >= msfile$stop[k]), 1)
     
-    if (all(is.na(sites))) {
-      log4r::warn(fn_logger, paste0("Total length of ", i, "bp window does not match with msfile."))
-      break
-    }
+    # update lengths
+    sites <- smfile[start_idx:stop_idx,]
+    sites$start[1] <- msfile$start[k]
+    sites$length[1] <- sites$stop[1] - sites$start[1] + 1
     
-    sites_sum <- aggregate(bp ~ newick, data=sites, FUN=length)
+    last_idx <- nrow(sites)
+    sites$stop[last_idx] <- msfile$stop[k]
+    sites$length[last_idx] <- sites$stop[last_idx] - sites$start[last_idx] + 1
+    
+    topology_idx <- match(msfile$topology[k], colnames(output))
     
     # add number of window sites for the respective ms topology
-    for (k in 1:nrow(sites_sum)) {
-      window_idx <- match(sites_sum$newick[k], colnames(output))
+    for (j in 1:nrow(sites)) {
+      window_idx <- match(sites$newick[j], output$topology)
       
       if (is.na(window_idx)) {
-        output$NT[topology_idx] = output$NT[topology_idx] + sites_sum$bp[k]
+        tempval <- as.numeric(output[mstree_uq_ln+1, ..topology_idx] + sites$length[j])
+        output[mstree_uq_ln+1, eval(msfile$topology[k]) := tempval]
       } else {
-        output[topology_idx,window_idx] = output[topology_idx,window_idx] + sites_sum$bp[k]
+        tempval <- as.numeric(output[window_idx, ..topology_idx] + sites$length[j])
+        output[window_idx, eval(msfile$topology[k]) := tempval]
       }
     }
     
-    rm(sites, sites_sum)
+    rm(sites)
   }
   
   # visualization
@@ -119,17 +118,17 @@ for (i in window_sizes) {
   #         ))
   # dev.off()
   
-  write.table(output, file=fn_cmp, sep = "\t", quote = F, row.names = F)
+  data.table::fwrite(output, file=fn_cmp, sep = "\t", quote = F)
   log4r::info(fn_logger, paste0("File created: ", i, "bp window comparison files (", params$prefix, ".cmp)."))
   
-  rm(smfile, dat, empty_matrix, output)
+  rm(smfile, output)
 }
 
 rm(msfile)
 ```
 
 ```{r sumtable, include=FALSE}
-t_accuracy <- c("window_size","accuracy","aic","aicc","bic","aic_ct","aicc_ct","bic_ct")
+t_accuracy <- c()
 
 # iterate through window sizes
 for (i in window_sizes) {
@@ -138,8 +137,8 @@ for (i in window_sizes) {
   fn_contiguous <- paste0(window_outdir,i,"/contiguous/trees/",params$prefix,".iqtree")
   
   # read and extract accuracy of each window
-  cmp <- read.table(fn_cmp)
-  cmp <- as.matrix(cmp[-1,-1])
+  cmp <- data.table::fread(fn_cmp)
+  cmp <- as.matrix(cmp[,-1])
   
   acc <- sum(as.numeric(diag(cmp))) / sum(as.numeric(cmp)) * 100
   acc <- round(acc, 3)
@@ -148,30 +147,30 @@ for (i in window_sizes) {
   aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
   aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
   bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
-  caic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_contiguous), intern = T))
-  caicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_contiguous), intern = T))
-  cbic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_contiguous), intern = T))
   
   # change empty character to NA
-  caic <- ifelse(!length(caic), NA, caic)
-  caicc <- ifelse(!length(caicc), NA, caicc)
-  cbic <- ifelse(!length(cbic), NA, cbic)
+  caic <- NA; caicc <- NA; cbic <- NA
+  if (file.exists(fn_contiguous)) {
+    caic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'", fn_contiguous), intern = T))
+    caicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_contiguous), intern = T))
+    cbic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_contiguous), intern = T))
+  }
   
   t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,caic,caicc,cbic))
-  
   rm(cmp, acc)
 }
 
-t_accuracy <- as.data.frame(t_accuracy)
-colnames(t_accuracy) <- t_accuracy[1,]
-t_accuracy <- t_accuracy[-1,]
+t_accuracy <- data.table::as.data.table(t_accuracy)
+data.table::setnames(t_accuracy, c("window_size","accuracy","aic","aicc","bic","aic_ct","aicc_ct","bic_ct"))
 
-write.table(t_accuracy, fn_summary, quote=F, row.names=F, col.names=T)
+data.table::fwrite(t_accuracy, file=fn_summary, quote=F, sep="\t")
 log4r::info(fn_logger, paste0("File created/modified: summary table of NOW and ms (", params$prefix, ".sum)."))
 
 # correlation plot
+t_accuracy <- as.data.frame(t_accuracy)
 t_accuracy <- t_accuracy[, colSums(is.na(t_accuracy))==0]
 
+library(ggplot2)
 pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
 iterator <- 0
 
@@ -200,6 +199,5 @@ for (c in 3:ncol(t_accuracy)) {
 }
 
 log4r::info(fn_logger, paste0("File created/modified: NOW accuracy vs NOW IC correlation plots."))
-
 rm(t_accuracy)
 ```
