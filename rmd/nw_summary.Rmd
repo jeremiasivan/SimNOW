@@ -149,9 +149,12 @@ for (i in window_sizes) {
   bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
   
   # change empty character to NA
-  caic <- ifelse(!file.exists(fn_contiguous), NA, gsub("^.* ", "", system(paste("grep '^Akaike information criterion'", fn_contiguous), intern = T)))
-  caicc <- ifelse(!file.exists(fn_contiguous), NA, gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_contiguous), intern = T)))
-  cbic <- ifelse(!file.exists(fn_contiguous), NA, gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_contiguous), intern = T)))
+  caic <- NA; caicc <- NA; cbic <- NA
+  if (file.exists(fn_contiguous)) {
+    caic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'", fn_contiguous), intern = T))
+    caicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_contiguous), intern = T))
+    cbic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_contiguous), intern = T))
+  }
   
   t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,caic,caicc,cbic))
   rm(cmp, acc)
