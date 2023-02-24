@@ -9,7 +9,6 @@ params:
 library(data.table)
 library(dplyr)
 library(ggplot2)
-library(RColorBrewer)
 
 simsumdir <- paste0(params$outdir, "/simsum/")
 if (!dir.exists(simsumdir)) {
@@ -24,37 +23,31 @@ fn_simfig <- paste0(simsumdir, params$prefix, ".simsum.tiff")
 # extract row and column names
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
 simulation <- allsims[grep(paste0("^",params$prefix), allsims)]
+simulation_ln <- length(simulation)
 
 window_sizes <- list.dirs(paste0(params$outdir,"/",simulation[1],"/windows/"), full.names = F, recursive = F)
-window_sizes <- subset(window_sizes, window_sizes != paste0(simulation[1],".summary"))
-
-empty_matrix <- as.data.frame(matrix(rep(0, length(window_sizes)+1), nrow=length(simulation), ncol=length(window_sizes)+1))
-names(empty_matrix) <- c(window_sizes, "r")
-  
-output <- data.frame(simulation = simulation)
-output <- cbind(output, empty_matrix)
+window_sizes <- window_sizes[window_sizes != paste0(simulation[1],".summary")]
+window_sizes_ln <- length(window_sizes)
 
 # extract summary for each simulation
+output <- data.table::data.table(simulation, matrix(0, nrow=simulation_ln, ncol=window_sizes_ln+1))
+data.table::setnames(output, c("simulation", window_sizes, "r"))
+
 for (i in simulation) {
-  row_idx <- which(output$simulation == i)
-  
-  fn_sum <- paste0(params$outdir,"/",i,"/windows/",i,".sum")
-  sumfile <- read.table(fn_sum)
-  colnames(sumfile) <- sumfile[1,]
-  sumfile <- sumfile[-1,]
+  row_idx <- match(i, output$simulation)
+  sumfile <- data.table::fread(paste0(params$outdir,"/",i,"/windows/",i,".sum"))
   
   for (j in 1:nrow(sumfile)) {
-    col_idx <- sumfile$window_size[j]
-    output[row_idx,col_idx] <- sumfile$accuracy[j]
+    output[row_idx, as.character(eval(sumfile$window_size[j])) := sumfile$accuracy[j]]
   }
   
   fn_ms <- paste0(params$outdir,"/",i,"/simulation/",i,".ms")
   command <- strsplit(system(paste("grep 'ms'",fn_ms), intern=T), " ")
   
-  output[row_idx,ncol(output)] = command[[1]][length(command[[1]])-1]
+  output[row_idx, "r" := as.numeric(command[[1]][length(command[[1]])-1])]
 }
 
-write.table(output, fn_simsum, quote = F, row.names = T, col.names = T)
+data.table::fwrite(output, file=fn_simsum, quote = F, sep = "\t")
 
 # visualization
 sub_output <- data.frame()
@@ -62,7 +55,7 @@ pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
   
 for (i in 1:nrow(output)) {
   for (j in 3:ncol(output)-1) {
-    sub_output <- rbind(sub_output, c(output$simulation[i],colnames(output[j]),output[i,j],output[i,ncol(output)]))
+    sub_output <- rbind(sub_output, c(output$simulation[i], colnames(output)[j], as.character(output[i, ..j]), as.numeric(output[i, "r"])))
   }
 }
 colnames(sub_output) <- c("simulation","wsize","accuracy","r")

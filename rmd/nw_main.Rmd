@@ -11,7 +11,7 @@ params:
   # ms
   msdir: "~/Documents/msdir/ms"
   ms_params: ""
-  ms_r: 0
+  ms_r: 
   ms_l: 1000000
   
   # AliSim
@@ -24,16 +24,21 @@ params:
   window_size: !r c()
 ---
 
-```{r setup, include=FALSE}
-library(ape)
+```{r, include=FALSE}
+# install.packages("ape")
+# install.packages("forcats")
+# install.packages("ggplot2")
+# install.packages("log4r")
+# install.packages("seqinr")
+
+# store initial system time
+sys_tic <- Sys.time()
+
+# load libraries
 library(data.table)
-library(doSNOW)
 library(dplyr)
-library(forcats)
-library(ggplot2)
+library(doSNOW)
 library(hash)
-library(log4r)
-library(seqinr)
 
 # create outdir
 currentdir <- paste0(params$outdir, "/", params$prefix)
@@ -43,7 +48,7 @@ if (!dir.exists(currentdir)) {
 
 # create log file
 fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".log")
-log_appender <- file_appender(fn_log, append = TRUE, layout = default_log_layout())
+log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
 if (params$redo) {
   unlink(fn_log)
@@ -56,14 +61,20 @@ if (!file.exists(fn_log)) {
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-## Sequence Simulation
 ```{r child = paste(params$rmddir,"/nw_simulation.Rmd",sep=""), include=FALSE}
 ```
 
-## Non-Overlapping Windows Analysis
 ```{r child = paste(params$rmddir,"/nw_run.Rmd",sep=""), include=FALSE}
 ```
 
-## Summary
 ```{r child = paste(params$rmddir,"/nw_summary.Rmd",sep=""), include=FALSE}
+```
+
+```{r, include=FALSE}
+# store final system time
+sys_toc <- Sys.time()
+
+# write the system time in log file
+write.table(c("", paste0("Total elapsed time: ", round(as.numeric(sys_toc - sys_tic) / 60, 3), " mins")),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
