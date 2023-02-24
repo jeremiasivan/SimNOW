@@ -79,16 +79,16 @@ log4r::info(fn_logger, paste0(nrow(uq_tops), " topology sets found."))
 
 # iterate through topology sets
 for (k in 1:nrow(uq_tops)) {
-  setfn <- paste0(mast_outdir,k,"/")
-  if (!dir.exists(setfn)) {
-    dir.create(setfn, recursive = T)
-  }
-  
   # check number of topology
   topls <- strsplit(uq_tops$topologies[k],split = "&")[[1]]
   if (length(topls) <= 1) {
     log4r::info(fn_logger, paste0(gsub("_",", ",uq_tops$wsizes[k]), "bp [set ", k, "] has one or less topology. Skipped."))
     next
+  }
+  
+  setfn <- paste0(mast_outdir,k,"/")
+  if (!dir.exists(setfn)) {
+    dir.create(setfn, recursive = T)
   }
   
   # create new directory based on the MAST model
