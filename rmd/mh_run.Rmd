@@ -120,7 +120,7 @@ for (k in 1:nrow(uq_tops)) {
                      "-blmin 0.0001",
                      "-te",fn_mast_tops,
                      "-pre",prefix,
-                     "-hmmster -redo")
+                     "-T 1 -hmmster -redo")
   }
   
   system(mast_cl)

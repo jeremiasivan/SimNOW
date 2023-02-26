@@ -176,7 +176,7 @@ if (file.exists(paste0(fn_alisim, ".fa")) && !params$redo) {
                  "-Q",fn_nexus,
                  "-t",fn_mttrees,
                  "-m",params$alisim_model,
-                 "-nt",params$thread,
+                 "-T",params$thread,
                  "-af fasta -redo"))
   } else {
     system(paste(params$iqtree2dir,
@@ -185,7 +185,7 @@ if (file.exists(paste0(fn_alisim, ".fa")) && !params$redo) {
                  "-t",fn_mttrees,
                  "--branch-scale",params$alisim_scale,
                  "-m",params$alisim_model,
-                 "-nt",params$thread,
+                 "-T",params$thread,
                  "-af fasta -redo"))
   }
   

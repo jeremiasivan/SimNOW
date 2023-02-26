@@ -117,13 +117,13 @@ foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
                  "-S",fastadir,
                  "-m",params$alisim_model,
                  "-pre",prefix,
-                 "--quiet -redo -nt 1"))
+                 "--quiet -redo -T 1"))
   } else {
     system(paste(params$iqtree2dir,
                  "-S",fastadir,
                  "-m",params$alisim_model,
                  "-pre",prefix,
-                 "--quiet -redo -nt 1",
+                 "--quiet -redo -T 1",
                  "-o",params$outgroup))
   }
   
@@ -368,13 +368,13 @@ foreach (i = window_sizes, .errorhandling = 'pass') %dopar% {
                  "-S",temp_outdir,
                  "-m",params$alisim_model,
                  "-pre",prefix,
-                 "--quiet -redo -nt 1"))
+                 "--quiet -redo -T 1"))
   } else {
     system(paste(params$iqtree2dir,
                  "-S",temp_outdir,
                  "-m",params$alisim_model,
                  "-pre",prefix,
-                 "--quiet -redo -nt 1",
+                 "--quiet -redo -T 1",
                  "-o",params$outgroup))
   }
   
