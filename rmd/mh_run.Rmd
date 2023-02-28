@@ -56,7 +56,7 @@ if (file.exists(fn_topset) && !params$redo){
     }
     
     list_tops <- rbind(list_tops, c(i,paste(sort(tmast),collapse="&")))
-    rm(topsum)
+    rm(topsum, tpercent, tmast)
   }
   
   list_tops <- data.table::as.data.table(list_tops)
@@ -110,6 +110,8 @@ for (k in 1:nrow(uq_tops)) {
     write.table(topls, file = fn_mast_tops, quote = F, row.names = F, col.names = F)
   }
   
+  rm(topls)
+  
   # run HMMSTER
   mast_cl <- ""
   log4r::info(fn_logger, paste0("Run ", params$analysis_type, " [set ", k, "]."))
@@ -123,7 +125,7 @@ for (k in 1:nrow(uq_tops)) {
                      "-T 1 -hmmster -redo")
   }
   
-  system(mast_cl)
+  system(mast_cl, intern = FALSE, ignore.stdout = TRUE, ignore.stderr = FALSE)
 }
 
 rm(uq_tops)

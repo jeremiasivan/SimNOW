@@ -150,7 +150,7 @@ for (i in mast_dirs) {
   log4r::info(fn_logger, paste0("Files created: set ", i, " ", params$analysis_type, " summary files (",
                                params$prefix, ".hmmtw, ", params$prefix, ".hmmsum)."))
   
-  rm(hmmtrees, ms_tw, trees, output)
+  rm(hmmtrees, ms_tw, trees, output, uq_mstrees, uq_tmtrees)
 }
 
 rm(msfile)
@@ -189,7 +189,7 @@ for (i in mast_dirs) {
   hmm <- gsub("^.* :", "", system(paste("grep '^BEST HMM SCORE'",fn_hmm), intern = T))
   
   t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,hmm))
-  rm(hmmsum, acc)
+  rm(hmmsum, acc, aic, aicc, bic, hmm)
 }
 
 # write the data.table into file
