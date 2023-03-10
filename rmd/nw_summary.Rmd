@@ -43,15 +43,17 @@ for (i in window_sizes) {
   for (j in mstree_uq) {
     for (k in smtree_uq) {
       if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::read.tree(text = k))) {
-        smfile[, newick := gsub(k, j, newick, fixed = TRUE)]
+        msfile[, topology := gsub(j, k, topology, fixed = TRUE)]
         break
       }
     }
   }
   
-  # create empty dataframe
+  # update mstrees
+  mstree_uq <- unique(msfile$topology)
   mstree_uq_ln <- length(mstree_uq)
   
+  # create empty dataframe
   output <- data.table::data.table(c(mstree_uq,"NT"), matrix(0, nrow=mstree_uq_ln+1, ncol=mstree_uq_ln))
   data.table::setnames(output, c("topology", mstree_uq))
   

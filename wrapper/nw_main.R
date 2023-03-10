@@ -1,7 +1,7 @@
 library(doSNOW)
 
 #################################
-ms_r <- c(0,3,30,300)
+ms_r <- c(0,20,200,400)
 nreps <- 10
 prefix <- "hl"
 nthread <- 4
@@ -14,12 +14,12 @@ redo <- FALSE
   
 # sequence simulation
 msdir <- "~/Documents/msdir/ms"
-ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 10 2 1 -ej 24 3 1 -ej 35 4 1 -ej 32 5 6 -ej 53 6 1 -ej 69 7 1 -es 1 2 0.25 -ej 1 8 1 -es 23 3 0.25 -ej 23 9 4 -es 34 6 0.25 -ej 34 10 4"
+ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 3.2 2 1 -ej 8.4 3 1 -ej 10.6 4 1 -ej 10.0 5 6 -ej 12.2 6 1 -ej 23.2 7 1 -es 1.6 2 0.65 -ej 1.6 8 1 -es 4.2 3 0.65 -ej 4.2 9 4 -es 10.2 6 0.65 -ej 10.2 10 4"
 ms_l <- 10000000
   
 iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
 alisim_model <- "JC"
-alisim_scale <- 0.00029
+alisim_scale <- 0.004
 outgroup <- "7"
   
 # non-overlapping window analysis
