@@ -12,8 +12,9 @@ redo <-  TRUE
 # mast and hmm
 iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
 analysis_type <- "HMMSTER"
-mast_model <- c("JC+T","JC+G+T")
+mast_model <- c("JC+T")
 mast_tops <- 0.95
+max_tops <- 10
 
 #################################
 
@@ -28,7 +29,7 @@ for (i in alldirs[dirname]) {
     templist <- list(out=out, params=list(prefix=i,
                                           rmddir=rmddir, outdir=outdir, redo=redo,
                                           iqtree2dir=iqtree2dir,
-                                          analysis_type=analysis_type, mast_model=j, mast_tops=mast_tops
+                                          analysis_type=analysis_type, mast_model=j, mast_tops=mast_tops, max_tops=max_tops
                                           ))
   
     reports <- append(reports, list(templist))

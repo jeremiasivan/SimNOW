@@ -65,17 +65,19 @@ for (i in mast_dirs) {
   # read HMM file and MAST input topologies
   uq_tmtrees <- readLines(fn_mast_tops)
   uq_mstrees <- unique(msfile$topology)
-  uq_mstrees_ln <- length(uq_mstrees)
   
   # match MAST topology with ms topology
   for (j in uq_mstrees) {
     for (k in uq_tmtrees) {
       if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::read.tree(text = k))) {
-        uq_tmtrees[match(k, uq_tmtrees)] <- j
+        msfile[, topology := gsub(j, k, topology, fixed = TRUE)]
         break
       }
     }
   }
+  
+  uq_mstrees <- unique(msfile$topology)
+  uq_mstrees_ln <- length(uq_mstrees)
   
   # ms topology weights
   ms_len <- sum(as.numeric(msfile$length))

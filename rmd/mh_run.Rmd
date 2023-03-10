@@ -79,10 +79,17 @@ log4r::info(fn_logger, paste0(nrow(uq_tops), " topology sets found."))
 
 # iterate through topology sets
 for (k in 1:nrow(uq_tops)) {
+  tempwsize <- gsub("_",", ",uq_tops$wsizes[k])
+  
   # check number of topology
   topls <- strsplit(uq_tops$topologies[k],split = "&")[[1]]
   if (length(topls) <= 1) {
-    log4r::info(fn_logger, paste0(gsub("_",", ",uq_tops$wsizes[k]), "bp [set ", k, "] has one or less topology. Skipped."))
+    log4r::info(fn_logger, paste0(tempwsize, "bp [set ", k, "] has one or less topology. Skipped."))
+    next
+  }
+  
+  if (length(topls) > params$max_tops) {
+    log4r::info(fn_logger, paste0(tempwsize, "bp [set ", k, "] has more than ", params$max_tops, " topologies. Skipped."))
     next
   }
   

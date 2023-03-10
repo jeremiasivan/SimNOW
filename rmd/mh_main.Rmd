@@ -14,6 +14,7 @@ params:
   analysis_type: "HMMSTER"
   mast_model: ""
   mast_tops: 0.95
+  max_tops: 10
 ---
 
 ```{r, include=FALSE}
