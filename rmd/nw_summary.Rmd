@@ -25,8 +25,9 @@ for (i in window_sizes) {
   temp_outdir <- paste0(window_outdir,i,"/summary/")
   
   fn_cmp <- paste0(temp_outdir, params$prefix, ".cmp")
+  fn_cmptw <- paste0(temp_outdir, params$prefix, ".cmptw")
   # fn_figure <- paste0(temp_outdir, params$prefix, ".cmp.tiff")
-  if (file.exists(fn_cmp) && !params$redo) {
+  if (all(file.exists(fn_cmp, fn_cmptw)) && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", i, "bp window comparison file."))
     next
   }
@@ -52,6 +53,29 @@ for (i in window_sizes) {
   # update mstrees
   mstree_uq <- unique(msfile$topology)
   mstree_uq_ln <- length(mstree_uq)
+  
+  # ms vs sm topology weights
+  ms_tw <- msfile %>%
+    group_by(topology) %>%
+    summarise(sumlen = sum(length), percentage = sumlen/sum(msfile$length) * 100)
+  
+  sm_tw <- smfile %>%
+    group_by(newick) %>%
+    summarise(sumlen = sum(length), percentage = sumlen/sum(smfile$length) * 100)
+  
+  cmptw <- c()
+  for (j in 1:nrow(ms_tw)) {
+    top_idx <- match(ms_tw$topology[j], sm_tw$newick)
+    if (is.na(top_idx)) {
+      cmptw <- rbind(cmptw, c(ms_tw$topology[j], round(ms_tw$percentage[j], 4), "NA"))
+    } else {
+      cmptw <- rbind(cmptw, c(ms_tw$topology[j], round(ms_tw$percentage[j], 4), round(sm_tw$percentage[top_idx], 4)))
+    }
+  }
+  
+  cmptw <- data.table::as.data.table(cmptw)
+  data.table::setnames(cmptw, c("topology", "ms", "now"))
+  data.table::fwrite(cmptw, file=fn_cmptw, quote=FALSE, sep="\t")
   
   # create empty dataframe
   output <- data.table::data.table(c(mstree_uq,"NT"), matrix(0, nrow=mstree_uq_ln+1, ncol=mstree_uq_ln))
