@@ -1,29 +1,29 @@
 library(doSNOW)
 
 #################################
-ms_r <- c(0,20,200,400)
-nreps <- 10
+ms_r <- c(0,20,100,200,400,600,800,1000)
+nreps <- 5
 prefix <- "hl"
-nthread <- 4
+nthread <- 5
 
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
 outdir <- "~/Documents/simulation/debug/hl"
-thread <- 2
+thread <- 1
 redo <- FALSE
   
 # sequence simulation
 msdir <- "~/Documents/msdir/ms"
-ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 3.2 2 1 -ej 8.4 3 1 -ej 10.6 4 1 -ej 10.0 5 6 -ej 12.2 6 1 -ej 23.2 7 1 -es 1.6 2 0.65 -ej 1.6 8 1 -es 4.2 3 0.65 -ej 4.2 9 4 -es 10.2 6 0.65 -ej 10.2 10 4"
+ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 8.0 2 1 -ej 21.0 3 1 -ej 26.5 4 1 -ej 25.0 5 6 -ej 30.5 6 1 -ej 58.0 7 1 -es 4.0 2 0.5 -ej 4.0 8 1 -es 10.5 3 0.5 -ej 10.5 9 4 -es 25.7 6 0.5 -ej 25.7 10 4"
 ms_l <- 10000000
   
 iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
 alisim_model <- "JC"
-alisim_scale <- 0.004
+alisim_scale <- 0.0015
 outgroup <- "7"
   
 # non-overlapping window analysis
-window_size <- c(1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
+window_size <- c(50000)
 
 #################################
 
