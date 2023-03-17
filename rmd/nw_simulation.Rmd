@@ -24,6 +24,13 @@ fn_uqtops <- paste0(simulation_outdir, "/", params$prefix, ".uqtops")
 
 fn_nexus <- paste0(simulation_outdir, "/", params$prefix, ".nex")
 fn_alisim <- paste0(simulation_outdir, "/", params$prefix)
+fn_alisim_fa <- paste0(simulation_outdir, "/", params$prefix, ".fa")
+
+alisim_treedir <- paste0(simulation_outdir, "/tree/")
+fn_alisim_tree <- paste0(alisim_treedir, params$prefix)
+if (!dir.exists(alisim_treedir)) {
+  dir.create(alisim_treedir, recursive = T)
+}
 ```
 
 ```{r ms, include=FALSE}
@@ -188,6 +195,14 @@ if (file.exists(paste0(fn_alisim, ".fa")) && !params$redo) {
                  "-T",params$thread,
                  "-af fasta -redo"))
   }
+  
+  # generate tree based on concatenated alignment
+  system(paste(params$iqtree2dir,
+               "-s",fn_alisim_fa,
+               "-T",params$thread,
+               "-m",params$alisim_model,
+               "-pre",fn_alisim_tree,
+               "--quiet -redo"))
   
   log4r::info(fn_logger, paste0("File created: ", params$prefix, ".fa."))
 }

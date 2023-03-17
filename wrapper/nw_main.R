@@ -14,7 +14,7 @@ redo <- FALSE
   
 # sequence simulation
 msdir <- "~/Documents/msdir/ms"
-ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 8.0 2 1 -ej 21.0 3 1 -ej 26.5 4 1 -ej 25.0 5 6 -ej 30.5 6 1 -ej 58.0 7 1 -es 4.0 2 0.5 -ej 4.0 8 1 -es 10.5 3 0.5 -ej 10.5 9 4 -es 25.7 6 0.5 -ej 25.7 10 4"
+ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 1.6 2 1 -ej 4.2 3 1 -ej 5.3 4 1 -ej 5.0 5 6 -ej 6.1 6 1 -ej 11.6 7 1 -es 0.8 2 0.966 -ej 0.8 8 1 -es 0.8 1 0.796 -ej 0.8 9 2 -es 2.1 3 0.115 -ej 2.1 10 4 -es 5.15 6 0.778 -ej 5.15 11 4 -es 5.15 4 0.853 -ej 5.15 12 6"
 ms_l <- 10000000
   
 iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"

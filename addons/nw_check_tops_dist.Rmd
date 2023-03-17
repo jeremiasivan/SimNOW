@@ -5,7 +5,7 @@ params:
   outdir: "~/Documents/simulation/debug/hl"
   
   wsize: 50000
-  reftopdir: "~/Documents/simulation/sim_edelman/reftops.txt"
+  reftopdir: "~/Documents/ref_tops.txt"
 ---
 
 ```{r setup, include=FALSE}
