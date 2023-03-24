@@ -1,29 +1,29 @@
 library(doSNOW)
 
 #################################
-ms_r <- c(0,20,100,200,400,600,800,1000)
-nreps <- 5
+ms_r <- c(1.7,17,170,1700)
+nreps <- 10
 prefix <- "hl"
-nthread <- 5
+nthread <- 10
 
 # general
 rmddir <- "~/Documents/SimNOW/rmd"
-outdir <- "~/Documents/simulation/debug/hl"
-thread <- 1
+outdir <- "~/Documents/simulation/hl"
+thread <- 5
 redo <- FALSE
   
 # sequence simulation
 msdir <- "~/Documents/msdir/ms"
-ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 1.6 2 1 -ej 4.2 3 1 -ej 5.3 4 1 -ej 5.0 5 6 -ej 6.1 6 1 -ej 11.6 7 1 -es 0.8 2 0.966 -ej 0.8 8 1 -es 0.8 1 0.796 -ej 0.8 9 2 -es 2.1 3 0.115 -ej 2.1 10 4 -es 5.15 6 0.778 -ej 5.15 11 4 -es 5.15 4 0.853 -ej 5.15 12 6"
+ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 2.13 2 1 -ej 5.60 3 1 -ej 7.07 4 1 -ej 6.67 5 6 -ej 8.13 6 1 -ej 15.47 7 1 -es 0.21 2 0.966 -ej 0.21 8 1 -es 0.21 1 0.796 -ej 0.21 9 2 -es 5.52 3 0.115 -ej 5.52 10 4 -es 6.84 6 0.778 -ej 6.84 11 4 -es 6.84 4 0.853 -ej 6.84 12 6"
 ms_l <- 10000000
   
 iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
 alisim_model <- "JC"
-alisim_scale <- 0.0015
+alisim_scale <- 0.005
 outgroup <- "7"
   
 # non-overlapping window analysis
-window_size <- c(50000)
+window_size <- c(1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
 
 #################################
 

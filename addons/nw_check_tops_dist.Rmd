@@ -2,10 +2,10 @@
 title: "Comparison of Topology Weights between Empirical and Simulated Datasets"
 params:
   prefix: "hl"
-  outdir: "~/Documents/simulation/debug/hl"
+  outdir: "~/Documents/simulation/hl"
   
   wsize: 50000
-  reftopdir: "~/Documents/ref_tops.txt"
+  reftopdir: "~/Documents/top_ref.txt"
 ---
 
 ```{r setup, include=FALSE}
@@ -76,6 +76,7 @@ for (i in simulation) {
   
   tempdt <- data.table::data.table(cmptw[1:lnreftop, topology], cmptw[1:lnreftop, now])
   data.table::setnames(tempdt, c("topology",i))
+  tempdt <- na.omit(tempdt, cols = c("topology",i))
   
   allreftop <- data.table::merge.data.table(allreftop, tempdt,
                                             by.x = "newick", by.y = "topology",
