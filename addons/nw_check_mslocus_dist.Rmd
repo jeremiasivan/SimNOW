@@ -1,0 +1,67 @@
+---
+title: "Check Locus Length Distribution from ms"
+params:
+  prefix: "hl"
+  outdir: "~/Documents/simulation/hl"
+  
+  ms_l: 10000000
+---
+
+```{r setup, include=FALSE}
+library(data.table)
+library(ggplot2)
+```
+
+```{r ms, include=FALSE}
+fn_fig <- paste0(params$outdir, "/", params$prefix, ".loclen.tiff")
+
+# extract simulations
+allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
+simulation <- allsims[grep(paste0("^",params$prefix), allsims)]
+
+locuslen <- c()
+
+for (s in simulation) {
+  fn_msfile <- paste0(params$outdir, "/", s, "/simulation/", s, ".ms")
+  ms <- data.table::fread(fn_msfile, col.names="cmd", sep="")
+  
+  # extract ms trees
+  mstrees <- ms[grepl("^\\[", cmd)]
+  if (nrow(mstrees) == 0) {
+    mstrees <- ms[grepl("^\\(.+\\);$", cmd)]
+    mstrees[1, cmd := paste0("[", params$ms_l, "]", mstrees[1, cmd])]
+  }
+  
+  # convert ms trees into data.table
+  mstrees[, c("empty","length","tree") := data.table::tstrsplit(cmd, '\\[|\\]', fixed = FALSE)]
+  
+  for (l in mstrees$length) {
+    locuslen <- rbind(locuslen, c(s, as.numeric(l)/1000))
+  }
+}
+
+locuslen <- as.data.frame(locuslen)
+colnames(locuslen) <- c("simulation","length")
+locuslen$length <- as.numeric(locuslen$length)
+
+#visualization
+lenbin <- ceiling(sqrt(nrow(locuslen)))
+widthbin <- (max(locuslen$length) - min(locuslen$length)) / lenbin
+
+tiff(filename=fn_fig, units="px", width=2880, height=1800)
+print(ggplot(locuslen, aes(x=length, fill=simulation)) +
+  geom_histogram(binwidth=widthbin, alpha=.5, position="identity") +
+  ggtitle(paste0("Distribution of locus length (bin width = ", round(widthbin, 5), ")")) +
+  xlab("Length (kb)") +
+  ylab("Count") +
+  theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 0.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      legend.position = "none"
+    ))
+dev.off()
+```
