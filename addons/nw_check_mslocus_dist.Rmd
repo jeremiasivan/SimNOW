@@ -49,13 +49,20 @@ locuslen <- as.data.frame(locuslen)
 colnames(locuslen) <- c("simulation","length","rho")
 locuslen$length <- as.numeric(locuslen$length)
 
+# write output file
+fn_file <- paste0(params$outdir, "/", params$prefix, ".loclen")
+write.csv(c("r","mean","sd"), file=fn_file, quote=F, row.names=F, col.names=F, append=T, sep="\t")
+
 #visualization
 for (r in unique(locuslen$rho)) {
+  fn_fig <- paste0(params$outdir, "/", params$prefix, ".r", r, "loclen.tiff")
+  
   outperr <- subset(locuslen, locuslen$rho == r)
+  write.csv(c(r, round(mean(outperr$length),5), round(sd(outperr$length),5)),
+            file=fn_file, quote=F, row.names=F, col.names=F, append=T, sep="\t")
+  
   lenbin <- ceiling(sqrt(nrow(outperr)))
   widthbin <- (max(outperr$length) - min(outperr$length)) / lenbin
-  
-  fn_fig <- paste0(params$outdir, "/", params$prefix, ".r", r, "loclen.tiff")
   
   tiff(filename=fn_fig, units="px", width=2880, height=1800)
   print(ggplot(outperr, aes(x=length, fill=simulation)) +

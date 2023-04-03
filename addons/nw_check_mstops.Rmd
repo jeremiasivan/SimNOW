@@ -4,7 +4,9 @@ params:
   # general
   prefix: "hl"
   outdir: "~/Documents/simulation/hl"
-  nreps: 100
+  nreps: 10
+  thread: 5
+  
   top_threshold: 0.985
   
   # ms
@@ -15,18 +17,23 @@ params:
 ---
 
 ```{r setup, include=FALSE}
-library(data.table)
-library(dplyr)
+library(doSNOW)
+
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
 ```
 
 ```{r ms, include=FALSE}
-options(scipen=999)
 ms_command <- paste(params$ms_params, "-r", params$ms_r, params$ms_l)
 
-lenloci <- c()
-lentree <- c()
-
-for (i in 1:params$nreps) {
+lenout <- foreach (i = 1:params$nreps, .combine=c) %dopar% {
+  library(data.table)
+  library(dplyr)
+  
+  options(scipen=999)
+  
+  # analysis run
   prefix <- paste0(params$prefix, "_", i)
   
   # create directory
@@ -56,7 +63,6 @@ for (i in 1:params$nreps) {
     mstrees <- ms[grepl("^\\(.+\\);$", cmd)]
     mstrees[1, cmd := paste0("[", params$ms_l, "]", mstrees[1, cmd])]
   }
-  lenloci <- c(lenloci, nrow(mstrees))
   
   # convert ms trees into data.table
   mstrees[, c("empty","length","tree") := data.table::tstrsplit(cmd, '\\[|\\]', fixed = FALSE)]
@@ -126,10 +132,17 @@ for (i in 1:params$nreps) {
   
   sub_sum <- head(subset(usummary$cum.percentage, usummary$cum.percentage >= params$top_threshold), 1)
   sum_idx <- match(sub_sum, usummary$cum.percentage)
-  lentree <- c(lentree, sum_idx)
   
   data.table::fwrite(usummary, file=fn_mstops, quote=FALSE, sep="\t")
+  
+  list(list(nrow(mstrees),sum_idx))
 }
+
+stopCluster(nwcl)
+
+# output
+lenloci <- sapply(lenout, function(x){x[[1]]})
+lentree <- sapply(lenout, function(x){x[[2]]})
 
 write.table(c(paste("Average number of loci:", mean(lenloci)),
               paste0("Average number of topologies: ", mean(lentree), " (", round(sd(lentree),5), ")")),
