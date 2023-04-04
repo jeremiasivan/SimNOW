@@ -36,11 +36,13 @@ lenout <- foreach (i = 1:params$nreps, .combine=c) %dopar% {
   # analysis run
   prefix <- paste0(params$prefix, "_", i)
   
-  # create directory
+  # set working directory
   currentdir <- paste0(params$outdir, "/", prefix, "/")
   if (!dir.exists(currentdir)) {
     dir.create(currentdir, recursive = T)
   }
+  
+  knitr::opts_knit$set(root.dir = currentdir)
   
   # output files
   fn_seedms <- paste0(currentdir, "seedms")
