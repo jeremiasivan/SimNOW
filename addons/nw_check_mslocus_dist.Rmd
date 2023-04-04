@@ -2,7 +2,7 @@
 title: "Check Locus Length Distribution from ms"
 params:
   prefix: "hl"
-  outdir: "~/Documents/simulation/040423"
+  outdir: "~/Documents/simulation/hl"
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +20,7 @@ simulation <- allsims[grep(paste0("^",params$prefix), allsims)]
 locuslen <- c()
 
 for (s in simulation) {
-  fn_msfile <- paste0(params$outdir, "/", s, "/", s, ".ms")
+  fn_msfile <- paste0(params$outdir, "/", s, "/simulation/", s, ".ms")
   command <- strsplit(system(paste("grep 'ms'",fn_msfile), intern=T), " ")
   
   # extract ms params
