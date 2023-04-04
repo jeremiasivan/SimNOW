@@ -75,6 +75,6 @@ knitr::opts_knit$set(root.dir = currentdir)
 sys_toc <- Sys.time()
 
 # write the system time in log file
-write.table(c("", paste0("Total elapsed time: ", round(as.numeric(sys_toc - sys_tic) / 60, 3), " mins")),
+write.table(c("", paste0("Total elapsed time: ", round(as.numeric(difftime(sys_toc, sys_tic, units = "mins")), 3), " mins")),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
