@@ -2,7 +2,7 @@
 title: "Check Locus Length Distribution from ms"
 params:
   prefix: "hl"
-  outdir: "~/Documents/simulation/hl"
+  outdir: "~/Documents/simulation/040423"
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +20,7 @@ simulation <- allsims[grep(paste0("^",params$prefix), allsims)]
 locuslen <- c()
 
 for (s in simulation) {
-  fn_msfile <- paste0(params$outdir, "/", s, "/simulation/", s, ".ms")
+  fn_msfile <- paste0(params$outdir, "/", s, "/", s, ".ms")
   command <- strsplit(system(paste("grep 'ms'",fn_msfile), intern=T), " ")
   
   # extract ms params
@@ -55,7 +55,7 @@ write.table(data.frame(cbind("r","mean","sd")), file=fn_file, quote=F, row.names
 
 #visualization
 for (r in unique(locuslen$rho)) {
-  fn_fig <- paste0(params$outdir, "/", params$prefix, ".r", r, "loclen.tiff")
+  fn_fig <- paste0(params$outdir, "/", params$prefix, ".r", r, ".loclen.tiff")
   
   outperr <- subset(locuslen, locuslen$rho == r)
   write.table(data.frame(cbind(r, round(mean(outperr$length),5), round(sd(outperr$length),5))),

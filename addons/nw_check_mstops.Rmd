@@ -42,19 +42,16 @@ lenout <- foreach (i = 1:params$nreps, .combine=c) %dopar% {
     dir.create(currentdir, recursive = T)
   }
   
-  knitr::opts_knit$set(root.dir = currentdir)
-  
   # output files
-  fn_seedms <- paste0(currentdir, "seedms")
   fn_msfile <- paste0(currentdir, prefix, ".ms")
   fn_mstops <- paste0(currentdir, prefix, ".mstops")
   
   # generate seedms
   randseed <- paste(sample(10000:99999,3), collapse=" ")
-  write.table(randseed, file=fn_seedms, quote=F, row.names=F, col.names=F)
+  ms_cmd <- paste(ms_command, "-seeds", randseed)
   
   # generate msfile
-  system(paste(params$msdir,ms_command,">",fn_msfile))
+  system(paste(params$msdir,ms_cmd,">",fn_msfile))
   
   # read msfile
   ms <- data.table::fread(fn_msfile, col.names="cmd", sep="")
