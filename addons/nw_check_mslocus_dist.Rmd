@@ -22,10 +22,11 @@ locuslen <- c()
 for (s in simulation) {
   fn_msfile <- paste0(params$outdir, "/", s, "/simulation/", s, ".ms")
   command <- strsplit(system(paste("grep 'ms'",fn_msfile), intern=T), " ")
+  r_idx <- match("-r", command[[1]]) + 1
   
   # extract ms params
-  rho <- as.numeric(command[[1]][length(command[[1]])-1])
-  ms_l <- as.numeric(command[[1]][length(command[[1]])])
+  rho <- as.numeric(command[[1]][r_idx])
+  ms_l <- as.numeric(command[[1]][r_idx+1])
   
   # read msfile
   ms <- data.table::fread(fn_msfile, col.names="cmd", sep="")

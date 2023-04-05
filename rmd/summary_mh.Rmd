@@ -60,9 +60,10 @@ for (s in simulation) {
 
   fn_ms <- paste0(params$outdir, "/", s, "/simulation/", s, ".ms")
   command <- strsplit(system(paste("grep 'ms'", fn_ms), intern=T), " ")
+  r_idx <- match("-r", command[[1]]) + 1
   
   for (r in 1:nrow(dftmp)) {
-    dfsets <- rbind(dfsets, c(dftmp$wsizes[r], r, s, command[[1]][length(command[[1]])-1]))
+    dfsets <- rbind(dfsets, c(dftmp$wsizes[r], r, s, command[[1]][r_idx]))
   }
 }
 
