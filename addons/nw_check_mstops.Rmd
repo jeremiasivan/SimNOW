@@ -4,7 +4,7 @@ params:
   # general
   prefix: "hl"
   outdir: "~/Documents/simulation/hl"
-  nreps: 10
+  nreps: 100
   thread: 5
   
   top_threshold: 0.985
@@ -143,7 +143,7 @@ stopCluster(nwcl)
 lenloci <- sapply(lenout, function(x){x[[1]]})
 lentree <- sapply(lenout, function(x){x[[2]]})
 
-write.table(c(paste("Average number of loci:", mean(lenloci)),
+write.table(c(paste0("Average number of loci: ", mean(lenloci), " (", round(sd(lenloci),5), ")"),
               paste0("Average number of topologies: ", mean(lentree), " (", round(sd(lentree),5), ")")),
             file = paste0(params$outdir, "/", params$prefix, ".mssum"),
             quote = FALSE, row.names = FALSE, col.names = FALSE)
