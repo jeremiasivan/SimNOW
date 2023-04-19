@@ -228,10 +228,9 @@ if (file.exists(paste0(fn_alisim, ".fa")) && !params$redo) {
   # generate tree based on concatenated alignment
   system(paste(params$iqtree2dir,
                "-s",fn_alisim_fa,
-               "-T",params$thread,
                "-m",params$alisim_model,
                "-pre",fn_alisim_tree,
-               "--quiet -redo"))
+               "-T 1 --quiet -redo"))
   
   log4r::info(fn_logger, paste0("File created: ", params$prefix, ".fa."))
 }
