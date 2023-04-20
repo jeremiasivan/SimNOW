@@ -38,21 +38,18 @@ for (i in window_sizes) {
   smfile$stop <- as.numeric(smfile$stop)
   
   mstree_uq <- unique(msfile$topology)
+  mstree_uq_ln <- length(mstree_uq)
   smtree_uq <- unique(smfile$topology)
   
   # match window topology with ms topology
   for (j in mstree_uq) {
     for (k in smtree_uq) {
       if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::read.tree(text = k))) {
-        msfile[, topology := gsub(j, k, topology, fixed = TRUE)]
+        smfile[, topology := gsub(k, j, topology, fixed = TRUE)]
         break
       }
     }
   }
-  
-  # update mstrees
-  mstree_uq <- unique(msfile$topology)
-  mstree_uq_ln <- length(mstree_uq)
   
   # ms vs sm topology weights
   ms_tw <- msfile %>%
@@ -174,20 +171,12 @@ for (i in window_sizes) {
   aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
   bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
   
-  # change empty character to NA
-  caic <- NA; caicc <- NA; cbic <- NA
-  if (file.exists(fn_contiguous)) {
-    caic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'", fn_contiguous), intern = T))
-    caicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_contiguous), intern = T))
-    cbic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_contiguous), intern = T))
-  }
-  
-  t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,caic,caicc,cbic))
+  t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic))
   rm(cmp, acc)
 }
 
 t_accuracy <- data.table::as.data.table(t_accuracy)
-data.table::setnames(t_accuracy, c("window_size","accuracy","aic","aicc","bic","aic_ct","aicc_ct","bic_ct"))
+data.table::setnames(t_accuracy, c("window_size","accuracy","aic","aicc","bic"))
 
 data.table::fwrite(t_accuracy, file=fn_summary, quote=F, sep="\t")
 log4r::info(fn_logger, paste0("File created/modified: summary table of NOW and ms (", params$prefix, ".sum)."))
@@ -208,8 +197,8 @@ for (c in 3:ncol(t_accuracy)) {
   print(ggplot(t_accuracy, aes(y=as.numeric(accuracy), x=as.numeric(t_accuracy[,c]), ymin=0, ymax=100)) + 
           geom_jitter(shape=16, width = 0.2, height = 0.2, size=5) +
           scale_colour_manual(values = pcolors[iterator]) +
-          ggtitle("Correlation of NOW Information Criterion and NOW Accuracy") + 
-          xlab("Information criterion score") +
+          ggtitle(paste("Correlation of NOW", toupper(colnames(t_accuracy)[c]), "and Accuracy")) + 
+          xlab("Score") +
           ylab("Accuracy (%)") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),

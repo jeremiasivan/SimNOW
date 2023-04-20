@@ -2,22 +2,22 @@
 title: "Non-overlapping Windows Analysis"
 params:
   # general
-  rmddir: "~/Documents/SimNOW/rmd"
-  prefix: "db_3"
-  outdir: "~/Documents/simulation/debug/190423"
-  thread: 4
+  rmddir: "~/SimNOW/rmd"
+  prefix: "sim"
+  outdir: "~/simulation"
+  thread: 5
   redo: TRUE
   
   # ms
   ms_l: 1000000
   
   # IQ-Tree2
-  iqtree2dir: "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
+  iqtree2dir: "~/iqtree-2.2.2.4-MacOSX/bin/iqtree2"
   alisim_model: "JC"
-  outgroup: "7"
+  outgroup: ""
   
   # non-overlapping window analysis
-  window_size: !r c(50000,20000,1000000)
+  window_size: !r c(100000,500000,1000000)
 ---
 
 ```{r, include=FALSE}

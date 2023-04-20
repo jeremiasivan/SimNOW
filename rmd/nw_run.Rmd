@@ -36,7 +36,7 @@ options(scipen=999)
 s <- seqinr::read.fasta(fn_alisim, whole.header = T)
 
 # iterate through window sizes
-for (w in params$window_size) {
+for (w in sort(params$window_size)) {
   # total alignment length should be divisible by the window size
   numw <- params$ms_l/w
   if (w == 0 || !numw%%1 == 0) {
