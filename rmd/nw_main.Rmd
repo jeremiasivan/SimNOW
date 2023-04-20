@@ -3,25 +3,21 @@ title: "Non-overlapping Windows Analysis"
 params:
   # general
   rmddir: "~/Documents/SimNOW/rmd"
-  prefix: "db"
-  outdir: "~/Documents/simulation/debug"
-  thread: 1
+  prefix: "db_3"
+  outdir: "~/Documents/simulation/debug/190423"
+  thread: 4
   redo: TRUE
   
   # ms
-  msdir: "~/Documents/msdir/ms"
-  ms_params: ""
-  ms_r: 0
   ms_l: 1000000
   
-  # AliSim
-  iqtree2dir: "~/Documents/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
+  # IQ-Tree2
+  iqtree2dir: "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
   alisim_model: "JC"
-  alisim_scale: 0.001
-  outgroup: ""
+  outgroup: "7"
   
   # non-overlapping window analysis
-  window_size: !r c()
+  window_size: !r c(50000,20000,1000000)
 ---
 
 ```{r, include=FALSE}
@@ -38,7 +34,6 @@ sys_tic <- Sys.time()
 library(data.table)
 library(dplyr)
 library(doSNOW)
-library(hash)
 
 # create outdir
 currentdir <- paste0(params$outdir, "/", params$prefix)
@@ -50,18 +45,8 @@ if (!dir.exists(currentdir)) {
 fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".log")
 log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
-if (params$redo) {
-  unlink(fn_log)
-}
-
-if (!file.exists(fn_log)) {
-  write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
-}
 
 knitr::opts_knit$set(root.dir = currentdir)
-```
-
-```{r child = paste(params$rmddir,"/nw_simulation.Rmd",sep=""), include=FALSE}
 ```
 
 ```{r child = paste(params$rmddir,"/nw_run.Rmd",sep=""), include=FALSE}

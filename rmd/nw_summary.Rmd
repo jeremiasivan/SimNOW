@@ -38,7 +38,7 @@ for (i in window_sizes) {
   smfile$stop <- as.numeric(smfile$stop)
   
   mstree_uq <- unique(msfile$topology)
-  smtree_uq <- unique(smfile$newick)
+  smtree_uq <- unique(smfile$topology)
   
   # match window topology with ms topology
   for (j in mstree_uq) {
@@ -60,12 +60,12 @@ for (i in window_sizes) {
     summarise(sumlen = sum(length), percentage = sumlen/sum(msfile$length) * 100)
   
   sm_tw <- smfile %>%
-    group_by(newick) %>%
+    group_by(topology) %>%
     summarise(sumlen = sum(length), percentage = sumlen/sum(smfile$length) * 100)
   
   cmptw <- c()
   for (j in 1:nrow(ms_tw)) {
-    top_idx <- match(ms_tw$topology[j], sm_tw$newick)
+    top_idx <- match(ms_tw$topology[j], sm_tw$topology)
     if (is.na(top_idx)) {
       cmptw <- rbind(cmptw, c(ms_tw$topology[j], round(ms_tw$percentage[j], 4), "NA"))
     } else {
@@ -100,7 +100,7 @@ for (i in window_sizes) {
     
     # add number of window sites for the respective ms topology
     for (j in 1:nrow(sites)) {
-      window_idx <- match(sites$newick[j], output$topology)
+      window_idx <- match(sites$topology[j], output$topology)
       
       if (is.na(window_idx)) {
         tempval <- as.numeric(output[mstree_uq_ln+1, ..topology_idx] + sites$length[j])

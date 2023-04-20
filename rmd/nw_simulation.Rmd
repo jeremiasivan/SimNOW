@@ -1,6 +1,48 @@
 ---
 title: "Sequence Simulation"
+params:
+  # general
+  prefix: "sim"
+  outdir: "~/simulation"
+  redo: TRUE
+  
+  # ms
+  msdir: "~/msdir/ms"
+  ms_params: ""
+  ms_r: 0
+  ms_l: 1000000
+  
+  # AliSim
+  iqtree2dir: "~/iqtree-2.2.2.4-MacOSX/bin/iqtree2"
+  alisim_model: "JC"
+  alisim_scale: 0.001
 ---
+
+```{r, include=FALSE}
+# store initial system time
+sys_tic <- Sys.time()
+
+# load libraries
+library(data.table)
+library(dplyr)
+
+# create outdir
+currentdir <- paste0(params$outdir, "/", params$prefix)
+if (!dir.exists(currentdir)) {
+  dir.create(currentdir, recursive = T)
+}
+
+# create log file
+fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".log")
+log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
+fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
+if (params$redo) {
+  unlink(fn_log)
+  write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
+}
+
+knitr::opts_knit$set(root.dir = currentdir)
+```
 
 ```{r simsetup, include=FALSE}
 write.table(c("",
@@ -25,12 +67,6 @@ fn_uqtops <- paste0(simulation_outdir, "/", params$prefix, ".uqtops")
 fn_nexus <- paste0(simulation_outdir, "/", params$prefix, ".nex")
 fn_alisim <- paste0(simulation_outdir, "/", params$prefix)
 fn_alisim_fa <- paste0(simulation_outdir, "/", params$prefix, ".fa")
-
-alisim_treedir <- paste0(simulation_outdir, "/tree/")
-fn_alisim_tree <- paste0(alisim_treedir, params$prefix)
-if (!dir.exists(alisim_treedir)) {
-  dir.create(alisim_treedir, recursive = T)
-}
 ```
 
 ```{r ms, include=FALSE}
@@ -100,52 +136,42 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$re
       topology <- c(topology, ape::write.tree(temp_tree))
     }
   }
-    
   summary[, c("start", "stop", "topology") := list(start, stop, topology)]
+  
+  # output files
   data.table::fwrite(summary, file=fn_mstrees, sep="\t", quote=F)
   write.table(summary$tree, file=fn_mttrees, sep="\t", quote=F, row.names=F, col.names=F)
   log4r::info(fn_logger, paste0(n, " tree partition(s) found. File created: ",
                                params$prefix, ".mstrees and ", params$prefix, ".multitree"))
     
-  # combine contiguous topologies together (pt.1)
-  t_summary <- summary %>%
-    group_by(topology, group_run = data.table::rleid(topology)) %>%
-    summarise(length=sum(length)) %>%
-    arrange(group_run)
-  t_summary$group_run <- NULL
-  t_summary <- as.data.table(t_summary)
+  # match the naming convention of topologies
+  uq_tops <- unique(summary$topology)
+  ls_unroot <- NULL
+  ls_uqtops <- NULL
   
-  # extract unique topologies
-  all_tops <- t_summary$topology
-  len_tops <- length(all_tops)
-  
-  ls_unroot <- all_tops[1]
-  ls_uqtops <- all_tops[1]
-  
-  if (len_tops > 1) {
-    for (i in all_tops[2:len_tops]) {
-      is_equal <- FALSE
-      
-      for (j in ls_unroot) {
-        if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = i)), ape::unroot(ape::read.tree(text = j)))) {
-          is_equal <- TRUE
-          ls_uqtops <- c(ls_uqtops, j)
-          break
-        }
+  for (i in uq_tops) {
+    is_equal <- FALSE
+    
+    for (j in ls_unroot) {
+      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = i)), ape::unroot(ape::read.tree(text = j)))) {
+        is_equal <- TRUE
+        ls_uqtops[[i]] <- j
+        break
       }
-      
-      if (!is_equal) {
-        ls_unroot <- c(ls_unroot, i)
-        ls_uqtops <- c(ls_uqtops, i)
-      }
+    }
+    
+    if (!is_equal) {
+      ls_unroot <- c(ls_unroot, i)
+      ls_uqtops[[i]] <- i
     }
   }
   
-  t_summary[, "utopology" := ls_uqtops]
+  lookup <- match(summary$topology, names(ls_uqtops))
+  summary[, "utopology" := as.character(ls_uqtops[lookup])]
   
-  # combine contiguous topologies together (pt.2)
-  t_summary <- t_summary %>%
-    group_by(utopology, group_run = data.table::rleid(topology)) %>%
+  # combine contiguous topologies together 
+  t_summary <- summary %>%
+    group_by(utopology, group_run = data.table::rleid(utopology)) %>%
     summarise(length=sum(length)) %>%
     arrange(group_run)
   t_summary$group_run <- NULL
@@ -163,8 +189,9 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$re
       stop <- c(stop,stop[length(stop)]+t_summary$length[i])
     }
   }    
-  
   t_summary[, c("start", "stop") := list(start, stop)]
+  
+  # output files
   data.table::fwrite(t_summary, file=fn_mstops, sep="\t", quote=F)
   write.table(unique(t_summary$topology), file=fn_uqtops, sep="\t", quote=F, row.names=F, col.names=F)
   log4r::info(fn_logger, paste0(nt, " topology partition(s) found. File created: ", 
@@ -206,32 +233,29 @@ if (file.exists(paste0(fn_alisim, ".fa")) && !params$redo) {
   log4r::info(fn_logger, paste0("File found: ", params$prefix, ".fa."))
   
 } else {
-  if (params$alisim_scale == 0 || is.null(params$alisim_scale)) {
-    system(paste(params$iqtree2dir,
-                 "--alisim",fn_alisim,
-                 "-Q",fn_nexus,
-                 "-t",fn_mttrees,
-                 "-m",params$alisim_model,
-                 "-T",params$thread,
-                 "-af fasta -redo"))
-  } else {
-    system(paste(params$iqtree2dir,
-                 "--alisim",fn_alisim,
-                 "-Q",fn_nexus,
-                 "-t",fn_mttrees,
-                 "--branch-scale",params$alisim_scale,
-                 "-m",params$alisim_model,
-                 "-T",params$thread,
-                 "-af fasta -redo"))
-  }
+  iqtree_cmd <- paste(params$iqtree2dir,
+                      "--alisim", fn_alisim,
+                      "-Q", fn_nexus,
+                      "-t", fn_mttrees,
+                      "-m", params$alisim_model,
+                      "--length", params$ms_l,
+                      "-T 1 -af fasta -cptime 1000000 -redo --no-log")
   
-  # generate tree based on concatenated alignment
-  system(paste(params$iqtree2dir,
-               "-s",fn_alisim_fa,
-               "-m",params$alisim_model,
-               "-pre",fn_alisim_tree,
-               "-T 1 --quiet -redo"))
+  if (params$alisim_scale <= 0 || is.null(params$alisim_scale)) {
+    system(iqtree_cmd)
+  } else {
+    system(paste(iqtree_cmd, "--branch-scale", params$alisim_scale))
+  }
   
   log4r::info(fn_logger, paste0("File created: ", params$prefix, ".fa."))
 }
+```
+
+```{r, include=FALSE}
+# store final system time
+sys_toc <- Sys.time()
+
+# write the system time in log file
+write.table(c("", paste0("Total elapsed time: ", round(as.numeric(difftime(sys_toc, sys_tic, units = "mins")), 3), " mins")),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
