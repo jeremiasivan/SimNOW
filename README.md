@@ -10,9 +10,8 @@ Software incorporated in the pipeline:
 
 ---
 ### Notes
-1. Currently, you can only set `ms` recombination rate to vary between simulations via `wrapper/nw_main.R`
-2. Multiple MAST models should be manually specified in `wrapper/mh_main.R` (complex models are unsupported)
-3. Treelikeness test has *not* been tested
+1. In `wrapper/nw_main.R`, users can set different recombination rate and number of replicates per rate
+2. Complex MAST models are unsupported
 
 ---
 ### Considerations
