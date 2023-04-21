@@ -23,6 +23,7 @@ fn_simfig <- paste0(simsumdir, params$prefix, ".simsum.tiff")
 # extract row and column names
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
 simulation <- allsims[grep(paste0("^",params$prefix), allsims)]
+simulation <- simulation[simulation != "simsum"]
 simulation_ln <- length(simulation)
 
 window_sizes <- list.dirs(paste0(params$outdir,"/",simulation[1],"/windows/"), full.names = F, recursive = F)
