@@ -80,7 +80,9 @@ data.table::setnames(infodf, cnnames)
 
 data.table::fwrite(output, file=fn_simsum, quote = F, sep = "\t")
 data.table::fwrite(infocr, file=fn_simifc, quote = F, sep = "\t")
-data.table::fwrite(infodf[, lapply(.SD, mean)], file=fn_difacc, quote = F, sep = "\t")
+data.table::fwrite(infodf[, lapply(.SD, function(x){
+  paste0(mean(x), " (", sd(x), ")")
+  })], file=fn_difacc, quote = F, sep = "\t")
 
 # visualization
 sub_output <- data.frame()
