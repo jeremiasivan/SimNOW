@@ -140,7 +140,8 @@ for (i in 5:ncol(infocr)-1) {
           geom_smooth(method = "lm", fill = NA) +
           scale_shape_manual(values = 1:length(unique(infocr$window_size))) +
           ggtitle(paste("Correlation between", toupper(ifc), "and Accuracy")) + xlab(toupper(ifc)) + ylab("Accuracy (%)") +
-          labs(color="run", shape="wsize (kb)") +
+          labs(shape="wsize (kb)") +
+          guides(color="none") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
             plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
