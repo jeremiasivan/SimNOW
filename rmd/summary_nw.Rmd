@@ -16,9 +16,10 @@ if (!dir.exists(simsumdir)) {
 }
 ```
 
-```{r sim_summary, include=FALSE}
+```{r simsum, include=FALSE}
 fn_simsum <- paste0(simsumdir, params$prefix, ".simsum")
 fn_simfig <- paste0(simsumdir, params$prefix, ".simsum.tiff")
+fn_simifc <- paste0(simsumdir, params$prefix, ".simifc")
 
 # extract row and column names
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
@@ -34,7 +35,10 @@ window_sizes_ln <- length(window_sizes)
 output <- data.table::data.table(simulation, matrix(0, nrow=simulation_ln, ncol=window_sizes_ln+1))
 data.table::setnames(output, c("simulation", window_sizes, "r"))
 
+infocr <- data.table::data.table()
+
 for (i in simulation) {
+  # read simulation summary file
   row_idx <- match(i, output$simulation)
   sumfile <- data.table::fread(paste0(params$outdir,"/",i,"/windows/",i,".sum"))
   
@@ -42,14 +46,22 @@ for (i in simulation) {
     output[row_idx, as.character(eval(sumfile$window_size[j])) := sumfile$accuracy[j]]
   }
   
+  # read ms file
   fn_ms <- paste0(params$outdir,"/",i,"/simulation/",i,".ms")
   command <- strsplit(system(paste("grep 'ms'",fn_ms), intern=T), " ")
-  r_idx <- match("-r", command[[1]]) + 1
+  rrate <- as.numeric(command[[1]][match("-r", command[[1]]) + 1])
   
-  output[row_idx, "r" := as.numeric(command[[1]][r_idx])]
+  # extract recombination rate
+  output[row_idx, "r" := rrate]
+  
+  sumfile$window_size <- NULL
+  sumfile <- data.table::data.table("simulation" = rep(i, nrow(sumfile)), sumfile)
+  sumfile[, "r" := rrate]
+  infocr <- rbind(infocr, sumfile)
 }
 
 data.table::fwrite(output, file=fn_simsum, quote = F, sep = "\t")
+data.table::fwrite(infocr, file=fn_simifc, quote = F, sep = "\t")
 
 # visualization
 sub_output <- data.frame()
@@ -101,6 +113,35 @@ for (i in unique(sub_output$r)) {
           ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
           xlab("Window size (kb)") +
           ylab("Accuracy (%)") +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=30),
+            axis.text.x=element_text(size=30),
+            legend.title=element_text(size=30),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+          ))
+  dev.off()
+}
+
+# visualization for information criteria
+infocr$accuracy <- as.numeric(infocr$accuracy)
+infocr$r <- as.character(infocr$r)
+
+for (i in 4:ncol(infocr)-1) {
+  ifc <- colnames(infocr)[i]
+  fn_simfig <- paste0(simsumdir, params$prefix, ".simifc.",ifc,".tiff")
+  
+  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
+  print(ggplot(infocr, aes(y=accuracy, x=as.numeric(unlist(infocr[,..i])), ymin=0, ymax=100, color=r)) +
+          geom_jitter(shape=16, width = 0, height = 0, size=5) +
+          geom_smooth(method = "lm", fill = NA) +
+          scale_colour_manual(values = pcolors) +
+          ggtitle(paste("Correlation between", toupper(ifc), "and Accuracy")) + xlab(toupper(ifc)) + ylab("Accuracy (%)") +
+          labs(color="rho") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
             plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
