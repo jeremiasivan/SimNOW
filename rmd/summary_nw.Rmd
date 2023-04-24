@@ -20,6 +20,7 @@ if (!dir.exists(simsumdir)) {
 fn_simsum <- paste0(simsumdir, params$prefix, ".simsum")
 fn_simfig <- paste0(simsumdir, params$prefix, ".simsum.tiff")
 fn_simifc <- paste0(simsumdir, params$prefix, ".simifc")
+fn_difacc <- paste0(simsumdir, params$prefix, ".difacc")
 
 # extract row and column names
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
@@ -35,16 +36,31 @@ window_sizes_ln <- length(window_sizes)
 output <- data.table::data.table(simulation, matrix(0, nrow=simulation_ln, ncol=window_sizes_ln+1))
 data.table::setnames(output, c("simulation", window_sizes, "r"))
 
+cnnames <- NULL
 infocr <- data.table::data.table()
+infodf <- data.table::data.table()
 
 for (i in simulation) {
   # read simulation summary file
   row_idx <- match(i, output$simulation)
   sumfile <- data.table::fread(paste0(params$outdir,"/",i,"/windows/",i,".sum"))
+  if (is.null(cnnames)){
+    cnnames <- colnames(sumfile)[3:ncol(sumfile)]
+  }
   
   for (j in 1:nrow(sumfile)) {
     output[row_idx, as.character(eval(sumfile$window_size[j])) := sumfile$accuracy[j]]
   }
+  
+  # calculate difference in accuracy
+  dif_acc <- c()
+  max_acc <- sumfile[match(max(sumfile$accuracy),sumfile$accuracy),accuracy]
+  for (j in 3:ncol(sumfile)) {
+    cnname <- colnames(sumfile)[j]
+    min_ic <- sumfile[match(min(sumfile[,..cnname]), unlist(sumfile[,..cnname])), accuracy]
+    dif_acc <- c(dif_acc, max_acc-min_ic)
+  }
+  infodf <- data.table::rbindlist(list(infodf, as.list(dif_acc)))
   
   # read ms file
   fn_ms <- paste0(params$outdir,"/",i,"/simulation/",i,".ms")
@@ -59,8 +75,12 @@ for (i in simulation) {
   infocr <- rbind(infocr, sumfile)
 }
 
+# update column names
+data.table::setnames(infodf, cnnames)
+
 data.table::fwrite(output, file=fn_simsum, quote = F, sep = "\t")
 data.table::fwrite(infocr, file=fn_simifc, quote = F, sep = "\t")
+data.table::fwrite(infodf[, lapply(.SD, mean)], file=fn_difacc, quote = F, sep = "\t")
 
 # visualization
 sub_output <- data.frame()
