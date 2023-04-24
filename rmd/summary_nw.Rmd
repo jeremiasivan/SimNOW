@@ -54,7 +54,6 @@ for (i in simulation) {
   # extract recombination rate
   output[row_idx, "r" := rrate]
   
-  sumfile$window_size <- NULL
   sumfile <- data.table::data.table("simulation" = rep(i, nrow(sumfile)), sumfile)
   sumfile[, "r" := rrate]
   infocr <- rbind(infocr, sumfile)
@@ -129,19 +128,21 @@ for (i in unique(sub_output$r)) {
 
 # visualization for information criteria
 infocr$accuracy <- as.numeric(infocr$accuracy)
+infocr$window_size <- as.character(infocr$window_size)
 infocr$r <- as.character(infocr$r)
 
-for (i in 4:ncol(infocr)-1) {
+for (i in 5:ncol(infocr)-1) {
   ifc <- colnames(infocr)[i]
   fn_simfig <- paste0(simsumdir, params$prefix, ".simifc.",ifc,".tiff")
   
   tiff(filename=fn_simfig, units="px", width=2880, height=1800)
   print(ggplot(infocr, aes(y=accuracy, x=as.numeric(unlist(infocr[,..i])), ymin=0, ymax=100, color=r)) +
-          geom_jitter(shape=16, width = 0, height = 0, size=5) +
+          geom_jitter(aes(shape=window_size), width = 0, height = 0, size=5) +
           geom_smooth(method = "lm", fill = NA) +
+          scale_shape_manual(values = 1:length(unique(infocr$window_size))) +
           scale_colour_manual(values = pcolors) +
           ggtitle(paste("Correlation between", toupper(ifc), "and Accuracy")) + xlab(toupper(ifc)) + ylab("Accuracy (%)") +
-          labs(color="rho") +
+          labs(color="rho", shape="wsize") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
             plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
@@ -159,6 +160,6 @@ for (i in 4:ncol(infocr)-1) {
 
 <br>
 
-```{r, fig.width=1, echo=FALSE}
+```{r, fig.width=1, echo=FALSE, eval=FALSE}
 knitr::include_graphics(fn_figs)
 ```
