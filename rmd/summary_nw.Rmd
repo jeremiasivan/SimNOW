@@ -129,20 +129,18 @@ for (i in unique(sub_output$r)) {
 # visualization for information criteria
 infocr$accuracy <- as.numeric(infocr$accuracy)
 infocr$window_size <- as.character(infocr$window_size/1000)
-infocr$r <- as.character(infocr$r)
 
 for (i in 5:ncol(infocr)-1) {
   ifc <- colnames(infocr)[i]
   fn_simfig <- paste0(simsumdir, params$prefix, ".simifc.",ifc,".tiff")
   
   tiff(filename=fn_simfig, units="px", width=2880, height=1800)
-  print(ggplot(infocr, aes(y=accuracy, x=as.numeric(unlist(infocr[,..i])), ymin=0, ymax=100, color=forcats::fct_inseq(r))) +
+  print(ggplot(infocr, aes(y=accuracy, x=as.numeric(unlist(infocr[,..i])), ymin=0, ymax=100, color=simulation)) +
           geom_jitter(aes(shape=forcats::fct_inseq(window_size)), width = 0, height = 0, size=5) +
           geom_smooth(method = "lm", fill = NA) +
           scale_shape_manual(values = 1:length(unique(infocr$window_size))) +
-          scale_colour_manual(values = pcolors) +
           ggtitle(paste("Correlation between", toupper(ifc), "and Accuracy")) + xlab(toupper(ifc)) + ylab("Accuracy (%)") +
-          labs(color="rho", shape="wsize (kb)") +
+          labs(color="run", shape="wsize (kb)") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
             plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
