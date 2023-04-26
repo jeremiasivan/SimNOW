@@ -17,7 +17,7 @@ params:
   outgroup: ""
   
   # non-overlapping window analysis
-  window_size: !r c(100000,500000,1000000)
+  window_size: !r c(50000,100000,500000,1000000)
 ---
 
 ```{r, include=FALSE}

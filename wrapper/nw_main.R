@@ -89,7 +89,7 @@ make_repnow <- function(r) {
   unlink(tf)
 }
 
-# run parallelized simulations
+# run parallelized sequence simulations
 cl <- makeCluster(nthread, outfile="")
 registerDoSNOW(cl)
 

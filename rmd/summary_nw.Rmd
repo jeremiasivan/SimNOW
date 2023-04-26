@@ -1,8 +1,8 @@
 ---
 title: "Summary of Multiple Non-overlapping Windows Analyses"
 params:
-  prefix: "db"
-  outdir: "~/Documents/simulation/debug"
+  prefix: "sim"
+  outdir: "~/simulation"
 ---
 
 ```{r setup, include=FALSE}
@@ -54,7 +54,7 @@ for (i in simulation) {
   
   # calculate difference in accuracy
   dif_acc <- c()
-  max_acc <- sumfile[match(max(sumfile$accuracy),sumfile$accuracy),accuracy]
+  max_acc <- sumfile[match(max(sumfile$accuracy), sumfile$accuracy), accuracy]
   for (j in 3:ncol(sumfile)) {
     cnname <- colnames(sumfile)[j]
     min_ic <- sumfile[match(min(sumfile[,..cnname]), unlist(sumfile[,..cnname])), accuracy]
@@ -81,7 +81,7 @@ data.table::setnames(infodf, cnnames)
 data.table::fwrite(output, file=fn_simsum, quote = F, sep = "\t")
 data.table::fwrite(infocr, file=fn_simifc, quote = F, sep = "\t")
 data.table::fwrite(infodf[, lapply(.SD, function(x){
-  paste0(mean(x), " (", sd(x), ")")
+  paste0(round(mean(x),5), " (", round(sd(x),5), ")")
   })], file=fn_difacc, quote = F, sep = "\t")
 
 # visualization

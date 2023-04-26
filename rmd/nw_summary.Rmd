@@ -54,11 +54,11 @@ for (i in window_sizes) {
   # ms vs sm topology weights
   ms_tw <- msfile %>%
     group_by(topology) %>%
-    summarise(sumlen = sum(length), percentage = sumlen/sum(msfile$length) * 100)
+    summarise(sumlen = sum(length), percentage = sumlen/params$ms_l * 100)
   
   sm_tw <- smfile %>%
     group_by(topology) %>%
-    summarise(sumlen = sum(length), percentage = sumlen/sum(smfile$length) * 100)
+    summarise(sumlen = sum(length), percentage = sumlen/params$ms_l * 100)
   
   cmptw <- c()
   for (j in 1:nrow(ms_tw)) {
