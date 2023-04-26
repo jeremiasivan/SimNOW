@@ -1,8 +1,8 @@
 ---
-title: "Check Locus Length Distribution from ms"
+title: "Check Locus Length Distribution Across Simulations"
 params:
-  prefix: "hl"
-  outdir: "~/Documents/simulation/hl"
+  prefix: "sim"
+  outdir: "~/simulation"
 ---
 
 ```{r setup, include=FALSE}
@@ -25,8 +25,8 @@ for (s in simulation) {
   r_idx <- match("-r", command[[1]]) + 1
   
   # extract ms params
-  rho <- as.numeric(command[[1]][r_idx])
-  ms_l <- as.numeric(command[[1]][r_idx+1])
+  rho <- command[[1]][r_idx]
+  ms_l <- command[[1]][r_idx+1]
   
   # read msfile
   ms <- data.table::fread(fn_msfile, col.names="cmd", sep="")
@@ -40,35 +40,29 @@ for (s in simulation) {
   
   # convert ms trees into data.table
   mstrees[, c("empty","length","tree") := data.table::tstrsplit(cmd, '\\[|\\]', fixed = FALSE)]
-  
-  for (l in mstrees$length) {
-    locuslen <- rbind(locuslen, c(s, as.numeric(l)/1000, rho))
-  }
+  locuslen[[rho]] <- c(locuslen[[rho]], unlist(as.numeric(mstrees$length)))
 }
-
-locuslen <- as.data.frame(locuslen)
-colnames(locuslen) <- c("simulation","length","rho")
-locuslen$length <- as.numeric(locuslen$length)
 
 # write output file
 fn_file <- paste0(params$outdir, "/", params$prefix, ".loclen")
 write.table(data.frame(cbind("r","mean","sd")), file=fn_file, quote=F, row.names=F, col.names=F)
 
 #visualization
-for (r in unique(locuslen$rho)) {
+for (r in names(locuslen)) {
   fn_fig <- paste0(params$outdir, "/", params$prefix, ".r", r, ".loclen.tiff")
-  
-  outperr <- subset(locuslen, locuslen$rho == r)
-  write.table(data.frame(cbind(r, round(mean(outperr$length),5), round(sd(outperr$length),5))),
+  write.table(data.frame(cbind(r, round(mean(locuslen[[r]]),5), round(sd(locuslen[[r]]),5))),
             file=fn_file, quote=F, row.names=F, col.names=F, append=T)
   
-  lenbin <- ceiling(sqrt(nrow(outperr)))
-  widthbin <- (max(outperr$length) - min(outperr$length)) / lenbin
+  lenbin <- ceiling(sqrt(length(locuslen[[r]])))
+  widthbin <- (max(locuslen[[r]]) - min(locuslen[[r]])) / lenbin
+  if (widthbin == 0) {
+    next
+  }
   
   tiff(filename=fn_fig, units="px", width=2880, height=1800)
-  print(ggplot(outperr, aes(x=length, fill=simulation)) +
+  print(ggplot(data.frame(length=locuslen[[r]]), aes(x=as.numeric(length))) +
     geom_histogram(binwidth=widthbin, alpha=.5, position="identity") +
-    ggtitle(paste0("Distribution of locus length (bin width = ", round(widthbin, 5), ")")) +
+    ggtitle(paste0("Distribution of locus length (bin width=", round(widthbin, 5), ")")) +
     xlab("Length (kb)") +
     ylab("Count") +
     theme(

@@ -1,22 +1,24 @@
 ---
-title: "Check Topology Distribution from ms"
+title: "Check Number of Loci and Topology Across Simulations"
 params:
   # general
-  prefix: "hl"
-  outdir: "~/Documents/simulation/hl"
-  nreps: 100
+  prefix: "sim"
+  outdir: "~/simulation"
+  nreps: 50
   thread: 5
   
   top_threshold: 0.985
   
   # ms
-  msdir: "~/Documents/msdir/ms"
+  msdir: "~/msdir/ms"
   ms_params: ""
   ms_r: 0
-  ms_l: 10000000
+  ms_l: 1000000
 ---
 
 ```{r setup, include=FALSE}
+# install.packages("data.table")
+# install.packages("dplyr")
 library(doSNOW)
 
 # create doSNOW cluster
@@ -25,15 +27,12 @@ doSNOW::registerDoSNOW(nwcl)
 ```
 
 ```{r ms, include=FALSE}
-ms_command <- paste(params$ms_params, "-r", params$ms_r, params$ms_l)
-
+# run in parallelization
 lenout <- foreach (i = 1:params$nreps, .combine=c) %dopar% {
   library(data.table)
   library(dplyr)
   
   options(scipen=999)
-  
-  # analysis run
   prefix <- paste0(params$prefix, "_", i)
   
   # set working directory
@@ -48,7 +47,7 @@ lenout <- foreach (i = 1:params$nreps, .combine=c) %dopar% {
   
   # generate seedms
   randseed <- paste(sample(10000:99999,3), collapse=" ")
-  ms_cmd <- paste(ms_command, "-seeds", randseed)
+  ms_cmd <- paste(params$ms_params, "-r", params$ms_r, params$ms_l, "-seeds", randseed)
   
   # generate msfile
   system(paste(params$msdir,ms_cmd,">",fn_msfile))
@@ -83,51 +82,41 @@ lenout <- foreach (i = 1:params$nreps, .combine=c) %dopar% {
     temp_tree$edge.length <- NULL
     topology <- c(topology, ape::write.tree(temp_tree))
   }
-  summary[, "topology" := topology]
+  summary[, "rtopology" := topology]
   summary$tree <- NULL
   
-  # group by topology
-  tsummary <- summary %>%
-    group_by(topology) %>%
-    summarise_all(sum)
-  
-  # extract unique topologies
-  ls_unroot <- c()
-  ls_uqtops <- c()
-  uq_tops <- unique(tsummary$topology)
+  # match the naming convention of topologies
+  uq_tops <- unique(summary$rtopology)
+  ls_unroot <- NULL
+  ls_uqtops <- NULL
   
   for (i in uq_tops) {
-    is_equal <- 0
-    
-    if (is.null(ls_unroot)) {
-      ls_unroot <- c(ls_unroot, i)
-      ls_uqtops <- c(ls_uqtops, i)
-      next
-    }
+    is_equal <- FALSE
     
     for (j in ls_unroot) {
       if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = i)), ape::unroot(ape::read.tree(text = j)))) {
-        is_equal <- 1
-        ls_uqtops <- c(ls_uqtops, j)
+        is_equal <- TRUE
+        ls_uqtops[[i]] <- j
         break
       }
     }
     
-    if (is_equal == 0) {
+    if (!is_equal) {
       ls_unroot <- c(ls_unroot, i)
-      ls_uqtops <- c(ls_uqtops, i)
+      ls_uqtops[[i]] <- i
     }
   }
-
-  # group by topology
-  tsummary <- data.table::as.data.table(tsummary)
-  tsummary[, "utopology" := ls_uqtops]
   
-  usummary <- tsummary %>%
-    group_by(utopology) %>%
-    summarise(n = sum(n), percentage = round(n/sum(tsummary$n) * 100, 5)) %>%
+  lookup <- match(summary$rtopology, names(ls_uqtops))
+  summary[, "topology" := as.character(ls_uqtops[lookup])]
+  summary$rtopology <- NULL
+  
+  # group by topology
+  usummary <- summary %>%
+    group_by(topology) %>%
+    summarise(n = sum(n), percentage = round(n/sum(summary$n) * 100, 5)) %>%
     arrange(-n) %>%
-    mutate(cum.percentage = round(cumsum(n) / sum(tsummary$n), 5))
+    mutate(cum.percentage = round(cumsum(n) / sum(summary$n), 5))
   
   sub_sum <- head(subset(usummary$cum.percentage, usummary$cum.percentage >= params$top_threshold), 1)
   sum_idx <- match(sub_sum, usummary$cum.percentage)

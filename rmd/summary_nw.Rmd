@@ -10,7 +10,9 @@ library(data.table)
 library(dplyr)
 library(ggplot2)
 
-simsumdir <- paste0(params$outdir, "/simsum/")
+pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
+
+simsumdir <- paste0(params$outdir, "/summary/")
 if (!dir.exists(simsumdir)) {
   dir.create(simsumdir, recursive = T)
 }
@@ -18,95 +20,52 @@ if (!dir.exists(simsumdir)) {
 
 ```{r simsum, include=FALSE}
 fn_simsum <- paste0(simsumdir, params$prefix, ".simsum")
-fn_simfig <- paste0(simsumdir, params$prefix, ".simsum.tiff")
-fn_simifc <- paste0(simsumdir, params$prefix, ".simifc")
-fn_difacc <- paste0(simsumdir, params$prefix, ".difacc")
+fn_acc_ws <- paste0(simsumdir, params$prefix, ".acc_ws.tiff")
 
 # extract row and column names
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
 simulation <- allsims[grep(paste0("^",params$prefix), allsims)]
-simulation <- simulation[simulation != "simsum"]
-simulation_ln <- length(simulation)
+simulation <- simulation[simulation != "summary"]
 
 window_sizes <- list.dirs(paste0(params$outdir,"/",simulation[1],"/windows/"), full.names = F, recursive = F)
 window_sizes <- window_sizes[window_sizes != paste0(simulation[1],".summary")]
-window_sizes_ln <- length(window_sizes)
 
 # extract summary for each simulation
-output <- data.table::data.table(simulation, matrix(0, nrow=simulation_ln, ncol=window_sizes_ln+1))
-data.table::setnames(output, c("simulation", window_sizes, "r"))
-
 cnnames <- NULL
-infocr <- data.table::data.table()
-infodf <- data.table::data.table()
+simsum <- data.table::data.table()
 
 for (i in simulation) {
   # read simulation summary file
-  row_idx <- match(i, output$simulation)
   sumfile <- data.table::fread(paste0(params$outdir,"/",i,"/windows/",i,".sum"))
   if (is.null(cnnames)){
     cnnames <- colnames(sumfile)[3:ncol(sumfile)]
   }
-  
-  for (j in 1:nrow(sumfile)) {
-    output[row_idx, as.character(eval(sumfile$window_size[j])) := sumfile$accuracy[j]]
-  }
-  
-  # calculate difference in accuracy
-  dif_acc <- c()
-  max_acc <- sumfile[match(max(sumfile$accuracy), sumfile$accuracy), accuracy]
-  for (j in 3:ncol(sumfile)) {
-    cnname <- colnames(sumfile)[j]
-    min_ic <- sumfile[match(min(sumfile[,..cnname]), unlist(sumfile[,..cnname])), accuracy]
-    dif_acc <- c(dif_acc, max_acc-min_ic)
-  }
-  infodf <- data.table::rbindlist(list(infodf, as.list(dif_acc)))
   
   # read ms file
   fn_ms <- paste0(params$outdir,"/",i,"/simulation/",i,".ms")
   command <- strsplit(system(paste("grep 'ms'",fn_ms), intern=T), " ")
   rrate <- as.numeric(command[[1]][match("-r", command[[1]]) + 1])
   
-  # extract recombination rate
-  output[row_idx, "r" := rrate]
-  
-  sumfile <- data.table::data.table("simulation" = rep(i, nrow(sumfile)), sumfile)
-  sumfile[, "r" := rrate]
-  infocr <- rbind(infocr, sumfile)
+  sumfile <- data.table::data.table("simulation" = rep(i,nrow(sumfile)), sumfile, "r" = rep(rrate,nrow(sumfile)))
+  simsum <- rbind(simsum, sumfile)
 }
 
-# update column names
-data.table::setnames(infodf, cnnames)
-
-data.table::fwrite(output, file=fn_simsum, quote = F, sep = "\t")
-data.table::fwrite(infocr, file=fn_simifc, quote = F, sep = "\t")
-data.table::fwrite(infodf[, lapply(.SD, function(x){
-  paste0(round(mean(x),5), " (", round(sd(x),5), ")")
-  })], file=fn_difacc, quote = F, sep = "\t")
-
-# visualization
-sub_output <- data.frame()
-pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
-  
-for (i in 1:nrow(output)) {
-  for (j in 3:ncol(output)-1) {
-    sub_output <- rbind(sub_output, c(output$simulation[i], colnames(output)[j], as.character(output[i, ..j]), as.numeric(output[i, "r"])))
-  }
-}
-colnames(sub_output) <- c("simulation","wsize","accuracy","r")
-sub_output$wsize <- factor(as.numeric(sub_output$wsize)/1000)
+simsum$accuracy <- as.numeric(simsum$accuracy)
+simsum$window_size <- factor(simsum$window_size/1000)
+simsum$r <- factor(simsum$r)
+data.table::fwrite(simsum, file=fn_simsum, quote = F, sep = "\t")
 
 # visualization for all simulations
-tiff(filename=fn_simfig, units="px", width=2880, height=1800)
-print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) + 
-        geom_jitter(shape=16, width = 0.1, height = 0, aes(colour=r), size=5) +
-        scale_colour_manual(values = pcolors) +
-        ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
-        xlab("Window size (kb)") +
-        ylab("Accuracy (%)") +
+tiff(filename=fn_acc_ws, units="px", width=2880, height=1800)
+print(ggplot(simsum, aes(y=accuracy, x=window_size, ymin=0, ymax=100)) + 
+        geom_boxplot(outlier.shape = NA) +
+        geom_point(shape=16, aes(colour=r, size=20)) +
+        facet_wrap(.~r, scales = "free") +
+        ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + xlab("Window size (kb)") + ylab("Accuracy (%)") +
+        guides(size="none", colour=guide_legend(override.aes=list(size=8))) +
         theme(
           plot.title = element_text(hjust = 0.5, size = 50),
-          plot.margin = margin(0, 0, 1.25, 0, "cm"),
+          plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
           axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
           axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
           axis.text.y=element_text(size=30),
@@ -117,53 +76,111 @@ print(ggplot(sub_output, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100))
         ))
 dev.off()
 
-# visualization for simulations per recombination rate
-fn_figs <- c(fn_simfig)
-iterator <- 0
-for (i in unique(sub_output$r)) {
-  fn_simfig <- paste0(simsumdir, params$prefix, ".simsum.r",i,".tiff")
-  fn_figs <- c(fn_figs, fn_simfig)
-  outperr <- subset(sub_output, sub_output$r == i)
-  iterator <- iterator + 1
+for (i in 5:ncol(simsum)-1) {
+  ifc <- colnames(simsum)[i]
+  ifc_outdir <- paste0(simsumdir, ifc, "/")
+  if (!dir.exists(ifc_outdir)) {
+    dir.create(ifc_outdir)
+  }
+  
+  # information criteria vs accuracy
+  fn_simfig <- paste0(ifc_outdir, params$prefix, ".acc_ws.",ifc,".tiff")
   
   tiff(filename=fn_simfig, units="px", width=2880, height=1800)
-  print(ggplot(outperr, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) + 
-          geom_boxplot(outlier.shape = NA) +
-          geom_jitter(shape=16, width = 0.1, height = 0, aes(colour=r), size=5) +
-          scale_colour_manual(values = pcolors[iterator]) +
-          ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
-          xlab("Window size (kb)") +
-          ylab("Accuracy (%)") +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            legend.title=element_text(size=30),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
-          ))
-  dev.off()
-}
-
-# visualization for information criteria
-infocr$accuracy <- as.numeric(infocr$accuracy)
-infocr$window_size <- as.character(infocr$window_size/1000)
-
-for (i in 5:ncol(infocr)-1) {
-  ifc <- colnames(infocr)[i]
-  fn_simfig <- paste0(simsumdir, params$prefix, ".simifc.",ifc,".tiff")
-  
-  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
-  print(ggplot(infocr, aes(y=accuracy, x=as.numeric(unlist(infocr[,..i])), ymin=0, ymax=100, color=simulation)) +
-          geom_jitter(aes(shape=forcats::fct_inseq(window_size)), width = 0, height = 0, size=5) +
-          geom_smooth(method = "lm", fill = NA) +
-          scale_shape_manual(values = 1:length(unique(infocr$window_size))) +
+  print(ggplot(simsum, aes(y=accuracy, x=unlist(simsum[,..i]), ymin=0, ymax=100, group=simulation)) +
+          geom_line(aes(size=1, alpha=0.2)) +
+          geom_point(aes(colour=window_size, size=20)) +
+          facet_wrap(.~r, scales = "free") +
           ggtitle(paste("Correlation between", toupper(ifc), "and Accuracy")) + xlab(toupper(ifc)) + ylab("Accuracy (%)") +
-          labs(shape="wsize (kb)") +
-          guides(color="none") +
+          labs(color="w_size (kb)") +
+          guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=30),
+            axis.text.x=element_text(size=30),
+            legend.title=element_text(size=30),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+          ))
+  dev.off()
+  
+  # accuracy loss
+  acc_loss <- simsum %>% 
+    group_by(simulation, r) %>% 
+    mutate(max_acc = max(accuracy)) %>%
+    slice(which.min(!!as.name(ifc))) %>% 
+    summarise(acc_loss = max_acc - accuracy)
+
+  fn_simfig <- paste0(ifc_outdir, params$prefix, ".acc_df.",ifc,".tiff")
+  
+  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
+  print(ggplot(acc_loss, aes(y=acc_loss, x=r, ymin=0)) + 
+          geom_boxplot(outlier.shape = NA) +
+          geom_point(shape=16, aes(colour=r, size=20)) +
+          facet_wrap(.~r, scales = "free") +
+          ggtitle(paste("Loss of Accuracy for Lowest", toupper(ifc))) + xlab(toupper(ifc)) + ylab("Loss of Accuracy (%)") +
+          guides(size="none", colour=guide_legend(override.aes=list(size=8))) +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=30),
+            axis.text.x=element_text(size=30),
+            legend.title=element_text(size=30),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+          ))
+  dev.off()
+  
+  # information criterion vs window size
+  fn_simfig <- paste0(ifc_outdir, params$prefix, ".ifc_ws.",ifc,".tiff")
+  
+  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
+  print(ggplot(simsum, aes(x=window_size, y=unlist(simsum[,..i]), group=simulation)) +
+          geom_line(aes(size=1, alpha=0.2)) +
+          geom_point(aes(colour=window_size, size=20)) +
+          facet_wrap(.~r, scales = "free") +
+          ggtitle(paste("Correlation between", toupper(ifc), "and Window Size")) + ylab(toupper(ifc)) + xlab("Window Size (kb)") +
+          guides(color="none", alpha="none", size="none") +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=30),
+            axis.text.x=element_text(size=30),
+            legend.title=element_text(size=30),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+          ))
+  dev.off()
+}
+
+# ranked IC vs ranked accuracy
+simsum$accuracy <- -1 * simsum$accuracy
+rank_simsum <- simsum %>%
+  group_by(simulation, r) %>%
+  mutate(
+    across(
+      where(is.numeric), min_rank))
+simsum$accuracy <- -1 * simsum$accuracy
+
+for (i in 5:ncol(rank_simsum)-1) {
+  ifc <- colnames(rank_simsum)[i]
+  fn_simfig <- paste0(simsumdir, params$prefix, ".rank.acc_ws.",ifc,".tiff")
+  
+  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
+  print(ggplot(rank_simsum, aes(y=accuracy, x=unlist(rank_simsum[,i]), ymin=0, group=simulation)) +
+          geom_line(aes(size=1, alpha=0.2)) +
+          geom_point(aes(colour=window_size, size=20)) +
+          facet_wrap(.~r, scales = "free") +
+          ggtitle(paste("Correlation between Ranked", toupper(ifc), "and Ranked Accuracy")) + xlab(paste("Ranked",toupper(ifc))) + ylab("Ranked Accuracy") +
+          labs(color="w_size (kb)") +
+          guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
             plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
@@ -177,10 +194,4 @@ for (i in 5:ncol(infocr)-1) {
           ))
   dev.off()
 }
-```
-
-<br>
-
-```{r, fig.width=1, echo=FALSE, eval=FALSE}
-knitr::include_graphics(fn_figs)
 ```

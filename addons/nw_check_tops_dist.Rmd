@@ -1,11 +1,11 @@
 ---
 title: "Comparison of Topology Weights between Empirical and Simulated Datasets"
 params:
-  prefix: "hl"
-  outdir: "~/Documents/simulation/hl"
+  prefix: "sim"
+  outdir: "~/simulation"
   
   wsize: 50000
-  reftopdir: "~/Documents/top_ref.txt"
+  reftopdir: "~/top_ref.txt"
 ---
 
 ```{r setup, include=FALSE}
