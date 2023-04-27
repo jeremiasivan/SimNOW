@@ -171,7 +171,12 @@ simsum$accuracy <- -1 * simsum$accuracy
 
 for (i in 5:ncol(rank_simsum)-1) {
   ifc <- colnames(rank_simsum)[i]
-  fn_simfig <- paste0(simsumdir, params$prefix, ".rank.acc_ws.",ifc,".tiff")
+  ifc_outdir <- paste0(simsumdir, ifc, "/")
+  if (!dir.exists(ifc_outdir)) {
+    dir.create(ifc_outdir)
+  }
+  
+  fn_simfig <- paste0(ifc_outdir, params$prefix, ".rank.acc_ws.",ifc,".tiff")
   
   tiff(filename=fn_simfig, units="px", width=2880, height=1800)
   print(ggplot(rank_simsum, aes(y=accuracy, x=unlist(rank_simsum[,i]), ymin=0, group=simulation)) +

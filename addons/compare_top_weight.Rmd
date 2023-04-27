@@ -26,6 +26,7 @@ fn_nwtopdist <- paste0(topdistdir, params$prefix, ".nwtopdist")
 # extract simulations
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
 simulation <- allsims[grep(paste0("^",params$prefix), allsims)]
+simulation <- simulation[simulation != "summary"]
 
 # read reference topology
 msreftop <- data.table::fread(params$reftopdir)
