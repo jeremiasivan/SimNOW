@@ -61,8 +61,10 @@ if (file.exists(fn_mast_tops) && !params$redo) {
   
   # extract topology according to threshold
   sub_topsum <- topsum %>%
-    filter(cum.percentage < params$percent_tops) %>%
-    rbind(topsum[nrow(sub_topsum),]) %>%
+    filter(cum.percentage < params$percent_tops)
+  
+  n <- nrow(sub_topsum)
+  sub_topsum <- topsum[, .SD[0:n+1]] %>%
     select(topology)
   
   n <- nrow(sub_topsum)
