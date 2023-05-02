@@ -73,7 +73,7 @@ if (file.exists(fn_mast_tops) && !params$redo) {
     knitr::knit_exit()
   }
   
-  write.table(unlist(sub_topsum$topology), fn_mast_tops, col.names = F, quote = F)
+  write.table(unlist(sub_topsum$topology), fn_mast_tops, col.names = F, quote = F, row.names = F)
   log4r::info(fn_logger, paste("File created:", toupper(mast_analysis), "topology file."))
 }
 ```
