@@ -1,11 +1,11 @@
 ---
-title: "Summary of MAST-HMM and HMMSTER Analyses"
+title: "Summary of MAST Analyses"
 params:
   prefix: ""
   outdir: ""
   redo: TRUE
   
-  analysis_type: "MASTHMM"
+  mast_analysis: "MASTHMM"
 ---
 
 ```{r setup, include=FALSE}

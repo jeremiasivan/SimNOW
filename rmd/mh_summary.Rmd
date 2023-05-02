@@ -1,239 +1,168 @@
 ---
-title: "Summary of HMMSTER Analysis vs Truth"
+title: "Summary of MAST Analysis vs Truth"
 ---
 
 ```{r sumsetup, include=FALSE}
-if (params$analysis_type == HMMSTER) {
-  write.table(c("",
-                "####################################",
-                "####      HMMSTER vs Truth      ####",
-                "####################################"),
-              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-}
+write.table(c("",
+              "####################################",
+              "####        MAST vs Truth       ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 # extract MAST run directories
-mast_outdir <- paste0(getwd(), "/", tolower(params$analysis_type), "/")
+mast_outdir <- paste0(getwd(), "/", mast_analysis, "/", fn_mast_model, "/")
 mast_model <- paste0("'", params$mast_model, "'")
-fn_mast_model <- gsub('^\\_+|\\_+$', '', tolower(gsub("[[:punct:]]", "_", mast_model)))
-
-mast_dirs <- list.dirs(mast_outdir, full.names = F, recursive = F)
-mast_dirs <- mast_dirs[mast_dirs != "summary"]
-if (!length(mast_dirs)) {
-  log4r::error(fn_logger, "Error: HMM directory is not found. Exited.")
-  knitr::knit_exit()
-}
-
-# input / output files
-fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
-fn_topset <- paste0(mast_outdir, params$prefix, ".topset")
-
+  
 # set up output directory
-mast_sumdir <- paste0(mast_outdir, "summary/", fn_mast_model, "/")
+mast_sumdir <- paste0(mast_outdir, "summary/")
 if (!dir.exists(mast_sumdir)) {
   dir.create(mast_sumdir, recursive = T)
 }
 
-fn_summary <- paste0(mast_sumdir, params$prefix, ".mh.sum")
+# input / output files
+fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
+fn_mast_tops <- paste0(getwd(), "/", mast_analysis, "/", params$prefix, ".mast.tops")
+fn_iqtree <- paste0(mast_outdir, params$prefix, ".iqtree")
+fn_hmm <- paste0(mast_outdir, params$prefix, ".hmm")
+
+fn_mast_tw <- paste0(mast_sumdir, params$prefix, ".mast_tw")
+fn_mast_sum <- paste0(mast_sumdir, params$prefix, ".mast_sum")
+fn_hmmsum <- paste0(mast_outdir, params$prefix, ".hmmsum")
+fn_summary <- paste0(mast_outdir, params$prefix, ".mh.sum")
 ```
 
-```{r postmh, include=FALSE}
-# read input files
-msfile <- data.table::fread(fn_mstops)
-options(scipen=999)
+```{r summast, include=FALSE}
+if (all(file.exists(fn_mast_tw, fn_mast_sum)) &&!params$redo){
+  log4r::info(fn_logger, paste("File found:", toupper(mast_analysis), "summary files."))
 
-# iterate through topology sets
-for (i in mast_dirs) {
-  temp_outdir <- paste0(mast_outdir,i,"/")
-  outdir <- paste0(temp_outdir, fn_mast_model, "/")
- 
-  # skip this step if files exist
-  fn_hmmtw <- paste0(outdir, params$prefix, ".hmmtw")
-  fn_hmmsum <- paste0(outdir, params$prefix, ".hmmsum")
-  if (all(file.exists(fn_hmmtw, fn_hmmsum)) && !params$redo) {
-    log4r::info(fn_logger, paste0("File found: ",params$analysis_type," summary files for set ", i, "."))
-    next
-  }
+} else {
+  options(scipen=999)
   
-  # skip this step if HMM file does not exist
-  fn_mast_tops <- paste0(temp_outdir, params$prefix, ".mast.tops")
-  fn_hmm <- paste0(outdir, params$prefix, ".hmm")
-  if (!file.exists(fn_hmm)) {
-    log4r::warn(fn_logger, paste0("Warn: HMM file for set ", i, " is not found. Skipped."))
-    next
-  }
-  
-  # read HMM file and MAST input topologies
-  uq_tmtrees <- readLines(fn_mast_tops)
+  # read ms topologies
+  msfile <- data.table::fread(fn_mstops)
   uq_mstrees <- unique(msfile$topology)
+  uq_mstrees_ln <- length(uq_mstrees)
+  
+  # read MAST input topologies
+  uq_tmtrees <- readLines(fn_mast_tops)
   
   # match MAST topology with ms topology
-  for (j in uq_mstrees) {
-    for (k in uq_tmtrees) {
+  for (j in uq_tmtrees) {
+    for (k in uq_mstrees) {
       if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::read.tree(text = k))) {
-        msfile[, topology := gsub(j, k, topology, fixed = TRUE)]
+        uq_tmtrees <- gsub(j, k, uq_tmtrees, fixed = TRUE)
         break
       }
     }
   }
   
-  uq_mstrees <- unique(msfile$topology)
-  uq_mstrees_ln <- length(uq_mstrees)
-  
   # ms topology weights
   ms_len <- sum(as.numeric(msfile$length))
-  ms_tw <- msfile[,1:2] %>%
+  ms_tw <- msfile %>%
+    select(topology, length) %>%
     group_by(topology) %>%
-    summarise_all(sum) %>%
-    summarise(topology=topology, ms=length/ms_len)
+    summarise(ms=sum(length)/ms_len)
   
-  # hmm topology weights
-  hmm_tw <- gsub("^.*: ", "", system(paste("grep '^Ratio of sites for each category'",fn_hmm), intern = T))
+  # MAST topology weights
+  mast_tw <- gsub("^.*: ", "", system(paste("grep '^Ratio of sites for each category'", fn_iqtree), intern = T))
   ls_hmm_tw <- strsplit(hmm_tw, " ")[[1]]
   
   # extract the weights for each topology
-  if (params$analysis_type == HMMSTER) {
-    write.table(paste("topology", "ms", "hmm", sep="\t"), file=fn_hmmtw, quote = F, col.names = F, row.names = F)
-    
-    for (j in 1:nrow(ms_tw)) {
-      top_idx <- match(ms_tw$topology[j], uq_tmtrees)
-      write.table(paste(ms_tw$topology[j], ms_tw$ms[j], round(as.numeric(ls_hmm_tw[top_idx]), 4), sep="\t"),
-                  file=fn_hmmtw, quote = F, col.names = F, row.names = F, append = T)
-    }
+  write.table(paste("topology", "ms", "hmm", sep="\t"), file=fn_hmmtw, quote = F, col.names = F, row.names = F)
+  
+  for (j in 1:nrow(ms_tw)) {
+    top_idx <- match(ms_tw$topology[j], uq_tmtrees)
+    write.table(paste(ms_tw$topology[j], ms_tw$ms[j], round(as.numeric(ls_hmm_tw[top_idx]), 4), sep="\t"),
+                file=fn_hmmtw, quote = F, col.names = F, row.names = F, append = T)
   }
   
-  # extract HMM per-site topology
-  hmmtrees <- system(paste("grep '^\\['", fn_hmm), intern=TRUE)
-  trees <- data.table::data.table(do.call('rbind', strsplit(as.character(hmmtrees),'\\[|,|\\]')))
-  trees[,1] <- NULL
+  log4r::info(fn_logger, paste("File created:", toupper(mast_analysis), "topology weights comparison."))
   
-  colnames(trees) <- c("start","stop","tree")
-  trees$start <- as.numeric(trees$start)
-  trees$stop <- as.numeric(trees$stop)
-  
-  # create empty data.table
-  output <- data.table::data.table(c(uq_mstrees, "NT"), matrix(0, nrow=uq_mstrees_ln+1, ncol=uq_mstrees_ln))
-  data.table::setnames(output, c("topology", uq_mstrees))
-  
-  # iterate through ms topology file
-  for (k in 1:nrow(msfile)){
-    # extract the hmm topology based on ms topology switching
-    start_idx <- tail(which(trees$start <= msfile$start[k]), 1)
-    stop_idx <- head(which(trees$stop >= msfile$stop[k]), 1)
+  # extract per-site topology from HMM
+  if (mast_analysis == HiMAST) {
+    # extract HMM per-site topology
+    hmmtrees <- system(paste("grep '^\\['", fn_hmm), intern=TRUE)
+    trees <- data.table::data.table(do.call('rbind', strsplit(as.character(hmmtrees),'\\[|,|\\]')))
+    trees[,1] <- NULL
     
-    # update lengths
-    sites <- trees[start_idx:stop_idx,]
-    sites$start[1] <- msfile$start[k]
-    sites$length[1] <- sites$stop[1] - sites$start[1] + 1
+    colnames(trees) <- c("start","stop","tree")
+    trees$start <- as.numeric(trees$start)
+    trees$stop <- as.numeric(trees$stop)
     
-    last_idx <- nrow(sites)
-    sites$stop[last_idx] <- msfile$stop[k]
-    sites$length[last_idx] <- sites$stop[last_idx] - sites$start[last_idx] + 1
+    # create empty data.table
+    output <- data.table::data.table(c(uq_mstrees, "NT"), matrix(0, nrow=uq_mstrees_ln+1, ncol=uq_mstrees_ln))
+    data.table::setnames(output, c("topology", uq_mstrees))
     
-    topology_idx <- match(msfile$topology[k], colnames(output))
-    
-    # add number of HMM sites for the respective ms topology
-    for (j in 1:nrow(sites)) {
-      window_idx <- match(uq_tmtrees[as.numeric(sites$tree[j])], output$topology)
+    # iterate through ms topology file
+    for (k in 1:nrow(msfile)){
+      # extract the hmm topology based on ms topology switching
+      start_idx <- tail(which(trees$start <= msfile$start[k]), 1)
+      stop_idx <- head(which(trees$stop >= msfile$stop[k]), 1)
       
-      if (is.na(window_idx)) {
-        tempval <- as.numeric(output[uq_mstrees_ln+1, ..topology_idx] + sites$length[j])
-        output[uq_mstrees_ln+1, eval(msfile$topology[k]) := tempval]
-      } else {
-        tempval <- as.numeric(output[window_idx, ..topology_idx] + sites$length[j])
-        output[window_idx, eval(msfile$topology[k]) := tempval]
+      # update lengths
+      sites <- trees[start_idx:stop_idx,]
+      sites$start[1] <- msfile$start[k]
+      sites$length[1] <- sites$stop[1] - sites$start[1] + 1
+      
+      last_idx <- nrow(sites)
+      sites$stop[last_idx] <- msfile$stop[k]
+      sites$length[last_idx] <- sites$stop[last_idx] - sites$start[last_idx] + 1
+      
+      topology_idx <- match(msfile$topology[k], colnames(output))
+      
+      # add number of HMM sites for the respective ms topology
+      for (j in 1:nrow(sites)) {
+        window_idx <- match(uq_tmtrees[as.numeric(sites$tree[j])], output$topology)
+        
+        if (is.na(window_idx)) {
+          tempval <- as.numeric(output[uq_mstrees_ln+1, ..topology_idx] + sites$length[j])
+          output[uq_mstrees_ln+1, eval(msfile$topology[k]) := tempval]
+        } else {
+          tempval <- as.numeric(output[window_idx, ..topology_idx] + sites$length[j])
+          output[window_idx, eval(msfile$topology[k]) := tempval]
+        }
       }
+      
+      rm(sites)
     }
     
-    rm(sites)
+    # write the data.table into file
+    data.table::fwrite(output, file=fn_hmmsum, quote=F, sep="\t")
+    log4r::info(fn_logger, paste("File created:", toupper(mast_analysis), "per-site topology comparison."))
+    
+    rm(hmmtrees, trees, output)
   }
   
-  # write the data.table into file
-  data.table::fwrite(output, file=fn_hmmsum, quote=F, sep="\t")
-  log4r::info(fn_logger, paste0("Files created: set ", i, " ", params$analysis_type, " summary files (",
-                               params$prefix, ".hmmtw, ", params$prefix, ".hmmsum)."))
-  
-  rm(hmmtrees, ms_tw, trees, output, uq_mstrees, uq_tmtrees)
+  rm(msfile, ms_tw, uq_mstrees, uq_tmtrees)
 }
-
-rm(msfile)
 ```
 
 ```{r sumtable, include=FALSE}
-t_accuracy <- c()
-
-# iterate through MAST directories
-for (i in mast_dirs) {
-  temp_outdir <- paste0(mast_outdir,i,"/")
-  outdir <- paste0(temp_outdir, fn_mast_model, "/")
-  
-  fn_iqtree <- paste0(outdir, params$prefix, ".iqtree")
-  fn_hmm <- paste0(outdir, params$prefix, ".hmm")
-  
-  # skip this step if HMM summary file does not exist
-  fn_hmmsum <- paste0(outdir, params$prefix, ".hmmsum")
+if (mast_analysis == HiMAST) {
   if (!file.exists(fn_hmmsum)) {
     log4r::warn(fn_logger, paste0("Warn: HMM summary file for set ", i, " is not found. Skipped."))
-    next
-  }
   
-  # read HMM summary file
-  hmmsum <- data.table::fread(fn_hmmsum)
-  hmmsum <- as.matrix(hmmsum[,-1])
+  } else {
+    # read HMM summary file
+    hmmsum <- data.table::fread(fn_hmmsum)
+    hmmsum <- as.matrix(hmmsum[,-1])
+      
+    # calculate the accuracy 
+    acc <- sum(as.numeric(diag(hmmsum))) / sum(as.numeric(hmmsum)) * 100
+    acc <- round(acc, 3)
     
-  # calculate the accuracy 
-  acc <- sum(as.numeric(diag(hmmsum))) / sum(as.numeric(hmmsum)) * 100
-  acc <- round(acc, 3)
-  
-  # extract information of interest
-  aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
-  aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
-  bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
-  hmm <- gsub("^.* :", "", system(paste("grep '^BEST HMM SCORE'",fn_hmm), intern = T))
-  
-  t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,hmm))
-  rm(hmmsum, acc, aic, aicc, bic, hmm)
+    # extract information of interest
+    aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
+    aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
+    bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
+    hmm <- gsub("^.* :", "", system(paste("grep '^BEST HMM SCORE'",fn_hmm), intern = T))
+    
+    output <- data.table::data.table()
+    output[, c("accuracy","aic","aicc","bic","hmm") := list(acc,aic,aicc,bic,hmm)]
+    data.table::fwrite(t_accuracy, file=fn_summary, quote=F, sep="\t")
+    
+    log4r::info(fn_logger, paste0("File created/modified: summary table of ", toupper(mast_analysis), "."))
+    rm(hmmsum, output)
+  }
 }
-
-# write the data.table into file
-t_accuracy <- data.table::as.data.table(t_accuracy)
-data.table::setnames(t_accuracy, c("set","accuracy","aic","aicc","bic","hmm"))
-
-data.table::fwrite(t_accuracy, file=fn_summary, quote=F, sep="\t")
-log4r::info(fn_logger, paste0("File created/modified: summary table of ", params$analysis_type, " and ms (", params$prefix, ".mh.sum)."))
-
-# correlation plot
-library(ggplot2)
-pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
-iterator <- 0
-
-# convert to data.frame for ggplot2
-t_accuracy <- as.data.frame(t_accuracy)
-
-# plot each information criterion score
-for (c in 3:ncol(t_accuracy)) {
-  fn_sumfig <- paste0(mast_sumdir, params$prefix, ".", colnames(t_accuracy)[c], ".mh.tiff")
-  iterator <- iterator + 1
-  
-  tiff(filename=fn_sumfig, units="px", width=2880, height=1800)
-  print(ggplot(t_accuracy, aes(y=as.numeric(accuracy), x=as.numeric(t_accuracy[,c]), ymin=0, ymax=100)) + 
-          geom_jitter(shape=16, width = 0.2, height = 0.2, size=5) +
-          scale_colour_manual(values = pcolors[iterator]) +
-          ggtitle(paste("Correlation of", params$analysis_type, "Information Criterion and NOW Accuracy")) + 
-          xlab("Information criterion score") +
-          ylab("Accuracy (%)") +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            legend.title=element_blank(),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
-          ))
-  dev.off()
-}
-
-log4r::info(fn_logger, paste0("Files created/modified: NOW accuracy vs ", params$analysis_type, " IC correlation plots."))
-rm(t_accuracy)
 ```

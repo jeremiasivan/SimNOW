@@ -1,21 +1,23 @@
 library(doSNOW)
 
 #################################
-prefix <- "hl"
+prefix <- "sim"
 nthread <- 4
 
 # general
-rmddir <- "~/Documents/SimNOW/rmd"
-outdir <- "~/Documents/simulation/hl"
+rmddir <- "~/SimNOW/rmd"
+outdir <- "~/simulation"
 redo <-  TRUE
 
 # mast and hmm
-iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
-analysis_type <- "HMMSTER"
-mast_model <- c("JC+T")
-mast_tops <- 0.95
-max_tops <- 10
+iqtree2dir <- "~/iqtree-2.2.2.4-MacOSX/bin/iqtree2"
 
+ic_type <- "AIC"
+
+mast_analysis <- "HiMAST"
+mast_model <- c("JC+T")
+percent_tops <- 0.95
+max_tops <- 10
 #################################
 
 alldirs <- list.dirs(outdir, full.names = F, recursive = F)
@@ -25,11 +27,12 @@ dirname <- grepl(paste("^",prefix,"_",sep=""), alldirs)
 reports <- list()
 for (i in alldirs[dirname]) {
   for (j in mast_model) {
-    out <- paste(outdir,"/",i,"/",gsub("[[:punct:]]","",j),".",tolower(analysis_type),".html", sep="")
+    out <- paste(outdir,"/",i,"/",toupper(gsub("[[:punct:]]","",j)),".",toupper(mast_analysis),".html", sep="")
     templist <- list(out=out, params=list(prefix=i,
                                           rmddir=rmddir, outdir=outdir, redo=redo,
                                           iqtree2dir=iqtree2dir,
-                                          analysis_type=analysis_type, mast_model=j, mast_tops=mast_tops, max_tops=max_tops
+                                          ic_type=ic_type,
+                                          mast_analysis=mast_analysis, mast_model=j, percent_tops=percent_tops, max_tops=max_tops
                                           ))
   
     reports <- append(reports, list(templist))
@@ -61,9 +64,9 @@ foreach(r=reports, .errorhandling = 'pass') %dopar% {
 stopCluster(cl)
 
 # summary
-rmarkdown::render(input=paste(rmddir,"/summary_mh.Rmd", sep=""),
-                  output_file=paste(outdir, "/", prefix, ".mh.html", sep=""),
-                  params=list(prefix=prefix, outdir=outdir, redo=redo, analysis_type=analysis_type),
-                  quiet=TRUE)
+# rmarkdown::render(input=paste(rmddir,"/summary_mh.Rmd", sep=""),
+#                   output_file=paste(outdir, "/", prefix, ".mh.html", sep=""),
+#                   params=list(prefix=prefix, outdir=outdir, redo=redo, analysis_type=analysis_type),
+#                   quiet=TRUE)
 
 #################################
