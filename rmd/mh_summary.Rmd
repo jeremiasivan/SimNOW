@@ -25,10 +25,9 @@ fn_mast_tops <- paste0(getwd(), "/", mast_analysis, "/", params$prefix, ".mast.t
 fn_iqtree <- paste0(mast_outdir, params$prefix, ".iqtree")
 fn_hmm <- paste0(mast_outdir, params$prefix, ".hmm")
 
-fn_mast_tw <- paste0(mast_sumdir, params$prefix, ".mast_tw")
-fn_mast_sum <- paste0(mast_sumdir, params$prefix, ".mast_sum")
-fn_hmmsum <- paste0(mast_outdir, params$prefix, ".hmmsum")
-fn_summary <- paste0(mast_outdir, params$prefix, ".mh.sum")
+fn_masttw <- paste0(mast_sumdir, params$prefix, ".masttw")
+fn_hmmsum <- paste0(mast_sumdir, params$prefix, ".hmmsum")
+fn_summary <- paste0(mast_sumdir, params$prefix, ".mh.sum")
 ```
 
 ```{r summast, include=FALSE}
