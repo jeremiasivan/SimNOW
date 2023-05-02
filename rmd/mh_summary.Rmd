@@ -64,18 +64,33 @@ if (all(file.exists(fn_mast_tw, fn_mast_sum)) &&!params$redo){
     summarise(ms=sum(length)/ms_len)
   
   # MAST topology weights
-  mast_tw <- gsub("^.*: ", "", system(paste("grep '^Ratio of sites for each category'", fn_iqtree), intern = T))
-  ls_hmm_tw <- strsplit(hmm_tw, " ")[[1]]
+  mast_tw <- gsub("^.*: ", "", system(paste("grep '^Tree weights'", fn_iqtree), intern = T))
+  ls_mast_tw <- strsplit(mast_tw, " ")[[1]]
   
   # extract the weights for each topology
-  write.table(paste("topology", "ms", "hmm", sep="\t"), file=fn_hmmtw, quote = F, col.names = F, row.names = F)
+  output <- NULL
   
-  for (j in 1:nrow(ms_tw)) {
-    top_idx <- match(ms_tw$topology[j], uq_tmtrees)
-    write.table(paste(ms_tw$topology[j], ms_tw$ms[j], round(as.numeric(ls_hmm_tw[top_idx]), 4), sep="\t"),
-                file=fn_hmmtw, quote = F, col.names = F, row.names = F, append = T)
+  if (mast_analysis == MAST) {
+    output <- data.table::data.table(topology = character(), ms = numeric(), mast = numeric())
+    
+    for (j in 1:nrow(ms_tw)) {
+      top_idx <- match(ms_tw$topology[j], uq_tmtrees)
+      output <- rbindlist(list(output, list(ms_tw$topology[j], ms_tw$ms[j], round(as.numeric(ls_mast_tw[top_idx]), 4))))
+    }
+    
+  } else if (mast_analysis == HiMAST) {
+    hmm_tw <- gsub("^.*: ", "", system(paste("grep '^Ratio of sites for each category'", fn_hmm), intern = T))
+    ls_hmm_tw <- strsplit(hmm_tw, " ")[[1]]
+  
+    output <- data.table::data.table(topology = character(), ms = numeric(), mast = numeric(), hmm = numeric())
+    
+    for (j in 1:nrow(ms_tw)) {
+      top_idx <- match(ms_tw$topology[j], uq_tmtrees)
+      output <- rbindlist(list(output, list(ms_tw$topology[j], ms_tw$ms[j], round(as.numeric(ls_mast_tw[top_idx]), 4), round(as.numeric(ls_hmm_tw[top_idx]), 4))))
+    }
   }
   
+  data.table::fwrite(output, fn_mast_tw, quote = F, sep = "\t")
   log4r::info(fn_logger, paste("File created:", toupper(mast_analysis), "topology weights comparison."))
   
   # extract per-site topology from HMM

@@ -42,8 +42,10 @@ if (file.exists(fn_mast_tops) && !params$redo) {
   # read summary file
   sum <- data.table::fread(fn_summary)
   if (!ic_type %in% colnames(sum)) {
-    log4r::error(fn_logger, paste("Error: invalid information criterion type. Exited."))
-    knitr::knit_exit()
+    errmsg <- "Error: invalid information criterion type. Exited."
+    
+    log4r::error(fn_logger, errmsg)
+    stop(errmsg)
   }
 
   wsize <- sum %>%
@@ -55,8 +57,10 @@ if (file.exists(fn_mast_tops) && !params$redo) {
   topsum <- data.table::fread(fn_topsum)
   
   if (nrow(topsum) == 1) {
-    log4r::error(fn_logger, paste("Error: only one topology found. Exited."))
-    knitr::knit_exit()
+    errmsg <- "Error: only one topology found. Exited."
+    
+    log4r::error(fn_logger, errmsg)
+    stop(errmsg)
   }
   
   # extract topology according to threshold
@@ -69,8 +73,10 @@ if (file.exists(fn_mast_tops) && !params$redo) {
   
   n <- nrow(sub_topsum)
   if (n == 1 || n > params$max_tops) {
-    log4r::error(fn_logger, paste0("Error: invalid number of topology (", n, "). Exited."))
-    knitr::knit_exit()
+    errmsg <- paste0("Error: invalid number of topology (", n, "). Exited.")
+    
+    log4r::error(fn_logger, errmsg)
+    stop(errmsg)
   }
   
   write.table(unlist(sub_topsum$topology), fn_mast_tops, col.names = F, quote = F, row.names = F)
