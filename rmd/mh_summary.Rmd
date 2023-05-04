@@ -94,7 +94,7 @@ if (mast_analysis == MAST) {
   }
 }
 
-data.table::fwrite(output, fn_mast_tw, quote = F, sep = "\t")
+data.table::fwrite(output, fn_masttw, quote = F, sep = "\t")
 log4r::info(fn_logger, paste("File created:", toupper(mast_analysis), "topology weights comparison."))
 
 # extract per-site topology from HMM
