@@ -173,7 +173,7 @@ if (mast_analysis == HiMAST) {
   
   output <- data.table::data.table()
   output[, c("accuracy","aic","aicc","bic","hmm") := list(acc,aic,aicc,bic,hmm)]
-  data.table::fwrite(t_accuracy, file=fn_summary, quote=F, sep="\t")
+  data.table::fwrite(output, file=fn_summary, quote=F, sep="\t")
   
   log4r::info(fn_logger, paste0("File created/modified: summary table of ", toupper(mast_analysis), "."))
   rm(hmmsum, output)
