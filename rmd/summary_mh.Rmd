@@ -5,7 +5,7 @@ params:
   outdir: ""
   redo: TRUE
   
-  mast_analysis: "MASTHMM"
+  mast_analysis: "MAST"
 ---
 
 ```{r setup, include=FALSE}
@@ -14,44 +14,46 @@ library(data.table)
 library(ggplot2)
 
 # select analysis type
-HMMSTER <- "HMMSTER"
-if (!params$analysis_type %in% c(HMMSTER)) {
+mast_analysis <- tolower(params$mast_analysis)
+pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
+
+MAST <- "mast"
+HiMAST <- "himast"
+if (!mast_analysis %in% c(MAST, HiMAST)) {
   print("Error: invalid type of analysis. Exited.")
   knitr::knit_exit()
 }
 
 # set up working directory
-hmmsumdir <- paste0(params$outdir, "/simsum/", tolower(params$analysis_type), "/")
+hmmsumdir <- paste0(params$outdir, "/summary/", mast_analysis, "/")
 if (!dir.exists(hmmsumdir)) {
   dir.create(hmmsumdir, recursive = T)
 }
 
 # output files
-fn_hmmacc <- paste0(hmmsumdir, "/", params$prefix, ".hmmacc")
-fn_hmmtopset <- paste0(hmmsumdir, "/", params$prefix, ".hmmtopset")
-fn_hmmfig <- paste0(hmmsumdir, "/", params$prefix, ".hmmacc.tiff")
-fn_hmmwacc <- paste0(hmmsumdir, "/", params$prefix, ".hmmwacc")
-fn_hmmwfig <- paste0(hmmsumdir, "/", params$prefix, ".hmmwacc.tiff")
+fn_hmmacc <- paste0(hmmsumdir, params$prefix, ".hmmacc")
+fn_hmmtopset <- paste0(hmmsumdir, params$prefix, ".hmmtopset")
+fn_hmmfig <- paste0(hmmsumdir, params$prefix, ".hmmacc.tiff")
+fn_hmmwacc <- paste0(hmmsumdir, params$prefix, ".hmmwacc")
+fn_hmmwfig <- paste0(hmmsumdir, params$prefix, ".hmmwacc.tiff")
 if (all(file.exists(fn_hmmacc, fn_hmmtopset, fn_hmmfig, fn_hmmwacc, fn_hmmwfig)) && !params$redo) {
   print("File found: HMM summary files. Exited.")
   knitr::knit_exit()
 }
-
-fn_figs <- c()
-pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
-
-# retrieve all simulations
-allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
-simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""), allsims)]
-
-# retrieve all MAST models
-hmmdir <- paste0(params$outdir, "/", simulation[1], "/", tolower(params$analysis_type), "/")
-top_sets <- list.dirs(hmmdir, full.names = F, recursive = F)
-model_list <- list.dirs(paste0(hmmdir, top_sets[1], "/"), full.names = F, recursive = F)
-model_list <- subset(model_list, model_list != paste(simulation[1], ".mast.tops", sep=""))
 ```
 
 ```{r hmmtruthwindow, include=FALSE}
+# retrieve all simulations
+allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
+simulation <- allsims[grep(paste("^",params$prefix,"_",sep=""), allsims)]
+simulation <- simulation[simulation != "summary"]
+
+# retrieve all MAST models 
+hmmdir <- paste0(params$outdir, "/", simulation[1], "/", mast_analysis, "/")
+model_list <- list.dirs(hmmdir, full.names = F, recursive = F)
+model_list <- subset(model_list, model_list != paste0(simulation[1], ".mast.tops"))
+
+# MAST summary
 dfsets <- c()
 
 # retrieve topology set and recombination rate for each simulation
