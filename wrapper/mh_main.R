@@ -64,9 +64,9 @@ foreach(r=reports, .errorhandling = 'pass') %dopar% {
 stopCluster(cl)
 
 # summary
-# rmarkdown::render(input=paste(rmddir,"/summary_mh.Rmd", sep=""),
-#                   output_file=paste(outdir, "/", prefix, ".mh.html", sep=""),
-#                   params=list(prefix=prefix, outdir=outdir, redo=redo, analysis_type=analysis_type),
-#                   quiet=TRUE)
+rmarkdown::render(input=paste(rmddir,"/summary_mh.Rmd", sep=""),
+                  output_file=paste(outdir, "/", prefix, ".mh.html", sep=""),
+                  params=list(prefix=prefix, outdir=outdir, redo=redo, mast_analysis=mast_analysis),
+                  quiet=TRUE)
 
 #################################

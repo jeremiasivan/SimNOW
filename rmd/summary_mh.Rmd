@@ -54,19 +54,25 @@ if (mast_analysis == HiMAST) {
   # retrieve topology set and recombination rate for each simulation
   for (s in simulation) {
     for (m in model_list) {
-        dftmp <- data.table::fread(paste0(params$outdir, "/", s, "/", mast_analysis, "/", m, "/summary/", s, ".mh.sum"))
-        
-        nowsum <- data.table::fread(paste0(params$outdir, "/", s, "/windows/", s, ".sum"))
-        if (!ic_type %in% colnames(nowsum)) {
-          print("Error: invalid information criterion type. Exited.")
-          knitr::knit_exit()
-        }
+      fn_dftmp <- paste0(params$outdir, "/", s, "/", mast_analysis, "/", m, "/summary/", s, ".mh.sum")
+      fn_nowsum <- paste0(params$outdir, "/", s, "/windows/", s, ".sum")
       
-        nowrow <- nowsum %>%
-          slice_min(!!as.name(ic_type)) %>%
-          select(window_size, accuracy)
-        
-        dfsets <- rbind(dfsets, c(s, m, nowrow$window_size[1], nowrow$accuracy[1], dftmp$accuracy[1]))
+      if (!all(file.exists(fn_dftmp, fn_nowsum))) {
+        next
+      }
+      
+      dftmp <- data.table::fread(fn_dftmp)
+      nowsum <- data.table::fread(fn_nowsum)
+      if (!ic_type %in% colnames(nowsum)) {
+        print("Error: invalid information criterion type. Exited.")
+        knitr::knit_exit()
+      }
+    
+      nowrow <- nowsum %>%
+        slice_min(!!as.name(ic_type)) %>%
+        select(window_size, accuracy)
+      
+      dfsets <- rbind(dfsets, c(s, m, nowrow$window_size[1], nowrow$accuracy[1], dftmp$accuracy[1]))
     }
   }
   
