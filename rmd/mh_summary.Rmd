@@ -48,7 +48,7 @@ uq_tmtrees <- readLines(fn_mast_tops)
 # match MAST topology with ms topology
 for (j in uq_tmtrees) {
   for (k in uq_mstrees) {
-    if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::read.tree(text = k))) {
+    if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = k)), ape::read.tree(text = j))) {
       uq_tmtrees <- gsub(j, k, uq_tmtrees, fixed = TRUE)
       break
     }
@@ -64,7 +64,7 @@ ms_tw <- msfile %>%
 
 # MAST topology weights
 mast_tw <- gsub("^.*: ", "", system(paste("grep '^Tree weights'", fn_iqtree), intern = T))
-ls_mast_tw <- strsplit(mast_tw, " ")[[1]]
+ls_mast_tw <- strsplit(mast_tw, ", ")[[1]]
 
 # extract the weights for each topology
 output <- NULL
@@ -90,7 +90,18 @@ if (mast_analysis == MAST) {
   
   for (j in 1:nrow(ms_tw)) {
     top_idx <- match(ms_tw$topology[j], uq_tmtrees)
-    output <- rbindlist(list(output, list(ms_tw$topology[j], ms_tw$ms[j], round(as.numeric(ls_mast_tw[top_idx]), 4), round(as.numeric(ls_hmm_tw[top_idx]), 4))))
+    
+    if (is.na(top_idx)) {
+      output <- rbindlist(list(output, list(ms_tw$topology[j],
+                                          ms_tw$ms[j],
+                                          "NA",
+                                          "NA")))
+    } else {
+      output <- rbindlist(list(output, list(ms_tw$topology[j],
+                                          ms_tw$ms[j],
+                                          round(as.numeric(ls_mast_tw[top_idx]), 4),
+                                          round(as.numeric(ls_hmm_tw[top_idx]), 4))))
+    }
   }
 }
 

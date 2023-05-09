@@ -56,7 +56,7 @@ if (file.exists(fn_mast_tops) && !params$redo) {
   fn_topsum <- paste0(getwd(), "/windows/", wsize$window_size[1], "/summary/", params$prefix, ".topsum")
   topsum <- data.table::fread(fn_topsum)
   
-  if (nrow(topsum) == 1) {
+  if (nrow(topsum) <= 1) {
     errmsg <- "Error: only one topology found. Exited."
     
     log4r::error(fn_logger, errmsg)
@@ -72,7 +72,7 @@ if (file.exists(fn_mast_tops) && !params$redo) {
     select(topology)
   
   n <- nrow(sub_topsum)
-  if (n == 1 || n > params$max_tops) {
+  if (n <= 1 || n > params$max_tops) {
     errmsg <- paste0("Error: invalid number of topology (", n, "). Exited.")
     
     log4r::error(fn_logger, errmsg)

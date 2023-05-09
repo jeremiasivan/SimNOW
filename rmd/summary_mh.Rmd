@@ -5,6 +5,8 @@ params:
   outdir: ""
   redo: TRUE
   
+  ic_type: "AIC"
+  
   mast_analysis: "MAST"
 ---
 
@@ -15,7 +17,7 @@ library(ggplot2)
 
 # select analysis type
 mast_analysis <- tolower(params$mast_analysis)
-pcolors <- RColorBrewer::brewer.pal(8, "Dark2")
+ic_type <- tolower(params$ic_type)
 
 MAST <- "mast"
 HiMAST <- "himast"
@@ -32,14 +34,6 @@ if (!dir.exists(hmmsumdir)) {
 
 # output files
 fn_hmmacc <- paste0(hmmsumdir, params$prefix, ".hmmacc")
-fn_hmmtopset <- paste0(hmmsumdir, params$prefix, ".hmmtopset")
-fn_hmmfig <- paste0(hmmsumdir, params$prefix, ".hmmacc.tiff")
-fn_hmmwacc <- paste0(hmmsumdir, params$prefix, ".hmmwacc")
-fn_hmmwfig <- paste0(hmmsumdir, params$prefix, ".hmmwacc.tiff")
-if (all(file.exists(fn_hmmacc, fn_hmmtopset, fn_hmmfig, fn_hmmwacc, fn_hmmwfig)) && !params$redo) {
-  print("File found: HMM summary files. Exited.")
-  knitr::knit_exit()
-}
 ```
 
 ```{r hmmtruthwindow, include=FALSE}
@@ -53,234 +47,31 @@ hmmdir <- paste0(params$outdir, "/", simulation[1], "/", mast_analysis, "/")
 model_list <- list.dirs(hmmdir, full.names = F, recursive = F)
 model_list <- subset(model_list, model_list != paste0(simulation[1], ".mast.tops"))
 
-# MAST summary
-dfsets <- c()
-
-# retrieve topology set and recombination rate for each simulation
-for (s in simulation) {
-  dftmp <- data.table::fread(paste0(params$outdir, "/", s, "/", tolower(params$analysis_type), "/", s, ".topset"))
-
-  fn_ms <- paste0(params$outdir, "/", s, "/simulation/", s, ".ms")
-  command <- strsplit(system(paste("grep 'ms'", fn_ms), intern=T), " ")
-  r_idx <- match("-r", command[[1]]) + 1
+if (mast_analysis == HiMAST) {
+  # MAST summary
+  dfsets <- c()
   
-  for (r in 1:nrow(dftmp)) {
-    dfsets <- rbind(dfsets, c(dftmp$wsizes[r], r, s, command[[1]][r_idx]))
-  }
-}
-
-dfsets <- data.table::as.data.table(dfsets)
-data.table::setnames(dfsets, c("wsize", "set", "simulation", "r"))
-
-# calculate MAST-HMM accuracy for each window size
-dfviz <- c()
-
-for (e in 1:nrow(dfsets)) {
-  wstmp <- strsplit(dfsets$wsize[e],"_")[[1]]
-  mhtmp <- paste0(params$outdir, "/", dfsets$simulation[e], "/", tolower(params$analysis_type), "/summary/")
-    
-  for (m in model_list) {
-    fn_hmmsum <- paste0(mhtmp, m, "/", dfsets$simulation[e], ".mh.sum")
-    
-    hmmsum <- data.table::fread(fn_hmmsum)
-    acc <- hmmsum[set == dfsets$set[e], accuracy]
-    
-    # store the values in dataframe
-    for (w in wstmp) {
-      dfviz <- rbind(dfviz, c(fn_hmmsum, acc, m, dfsets$r[e], w))
-    }
-  }
-}
-
-dfviz <- as.data.frame(dfviz)
-colnames(dfviz) <- c("dir","accuracy","model","r","wsize")
-
-dfviz$model <- gsub("\\_","+",toupper(dfviz$model))
-dfviz$wsize <- factor(as.numeric(dfviz$wsize)/1000)
-
-write.table(dfviz, fn_hmmwacc, quote = F, row.names = F, col.names = T)
-
-# visualization for all simulations
-tiff(filename=fn_hmmwfig, units="px", width=2880, height=1800)
-print(ggplot(dfviz, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) + 
-        geom_jitter(shape=16, width = 0.1, height = 0, aes(colour=r), size=5) +
-        scale_colour_manual(values = pcolors) +
-        ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
-        xlab("Window size (kb)") +
-        ylab("Accuracy (%)") +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 50),
-          plot.margin = margin(0, 0, 1.25, 0, "cm"),
-          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-          axis.text.y=element_text(size=30),
-          axis.text.x=element_text(size=30),
-          legend.title=element_text(size=30),
-          legend.text=element_text(size=30),
-          legend.key.size=unit(2,"cm")
-        ))
-dev.off()
-
-# visualization for simulations per recombination rate
-fn_figs <- c(fn_figs, fn_hmmwfig)
-iterator <- 0
-
-for (i in unique(dfviz$r)) {
-  outperr <- subset(dfviz, dfviz$r == i)
-  
-  fn_simfig <- paste(hmmsumdir, "/", params$prefix, ".hmmwacc.r",i,".tiff", sep="")
-  fn_figs <- c(fn_figs, fn_simfig)
-  iterator <- iterator + 1
-  
-  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
-  print(ggplot(outperr, aes(y=as.numeric(accuracy), x=wsize, ymin=0, ymax=100)) + 
-          geom_boxplot() +
-          geom_jitter(shape=16, width = 0.1, height = 0, aes(colour=r), size=5) +
-          scale_colour_manual(values = pcolors[iterator]) +
-          ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
-          xlab("Window size (kb)") +
-          ylab("Accuracy (%)") +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            legend.title=element_text(size=30),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
-          ))
-  dev.off()
-}
-```
-
-```{r hmmtruthset, eval=FALSE, include=FALSE}
-dfsets <- data.frame("topologies", "set", "simulation", "r")
-
-# retrieve topology set and recombination rate for each simulation
-for (s in simulation) {
-  dftmp <- read.table(paste(params$outdir, "/", s, "/", tolower(params$analysis_type), "/", s, ".topset", sep=""))
-  colnames(dftmp) <- dftmp[1,]
-  dftmp <- dftmp[-1,]
-  
-  fn_ms <- paste(params$outdir, "/", s, "/simulation/", s, ".ms", sep="")
-  command <- strsplit(system(paste("grep 'ms'", fn_ms), intern=T), " ")
-  
-  for (r in 1:nrow(dftmp)) {
-    dfsets <- rbind(dfsets, c(dftmp$topologies[r], as.numeric(rownames(dftmp)[r])-1, s, command[[1]][length(command[[1]])-1]))
-  }
-}
-
-colnames(dfsets) <- dfsets[1,]
-dfsets <- dfsets[-1,]
-
-# calculate MAST-HMM accuracy for each topology set
-dfviz <- data.frame("accuracy","model","r","set")
-dfstop <- data.frame("set","topology")
-set_iterator <- 1
-
-for (t in unique(dfsets$topologies)) {
-  dfsubs <- subset(dfsets[dfsets$topologies == t,])
-  
-  for (r in 1:nrow(dfsubs)) {
-    mhtemp <- paste(params$outdir, "/", dfsubs$simulation[r], "/", tolower(params$analysis_type), "/", dfsubs$set[r], "/", sep="")
-    
+  # retrieve topology set and recombination rate for each simulation
+  for (s in simulation) {
     for (m in model_list) {
-      fn_hmmsum <- paste(mhtemp, m, "/", dfsubs$simulation[r], ".hmmsum", sep="")
-      if (!file.exists(fn_hmmsum)) {
-        next
-      }
-      
-      hmmsum <- read.table(fn_hmmsum)
-      hmmsum <- sapply(hmmsum[-1,-1], as.numeric)
-      
-      # calculate the accuracy with if conditional for one topology  
-      acc <- 0
-      if (is.null(nrow(hmmsum))) {
-        acc <- hmmsum[1]
-      } else {
-        for (k in 1:nrow(hmmsum)) {
-          acc <- acc + as.numeric(hmmsum[k,k])
+        dftmp <- data.table::fread(paste0(params$outdir, "/", s, "/", mast_analysis, "/", m, "/summary/", s, ".mh.sum"))
+        
+        nowsum <- data.table::fread(paste0(params$outdir, "/", s, "/windows/", s, ".sum"))
+        if (!ic_type %in% colnames(nowsum)) {
+          print("Error: invalid information criterion type. Exited.")
+          knitr::knit_exit()
         }
-      }
-      acc <- round(acc / sum(hmmsum) * 100, 3)
       
-      # store the values in dataframe
-      dfviz <- rbind(dfviz, c(acc, m, dfsubs$r[r], set_iterator))
+        nowrow <- nowsum %>%
+          slice_min(!!as.name(ic_type)) %>%
+          select(window_size, accuracy)
+        
+        dfsets <- rbind(dfsets, c(s, m, nowrow$window_size[1], nowrow$accuracy[1], dftmp$accuracy[1]))
     }
   }
   
-  dfstop <- rbind(dfstop, c(set_iterator,t))
-  set_iterator <- set_iterator + 1
+  dfsets <- data.table::as.data.table(dfsets)
+  data.table::setnames(dfsets, c("simulation", "mast_model", "window_size", "now", "hmm"))
+  data.table::fwrite(dfsets, )
 }
-
-colnames(dfstop) <- dfstop[1,]
-dfstop <- dfstop[-1,]
-
-colnames(dfviz) <- dfviz[1,]
-dfviz <- dfviz[-1,]
-
-dfviz$model <- gsub("\\_","+",toupper(dfviz$model))
-dfviz$set <- factor(dfviz$set,levels = unique(dfviz$set),ordered = T)
-
-write.table(dfstop, fn_hmmtopset, quote = F, row.names = F, col.names = T)
-write.table(dfviz, fn_hmmacc, quote = F, row.names = F, col.names = T)
-
-# visualization for all simulations
-tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
-print(ggplot(dfviz, aes(y=as.numeric(accuracy), x=set, ymin=0, ymax=100)) + 
-        geom_jitter(shape=16, width = 0.1, height = 0, aes(colour=r), size=5) +
-        scale_colour_manual(values = pcolors) +
-        ggtitle("Accuracy of MAST-HMM in Simulated Dataset") + 
-        xlab("Topology Set") +
-        ylab("Accuracy (%)") +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 50),
-          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-          axis.text.y=element_text(size=30),
-          axis.text.x=element_text(size=30),
-          legend.title=element_blank(),
-          legend.text=element_text(size=30),
-          legend.key.size=unit(2,"cm")
-        ))
-dev.off()
-
-# visualization for simulations per recombination rate
-fn_figs <- c(fn_figs, fn_hmmfig)
-iterator <- 0
-
-for (i in unique(dfviz$r)) {
-  outperr <- subset(dfviz, dfviz$r == i)
-  
-  fn_hmmfig <- paste(params$outdir, "/", params$prefix, ".hmmacc.r",i,".tiff", sep="")
-  fn_figs <- c(fn_figs, fn_hmmfig)
-  iterator <- iterator + 1
-  
-  tiff(filename=fn_hmmfig, units="px", width=2880, height=1800)
-  print(ggplot(outperr, aes(y=as.numeric(accuracy), x=set, ymin=0, ymax=100)) + 
-          geom_boxplot() +
-          geom_jitter(shape=16, width = 0.1, height = 0, aes(colour=r), size=5) +
-          scale_colour_manual(values = pcolors[iterator]) +
-          ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + 
-          xlab("Topology Set") +
-          ylab("Accuracy (%)") +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            legend.title=element_text(size=30),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
-          ))
-  dev.off()
-}
-```
-
-```{r, fig.width=1, echo=FALSE}
-knitr::include_graphics(fn_figs)
 ```
