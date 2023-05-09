@@ -7,7 +7,7 @@ params:
   
   ic_type: "AIC"
   
-  mast_analysis: "MAST"
+  mast_analysis: "HiMAST"
 ---
 
 ```{r setup, include=FALSE}
