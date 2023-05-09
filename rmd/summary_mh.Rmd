@@ -78,6 +78,6 @@ if (mast_analysis == HiMAST) {
   
   dfsets <- data.table::as.data.table(dfsets)
   data.table::setnames(dfsets, c("simulation", "mast_model", "window_size", "now", "hmm"))
-  data.table::fwrite(dfsets, )
+  data.table::fwrite(dfsets, fn_hmmacc, quote = F, sep = "\t")
 }
 ```
