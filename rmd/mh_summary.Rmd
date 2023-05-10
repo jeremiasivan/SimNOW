@@ -198,7 +198,7 @@ if (mast_analysis == HiMAST) {
   fn_windows <- list.dirs(mast_nw_outdir, full.names = FALSE, recursive = FALSE)
   
   # create new empty data.table
-  trees <- data.table::data.table(start = character(), stop = numeric(), tree = numeric())
+  trees <- data.table::data.table(start = numeric(), stop = numeric(), length = numeric(), tree = character())
   last_pos <- 0
   
   # iterate through each window
@@ -212,6 +212,7 @@ if (mast_analysis == HiMAST) {
     colnames(temp_trees) <- c("start","stop","tree")
     temp_trees$start <- as.numeric(temp_trees$start) + last_pos
     temp_trees$stop <- as.numeric(temp_trees$stop) + last_pos
+    temp_trees$length <- temp_trees$stop - temp_trees$start + 1
     
     trees <- rbind(trees, temp_trees)
     last_pos <- temp_trees$stop[nrow(temp_trees)]
