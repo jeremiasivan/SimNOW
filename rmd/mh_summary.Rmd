@@ -165,8 +165,6 @@ if (mast_analysis == HiMAST) {
   
   rm(hmmtrees, trees, output)
 }
-
-rm(msfile, ms_tw, uq_mstrees, uq_tmtrees)
 ```
 
 ```{r sumtable, include=FALSE}
