@@ -215,7 +215,7 @@ if (mast_analysis == HiMAST) {
     temp_trees$start <- as.numeric(temp_trees$start) + last_pos
     temp_trees$stop <- as.numeric(temp_trees$stop) + last_pos
     
-    dfall <- rbind(dfall, temp_trees)
+    trees <- rbind(trees, temp_trees)
     last_pos <- temp_trees$stop[nrow(temp_trees)]
   }
   
