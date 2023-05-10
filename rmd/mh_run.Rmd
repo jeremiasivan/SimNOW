@@ -19,7 +19,7 @@ if (mast_analysis == MAST) {
 
 # set up MAST output directory
 mast_outdir <- paste0(getwd(), "/", mast_analysis, "/", fn_mast_model, "/")
-mast_nw_outdir <- paste0(mast_outdir, "/windows/")
+mast_nw_outdir <- paste0(mast_outdir, "windows/")
 if (!dir.exists(mast_nw_outdir)) {
   dir.create(mast_nw_outdir)
 }
@@ -132,7 +132,6 @@ if (mast_analysis == HiMAST) {
     
     temp_prefix <- paste0(temp_outdir, i)
     if (file.exists(paste0(temp_prefix, ".hmm"))){
-      log4r::warn(fn_logger, paste("File found:", i, "HMM file. Skipped."))
       return(NULL)
     }
     
