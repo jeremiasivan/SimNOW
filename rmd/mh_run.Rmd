@@ -19,6 +19,10 @@ if (mast_analysis == MAST) {
 
 # set up MAST output directory
 mast_outdir <- paste0(getwd(), "/", mast_analysis, "/", fn_mast_model, "/")
+mast_nw_outdir <- paste0(mast_outdir, "/windows/")
+if (!dir.exists(mast_nw_outdir)) {
+  dir.create(mast_nw_outdir)
+}
 
 # add single quote for MAST model
 mast_model <- paste0("'", params$mast_model, "'")
@@ -33,25 +37,27 @@ fn_treefile <- paste0(mast_outdir, params$prefix, ".treefile")
 ```
 
 ```{r premh, include=FALSE}
+options(scipen=999)
+
+# read summary file
+sum <- data.table::fread(fn_summary)
+if (!ic_type %in% colnames(sum)) {
+  errmsg <- "Error: invalid information criterion type. Exited."
+  
+  log4r::error(fn_logger, errmsg)
+  stop(errmsg)
+}
+
+# select window size
+wsize <- sum %>%
+  slice_min(!!as.name(ic_type)) %>%
+  select(window_size)
+  
+# skip this step if MAST input topology file is found
 if (file.exists(fn_mast_tops) && !params$redo) {
   log4r::info(fn_logger, paste("File found:", toupper(mast_analysis), "topology file. Skipped."))
   
 } else {
-  options(scipen=999)
-  
-  # read summary file
-  sum <- data.table::fread(fn_summary)
-  if (!ic_type %in% colnames(sum)) {
-    errmsg <- "Error: invalid information criterion type. Exited."
-    
-    log4r::error(fn_logger, errmsg)
-    stop(errmsg)
-  }
-
-  wsize <- sum %>%
-    slice_min(!!as.name(ic_type)) %>%
-    select(window_size)
-  
   # read topology file
   fn_topsum <- paste0(getwd(), "/windows/", wsize$window_size[1], "/summary/", params$prefix, ".topsum")
   topsum <- data.table::fread(fn_topsum)
@@ -104,5 +110,43 @@ if (file.exists(fn_treefile) && !params$redo) {
   }
   
   system(mast_cl)
+}
+```
+
+```{r hmmnow, include=FALSE}
+if (mast_analysis == HiMAST) {
+  options(scipen=999)
+    
+  fn_fasta_dir <- paste0(getwd(), "/windows/", wsize$window_size[1], "/alignment/")
+  fn_fasta <- unlist(strsplit(list.files(fn_fasta_dir), ".fa"))
+  
+  # create doSNOW cluster
+  nwcl <- makeCluster(params$thread)
+  doSNOW::registerDoSNOW(nwcl)
+  
+  foreach (i = fn_fasta) %dopar% {
+    temp_outdir <- paste0(mast_nw_outdir, i, "/")
+    if (!dir.exists(temp_outdir)) {
+      dir.create(temp_outdir)
+    }
+    
+    temp_prefix <- paste0(temp_outdir, i)
+    if (file.exists(paste0(temp_prefix, ".hmm"))){
+      log4r::warn(fn_logger, paste("File found:", i, "HMM file. Skipped."))
+      return(NULL)
+    }
+    
+    temp_fasta <- paste0(fn_fasta_dir, i, ".fa")
+    mast_cl <- paste(params$iqtree2dir,
+                   "-s",temp_fasta,
+                   "-m",mast_model,
+                   "-te",fn_mast_tops,
+                   "-pre",temp_prefix,
+                   "-hmmster -T 1 -redo")
+    system(mast_cl)
+    return(NULL)
+  }
+  
+  stopCluster(nwcl)
 }
 ```

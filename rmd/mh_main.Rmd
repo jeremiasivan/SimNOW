@@ -5,6 +5,7 @@ params:
   rmddir: ""
   prefix: ""
   outdir: ""
+  thread: 5
   redo: FALSE
   
   # software
@@ -30,6 +31,7 @@ sys_tic <- Sys.time()
 # load libraries
 library(data.table)
 library(dplyr)
+library(doSNOW)
 
 # set up working directory
 currentdir <- paste0(params$outdir, "/", params$prefix)

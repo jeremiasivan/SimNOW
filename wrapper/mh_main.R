@@ -2,11 +2,12 @@ library(doSNOW)
 
 #################################
 prefix <- "sim"
-nthread <- 4
+nthread <- 50
 
 # general
 rmddir <- "~/SimNOW/rmd"
 outdir <- "~/simulation"
+thread <- 10
 redo <-  TRUE
 
 # mast and hmm
@@ -20,6 +21,10 @@ percent_tops <- 0.95
 max_tops <- 10
 #################################
 
+if (nthread / thread < 1) {
+  stop("Invalid number of threads (nthread) vs thread per run (thread)")
+}
+
 alldirs <- list.dirs(outdir, full.names = F, recursive = F)
 dirname <- grepl(paste("^",prefix,"_",sep=""), alldirs)
 
@@ -29,7 +34,7 @@ for (i in alldirs[dirname]) {
   for (j in mast_model) {
     out <- paste(outdir,"/",i,"/",toupper(gsub("[[:punct:]]","",j)),".",toupper(mast_analysis),".html", sep="")
     templist <- list(out=out, params=list(prefix=i,
-                                          rmddir=rmddir, outdir=outdir, redo=redo,
+                                          rmddir=rmddir, outdir=outdir, thread=thread, redo=redo,
                                           iqtree2dir=iqtree2dir,
                                           ic_type=ic_type,
                                           mast_analysis=mast_analysis, mast_model=j, percent_tops=percent_tops, max_tops=max_tops
@@ -53,7 +58,7 @@ make_report <- function(r) {
 }
 
 # run parallelized simulations
-cl <- makeCluster(nthread, outfile="")
+cl <- makeCluster(floor(nthread/thread), outfile="")
 registerDoSNOW(cl)
 
 foreach(r=reports, .errorhandling = 'pass') %dopar% {
