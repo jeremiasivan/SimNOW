@@ -106,7 +106,7 @@ if (file.exists(fn_treefile) && !params$redo) {
   
   # run MAST
   if (mast_analysis == HiMAST) {
-    mast_cl <- paste(mast_cl, "-hmmster")
+    mast_cl <- paste(mast_cl, "-hmmster{gm}")
   }
   
   system(mast_cl)

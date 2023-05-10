@@ -32,7 +32,7 @@ dirname <- grepl(paste("^",prefix,"_",sep=""), alldirs)
 reports <- list()
 for (i in alldirs[dirname]) {
   for (j in mast_model) {
-    out <- paste(outdir,"/",i,"/",toupper(gsub("[[:punct:]]","",j)),".",toupper(mast_analysis),".html", sep="")
+    out <- paste(outdir,"/",i,"/",tolower(gsub("[[:punct:]]","",j)),".",tolower(mast_analysis),".html", sep="")
     templist <- list(out=out, params=list(prefix=i,
                                           rmddir=rmddir, outdir=outdir, thread=thread, redo=redo,
                                           iqtree2dir=iqtree2dir,
