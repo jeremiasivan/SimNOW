@@ -14,7 +14,6 @@ mast_outdir <- paste0(getwd(), "/", mast_analysis, "/", fn_mast_model, "/")
 mast_model <- paste0("'", params$mast_model, "'")
   
 mast_nw_outdir <- paste0(mast_outdir, "windows/")
-fn_hmmsum_nw <- paste0(mast_nw_outdir, params$prefix, ".hmmnow")
 
 # set up output directory
 mast_sumdir <- paste0(mast_outdir, "summary/")
@@ -31,6 +30,7 @@ fn_hmm <- paste0(mast_outdir, params$prefix, ".hmm")
 fn_masttw <- paste0(mast_sumdir, params$prefix, ".masttw")
 fn_hmmsum <- paste0(mast_sumdir, params$prefix, ".hmmsum")
 fn_summary <- paste0(mast_sumdir, params$prefix, ".mh.sum")
+fn_hmmsum_nw <- paste0(mast_sumdir, params$prefix, ".hmmnow")
 ```
 
 ```{r summast, include=FALSE}
