@@ -58,7 +58,7 @@ if (mast_analysis == HiMAST) {
       fn_nowsum <- paste0(params$outdir, "/", s, "/windows/", s, ".sum")
       fn_hmmsum_nw <- paste0(params$outdir, "/", s, "/", mast_analysis, "/", m, "/windows/", params$prefix, ".hmmnow")
       
-      if (!all(file.exists(fn_dftmp, fn_nowsum))) {
+      if (!all(file.exists(fn_dftmp, fn_nowsum, fn_hmmsum_nw))) {
         next
       }
       
