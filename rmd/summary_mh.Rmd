@@ -57,7 +57,9 @@ if (mast_analysis == HiMAST) {
       fn_dftmp <- paste0(params$outdir, "/", s, "/", mast_analysis, "/", m, "/summary/", s, ".mh.sum")
       fn_nowsum <- paste0(params$outdir, "/", s, "/windows/", s, ".sum")
       fn_hmmsum_nw <- paste0(params$outdir, "/", s, "/", mast_analysis, "/", m, "/summary/", s, ".hmmnow")
+      fn_hmmsum_ms <- paste0(params$outdir, "/", s, "/", mast_analysis, "/", m, "/summary/", s, ".hmmms")
       
+      hmmmsacc <- "NA"
       if (!all(file.exists(fn_dftmp, fn_nowsum, fn_hmmsum_nw))) {
         next
       }
@@ -73,6 +75,16 @@ if (mast_analysis == HiMAST) {
         slice_min(!!as.name(ic_type)) %>%
         select(window_size, accuracy)
       
+      # ms-based HMM
+      if (file.exists(fn_hmmsum_ms)) {
+        hmmsum_ms <- data.table::fread(fn_hmmsum_ms)
+        hmmsum <- as.matrix(hmmsum_ms[,-1])
+      
+        # calculate the accuracy 
+        acc <- sum(as.numeric(diag(hmmsum))) / sum(as.numeric(hmmsum)) * 100
+        hmmmsacc <- round(acc, 3)
+      }
+      
       # window-based HMM
       hmmsum_nw <- data.table::fread(fn_hmmsum_nw)
       hmmsum <- as.matrix(hmmsum_nw[,-1])
@@ -81,12 +93,12 @@ if (mast_analysis == HiMAST) {
       acc <- sum(as.numeric(diag(hmmsum))) / sum(as.numeric(hmmsum)) * 100
       acc <- round(acc, 3)
       
-      dfsets <- rbind(dfsets, c(s, m, nowrow$window_size[1], nowrow$accuracy[1], dftmp$accuracy[1], acc))
+      dfsets <- rbind(dfsets, c(s, m, hmmmsacc, nowrow$window_size[1], nowrow$accuracy[1], dftmp$accuracy[1], acc))
     }
   }
   
   dfsets <- data.table::as.data.table(dfsets)
-  data.table::setnames(dfsets, c("simulation", "mast_model", "window_size", "now", "hmm", "hmm_now"))
+  data.table::setnames(dfsets, c("simulation", "mast_model", "hmm_ms", "window_size", "now", "hmm", "hmm_now"))
   data.table::fwrite(dfsets, fn_hmmacc, quote = F, sep = "\t")
 }
 ```

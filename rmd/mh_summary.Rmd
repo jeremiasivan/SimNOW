@@ -14,6 +14,7 @@ mast_outdir <- paste0(getwd(), "/", mast_analysis, "/", fn_mast_model, "/")
 mast_model <- paste0("'", params$mast_model, "'")
   
 mast_nw_outdir <- paste0(mast_outdir, "windows/")
+mast_ms_outdir <- paste0(mast_outdir, "ms/")
 
 # set up output directory
 mast_sumdir <- paste0(mast_outdir, "summary/")
@@ -31,6 +32,7 @@ fn_masttw <- paste0(mast_sumdir, params$prefix, ".masttw")
 fn_hmmsum <- paste0(mast_sumdir, params$prefix, ".hmmsum")
 fn_summary <- paste0(mast_sumdir, params$prefix, ".mh.sum")
 fn_hmmsum_nw <- paste0(mast_sumdir, params$prefix, ".hmmnow")
+fn_hmmsum_ms <- paste0(mast_sumdir, params$prefix, ".hmmms")
 ```
 
 ```{r summast, include=FALSE}
@@ -258,5 +260,61 @@ if (mast_analysis == HiMAST) {
   # write the data.table into file
   data.table::fwrite(output, file=fn_hmmsum_nw, quote=F, sep="\t")
   log4r::info(fn_logger, paste("File created:", toupper(mast_analysis), "per-site, window-based topology comparison."))
+}
+```
+
+```{r sumhmmms, include=FALSE}
+if (mast_analysis == HiMAST) {
+  fn_hmmms <- paste0(mast_ms_outdir, params$prefix, ".hmm")
+  
+  # extract HMM per-site topology
+  hmmtrees <- system(paste("grep '^\\['", fn_hmmms), intern=TRUE)
+  trees <- data.table::data.table(do.call('rbind', strsplit(as.character(hmmtrees),'\\[|,|\\]')))
+  trees[,1] <- NULL
+  
+  colnames(trees) <- c("start","stop","tree")
+  trees$start <- as.numeric(trees$start)
+  trees$stop <- as.numeric(trees$stop)
+  
+  # create empty data.table
+  output <- data.table::data.table(c(uq_mstrees, "NT"), matrix(0, nrow=uq_mstrees_ln+1, ncol=uq_mstrees_ln))
+  data.table::setnames(output, c("topology", uq_mstrees))
+  
+  # iterate through ms topology file
+  for (k in 1:nrow(msfile)){
+    # extract the hmm topology based on ms topology switching
+    start_idx <- tail(which(trees$start <= msfile$start[k]), 1)
+    stop_idx <- head(which(trees$stop >= msfile$stop[k]), 1)
+    
+    # update lengths
+    sites <- trees[start_idx:stop_idx,]
+    sites$start[1] <- msfile$start[k]
+    sites$length[1] <- sites$stop[1] - sites$start[1] + 1
+    
+    last_idx <- nrow(sites)
+    sites$stop[last_idx] <- msfile$stop[k]
+    sites$length[last_idx] <- sites$stop[last_idx] - sites$start[last_idx] + 1
+    
+    topology_idx <- match(msfile$topology[k], colnames(output))
+    
+    # add number of HMM sites for the respective ms topology
+    for (j in 1:nrow(sites)) {
+      window_idx <- match(uq_tmtrees[as.numeric(sites$tree[j])], output$topology)
+      
+      if (is.na(window_idx)) {
+        tempval <- as.numeric(output[uq_mstrees_ln+1, ..topology_idx] + sites$length[j])
+        output[uq_mstrees_ln+1, eval(msfile$topology[k]) := tempval]
+      } else {
+        tempval <- as.numeric(output[window_idx, ..topology_idx] + sites$length[j])
+        output[window_idx, eval(msfile$topology[k]) := tempval]
+      }
+    }
+    
+    rm(sites)
+  }
+  
+  # write the data.table into file
+  data.table::fwrite(output, file=fn_hmmsum_ms, quote=F, sep="\t")
+  log4r::info(fn_logger, paste("File created:", toupper(mast_analysis), "per-site, ms-based topology comparison."))
 }
 ```

@@ -24,6 +24,11 @@ if (!dir.exists(mast_nw_outdir)) {
   dir.create(mast_nw_outdir)
 }
 
+mast_ms_outdir <- paste0(mast_outdir, "ms/")
+if (!dir.exists(mast_ms_outdir)) {
+  dir.create(mast_ms_outdir)
+}
+
 # add single quote for MAST model
 mast_model <- paste0("'", params$mast_model, "'")
 ic_type <- tolower(params$ic_type)
@@ -110,6 +115,7 @@ if (file.exists(fn_treefile) && !params$redo) {
   }
   
   system(mast_cl)
+  log4r::info(fn_logger, paste("File created:", toupper(mast_analysis), "run"))
 }
 ```
 
@@ -147,5 +153,36 @@ if (mast_analysis == HiMAST) {
   }
   
   stopCluster(nwcl)
+  log4r::info(fn_logger, "File created: window-based HiMAST runs")
+}
+```
+
+```{r hmmms, include=FALSE}
+if (mast_analysis == HiMAST) {
+  options(scipen=999)
+  
+  fn_fasta <- paste0(params$outdir, "/", params$prefix, "/simulation/", params$prefix, ".fa")
+  fn_uqtops <- paste0(params$outdir, "/", params$prefix, "/simulation/", params$prefix, ".uqtops")
+  
+  n <- length(readLines(fn_uqtops))
+  if (n <= 1 || n > params$max_tops) {
+    log4r::error(fn_logger, paste0("Error: invalid number of topology for ms-based HiMAST (", n, "). Skipped"))
+    knitr::knit_exit()
+  }
+  
+  temp_prefix <- paste0(mast_ms_outdir, params$prefix)
+  if (file.exists(paste0(temp_prefix, ".hmm"))){
+    log4r::warn(fn_logger, paste0("File found: ms-based HMM file. Skipped"))
+    knitr::knit_exit()
+  }
+  
+  mast_cl <- paste(params$iqtree2dir,
+                   "-s",fn_fasta,
+                   "-m",mast_model,
+                   "-te",fn_uqtops,
+                   "-pre",temp_prefix,
+                   "-hmmster{gm} -T 1 -redo")
+  system(mast_cl)
+  log4r::info(fn_logger, "File created: ms-based HiMAST run")
 }
 ```
