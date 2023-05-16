@@ -98,6 +98,7 @@ if (mast_analysis == MAST) {
 
   output <- data.table::data.table(topology = character(), ms = numeric(), mast = numeric(), hmm = numeric())
   
+  # add weights based on ms topologies
   for (j in 1:nrow(ms_tw)) {
     top_idx <- match(ms_tw$topology[j], uq_tmtrees)
     
@@ -112,6 +113,16 @@ if (mast_analysis == MAST) {
                                           round(as.numeric(ls_mast_tw[top_idx]), 4),
                                           round(as.numeric(ls_hmm_tw[top_idx]), 4))))
     }
+  }
+  
+  # add weights based on MAST topologies
+  for (j in subset(uq_tmtrees, !uq_tmtrees %in% uq_mstrees)) {
+    top_idx <- match(j, uq_tmtrees)
+    
+    output <- rbindlist(list(output, list(j,
+                                        "NA",
+                                        round(as.numeric(ls_mast_tw[top_idx]), 4),
+                                        round(as.numeric(ls_hmm_tw[top_idx]), 4))))
   }
 }
 
