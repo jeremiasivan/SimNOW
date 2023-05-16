@@ -138,11 +138,13 @@ if (mast_analysis == HiMAST) {
       dir.create(temp_outdir)
     }
     
+    # check if HMM file already exists
     temp_prefix <- paste0(temp_outdir, i)
     if (file.exists(paste0(temp_prefix, ".hmm"))){
       return(NULL)
     }
     
+    # run HiMAST
     temp_fasta <- paste0(fn_fasta_dir, i, ".fa")
     mast_cl <- paste(params$iqtree2dir,
                    "-s",temp_fasta,
@@ -155,7 +157,7 @@ if (mast_analysis == HiMAST) {
   }
   
   stopCluster(nwcl)
-  log4r::info(fn_logger, "File created: window-based HiMAST runs.")
+  log4r::info(fn_logger, "File created/modified: window-based HiMAST runs.")
 }
 ```
 
@@ -163,32 +165,33 @@ if (mast_analysis == HiMAST) {
 if (mast_analysis == HiMAST) {
   options(scipen=999)
   
-  # check if HMM file already exists
-  temp_prefix <- paste0(mast_ms_outdir, params$prefix)
-  if (file.exists(paste0(temp_prefix, ".hmm"))){
-    log4r::warn(fn_logger, paste0("File found: ms-based HMM file. Skipped."))
-    knitr::knit_exit()
-  }
-  
   simulation_dir <- paste0(params$outdir, "/", params$prefix, "/simulation/")
   fn_fasta <- paste0(simulation_dir, params$prefix, ".fa")
   fn_uqtops <- paste0(simulation_dir, params$prefix, ".uqtops")
   
   # check the number of input topologies
   n <- length(readLines(fn_uqtops))
-  if (n <= 1 || n > params$max_tops) {
-    log4r::error(fn_logger, paste0("Error: invalid number of topology for ms-based HiMAST (", n, "). Skipped."))
-    knitr::knit_exit()
-  }
   
-  # run HiMAST
-  mast_cl <- paste(params$iqtree2dir,
-                   "-s",fn_fasta,
-                   "-m",mast_model,
-                   "-te",fn_uqtops,
-                   "-pre",temp_prefix,
-                   "-hmmster{gm} -T 1 -redo")
-  system(mast_cl)
-  log4r::info(fn_logger, "File created: ms-based HiMAST run.")
+  # check if HMM file already exists
+  temp_prefix <- paste0(mast_ms_outdir, params$prefix)
+  
+  # conditionals
+  if (file.exists(paste0(temp_prefix, ".hmm"))){
+    log4r::warn(fn_logger, paste0("File found: ms-based HMM file. Skipped."))
+    
+  } else if (n <= 1 || n > params$max_tops) {
+    log4r::error(fn_logger, paste0("Error: invalid number of topology for ms-based HiMAST (", n, "). Skipped."))
+    
+  } else {
+    # run HiMAST
+    mast_cl <- paste(params$iqtree2dir,
+                     "-s",fn_fasta,
+                     "-m",mast_model,
+                     "-te",fn_uqtops,
+                     "-pre",temp_prefix,
+                     "-hmmster{gm} -T 1 -redo")
+    system(mast_cl)
+    log4r::info(fn_logger, "File created: ms-based HiMAST run.")
+  }
 }
 ```
