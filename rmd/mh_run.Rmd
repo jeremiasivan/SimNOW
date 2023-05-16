@@ -145,7 +145,7 @@ if (mast_analysis == HiMAST) {
     
     # check if HMM file already exists
     temp_prefix <- paste0(temp_outdir, i)
-    if (file.exists(paste0(temp_prefix, ".hmm"))){
+    if (file.exists(paste0(temp_prefix, ".hmm")) && !params$redo){
       return(NULL)
     }
     
@@ -177,7 +177,7 @@ if (mast_analysis == HiMAST) {
   temp_prefix <- paste0(mast_ms_outdir, params$prefix)
   
   # check if all criteria are met
-  if (file.exists(paste0(temp_prefix, ".hmm"))){
+  if (file.exists(paste0(temp_prefix, ".hmm")) && !params$redo){
     log4r::warn(fn_logger, paste0("File found: ms-based HMM file. Skipped."))
     
   } else if (n <= 1 || n > params$max_tops) {
