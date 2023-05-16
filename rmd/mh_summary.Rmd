@@ -266,6 +266,7 @@ if (mast_analysis == HiMAST) {
 ```{r sumhmmms, include=FALSE}
 if (mast_analysis == HiMAST) {
   fn_hmmms <- paste0(mast_ms_outdir, params$prefix, ".hmm")
+  fn_uqtops <- paste0(params$outdir, "/", params$prefix, "/simulation/", params$prefix, ".uqtops")
   
   # extract HMM per-site topology
   hmmtrees <- system(paste("grep '^\\['", fn_hmmms), intern=TRUE)
@@ -275,6 +276,9 @@ if (mast_analysis == HiMAST) {
   colnames(trees) <- c("start","stop","tree")
   trees$start <- as.numeric(trees$start)
   trees$stop <- as.numeric(trees$stop)
+  
+  # read MAST input topologies
+  uq_tmtrees <- readLines(fn_uqtops)
   
   # create empty data.table
   output <- data.table::data.table(c(uq_mstrees, "NT"), matrix(0, nrow=uq_mstrees_ln+1, ncol=uq_mstrees_ln))
