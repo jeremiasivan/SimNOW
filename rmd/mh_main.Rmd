@@ -24,6 +24,7 @@ params:
 # install.packages("ape")
 # install.packages("ggplot2")
 # install.packages("log4r")
+# install.packages("stringr")
 
 # store initial system time
 sys_tic <- Sys.time()
@@ -39,6 +40,7 @@ if (!dir.exists(currentdir)) {
   dir.create(currentdir, recursive = T)
 }
 
+# update variables as folder name
 fn_mast_model <- gsub('^\\_+|\\_+$', '', tolower(gsub("[[:punct:]]", "_", params$mast_model)))
 mast_analysis <- tolower(params$mast_analysis)
 

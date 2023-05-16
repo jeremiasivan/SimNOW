@@ -22,12 +22,13 @@ if (!dir.exists(mast_sumdir)) {
   dir.create(mast_sumdir, recursive = T)
 }
 
-# input / output files
+# input files
 fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
 fn_mast_tops <- paste0(getwd(), "/", mast_analysis, "/", params$prefix, ".mast.tops")
 fn_iqtree <- paste0(mast_outdir, params$prefix, ".iqtree")
 fn_hmm <- paste0(mast_outdir, params$prefix, ".hmm")
 
+# output files
 fn_masttw <- paste0(mast_sumdir, params$prefix, ".masttw")
 fn_hmmsum <- paste0(mast_sumdir, params$prefix, ".hmmsum")
 fn_summary <- paste0(mast_sumdir, params$prefix, ".mh.sum")
@@ -39,6 +40,8 @@ fn_hmmsum_ms <- paste0(mast_sumdir, params$prefix, ".hmmms")
 options(scipen=999)
 if (!file.exists(fn_iqtree)) {
   errmsg <- "Error: IQ-Tree 2 file is not found. Exited."
+  
+  log4r::error(fn_logger, errmsg)
   stop(errmsg)
 }
 
@@ -85,6 +88,8 @@ if (mast_analysis == MAST) {
 } else if (mast_analysis == HiMAST) {
   if (!file.exists(fn_hmm)) {
     errmsg <- "Error: HMM file is not found. Exited."
+    
+    log4r::error(fn_logger, errmsg)
     stop(errmsg)
   }
   

@@ -19,11 +19,14 @@ if (mast_analysis == MAST) {
 
 # set up MAST output directory
 mast_outdir <- paste0(getwd(), "/", mast_analysis, "/", fn_mast_model, "/")
+
+# set up per-window MAST output directory
 mast_nw_outdir <- paste0(mast_outdir, "windows/")
 if (!dir.exists(mast_nw_outdir)) {
   dir.create(mast_nw_outdir)
 }
 
+# set up ms-based MAST output directory
 mast_ms_outdir <- paste0(mast_outdir, "ms/")
 if (!dir.exists(mast_ms_outdir)) {
   dir.create(mast_ms_outdir)
@@ -35,8 +38,10 @@ ic_type <- tolower(params$ic_type)
 
 # input files
 fn_alisim <- paste0(getwd(), "/simulation/", params$prefix, ".fa")
+fn_uqtops <- paste0(getwd(), "/simulation/", params$prefix, ".uqtops")
 fn_summary <- paste0(getwd(), "/windows/", params$prefix, ".sum")
 
+# output files
 fn_mast_tops <- paste0(getwd(), "/", mast_analysis, "/", params$prefix, ".mast.tops")
 fn_treefile <- paste0(mast_outdir, params$prefix, ".treefile")
 ```
@@ -53,7 +58,7 @@ if (!ic_type %in% colnames(sum)) {
   stop(errmsg)
 }
 
-# select window size
+# select window size according to the lowest IC
 wsize <- sum %>%
   slice_min(!!as.name(ic_type)) %>%
   select(window_size)
@@ -165,17 +170,13 @@ if (mast_analysis == HiMAST) {
 if (mast_analysis == HiMAST) {
   options(scipen=999)
   
-  simulation_dir <- paste0(params$outdir, "/", params$prefix, "/simulation/")
-  fn_fasta <- paste0(simulation_dir, params$prefix, ".fa")
-  fn_uqtops <- paste0(simulation_dir, params$prefix, ".uqtops")
-  
   # check the number of input topologies
   n <- length(readLines(fn_uqtops))
   
-  # check if HMM file already exists
+  # prefix for HiMAST run
   temp_prefix <- paste0(mast_ms_outdir, params$prefix)
   
-  # conditionals
+  # check if all criteria are met
   if (file.exists(paste0(temp_prefix, ".hmm"))){
     log4r::warn(fn_logger, paste0("File found: ms-based HMM file. Skipped."))
     
@@ -185,7 +186,7 @@ if (mast_analysis == HiMAST) {
   } else {
     # run HiMAST
     mast_cl <- paste(params$iqtree2dir,
-                     "-s",fn_fasta,
+                     "-s",fn_alisim,
                      "-m",mast_model,
                      "-te",fn_uqtops,
                      "-pre",temp_prefix,
