@@ -325,13 +325,8 @@ if (mast_analysis == HiMAST) {
       for (j in 1:nrow(sites)) {
         window_idx <- match(uq_tmtrees[as.numeric(sites$tree[j])], output$topology)
         
-        if (is.na(window_idx)) {
-          tempval <- as.numeric(output[uq_mstrees_ln+1, ..topology_idx] + sites$length[j])
-          output[uq_mstrees_ln+1, eval(msfile$topology[k]) := tempval]
-        } else {
-          tempval <- as.numeric(output[window_idx, ..topology_idx] + sites$length[j])
-          output[window_idx, eval(msfile$topology[k]) := tempval]
-        }
+        tempval <- as.numeric(output[window_idx, ..topology_idx] + sites$length[j])
+        output[window_idx, eval(msfile$topology[k]) := tempval]
       }
       
       rm(sites)
