@@ -26,6 +26,7 @@ params:
 # install.packages("ggplot2")
 # install.packages("log4r")
 # install.packages("seqinr")
+# install.packages("stringr")
 
 # store initial system time
 sys_tic <- Sys.time()

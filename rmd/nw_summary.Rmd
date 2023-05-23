@@ -70,6 +70,12 @@ for (i in window_sizes) {
     }
   }
   
+  # add weights based on NOW topologies
+  for (j in subset(sm_tw$topology, !sm_tw$topology %in% mstree_uq)) {
+    top_idx <- match(j, sm_tw$topology)
+    cmptw <- rbind(cmptw, c(j, "NA", round(sm_tw$percentage[top_idx], 4)))
+  }
+  
   cmptw <- data.table::as.data.table(cmptw)
   data.table::setnames(cmptw, c("topology", "ms", "now"))
   data.table::fwrite(cmptw, file=fn_cmptw, quote=FALSE, sep="\t")

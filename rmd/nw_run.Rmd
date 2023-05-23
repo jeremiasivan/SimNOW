@@ -175,7 +175,7 @@ ls_seqlen <- foreach (i = window_sizes, .combine=c) %dopar% {
     return(NULL)
   }
   
-  seq_list <- sort(list.files(paste0(window_outdir, i, "/alignment/")))
+  seq_list <- stringr::str_sort(list.files(paste0(window_outdir, i, "/alignment/")), numeric=TRUE)
   iqtree_file <- file(description = fn_treefile, open="r", blocking = TRUE)
   
   seq_len <- c()
