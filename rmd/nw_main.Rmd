@@ -27,6 +27,7 @@ params:
 # install.packages("log4r")
 # install.packages("seqinr")
 # install.packages("stringr")
+# install.packages("viridis")
 
 # store initial system time
 sys_tic <- Sys.time()

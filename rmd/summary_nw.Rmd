@@ -89,7 +89,7 @@ for (i in 5:ncol(simsum)-1) {
           geom_line(aes(size=1, alpha=0.2)) +
           geom_point(aes(colour=window_size, size=20)) +
           facet_wrap(.~r, scales = "free") +
-          scale_color_viridis(discrete = TRUE) +
+          viridis::scale_color_viridis(discrete = TRUE) +
           ggtitle(paste("Correlation between", toupper(ifc), "and Accuracy")) + xlab(toupper(ifc)) + ylab("Accuracy (%)") +
           labs(color="w_size (kb)") +
           guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
@@ -143,7 +143,7 @@ for (i in 5:ncol(simsum)-1) {
           geom_line(aes(size=1, alpha=0.2)) +
           geom_point(aes(colour=window_size, size=20)) +
           facet_wrap(.~r, scales = "free", ncol = 1) +
-          scale_color_viridis(discrete = TRUE) +
+          viridis::scale_color_viridis(discrete = TRUE) +
           ggtitle(paste("Correlation between", toupper(ifc), "and Window Size")) + ylab(toupper(ifc)) + xlab("Window Size (kb)") +
           guides(color="none", alpha="none", size="none") +
           theme(
@@ -183,7 +183,7 @@ for (i in 5:ncol(rank_simsum)-1) {
           geom_line(aes(size=1, alpha=0.2)) +
           geom_point(aes(colour=window_size, size=20)) +
           facet_wrap(.~r, scales = "free") +
-          scale_color_viridis(discrete = TRUE) +
+          viridis::scale_color_viridis(discrete = TRUE) +
           ggtitle(paste("Correlation between Ranked", toupper(ifc), "and Ranked Accuracy")) + xlab(paste("Ranked",toupper(ifc))) + ylab("Ranked Accuracy") +
           labs(color="w_size (kb)") +
           guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
