@@ -56,12 +56,12 @@ simsum$r <- factor(simsum$r)
 data.table::fwrite(simsum, file=fn_simsum, quote = F, sep = "\t")
 
 # visualization for all simulations
-tiff(filename=fn_acc_ws, units="px", width=1400, height=3200)
+tiff(filename=fn_acc_ws, units="px", width=1600, height=2800)
 print(ggplot(simsum, aes(y=accuracy, x=window_size, ymin=0, ymax=100)) + 
         geom_boxplot(outlier.shape = NA) +
         geom_point(shape=16, aes(colour=r, size=20)) +
         facet_wrap(.~r, scales = "free", ncol = 1) +
-        ggtitle("Accuracy of Non-Overlapping Windows in Simulated Dataset") + xlab("Window size (kb)") + ylab("Accuracy (%)") +
+        ggtitle("Accuracy of Non-Overlapping Windows in Simulated Datasets") + xlab("Window size (kb)") + ylab("Accuracy (%)") +
         guides(size="none", colour=guide_legend(override.aes=list(size=8))) +
         theme(
           plot.title = element_text(hjust = 0.5, size = 50),
@@ -141,7 +141,7 @@ for (i in 5:ncol(simsum)-1) {
   # information criterion vs window size
   fn_simfig <- paste0(ifc_outdir, params$prefix, ".ifc_ws.",ifc,".tiff")
   
-  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
+  tiff(filename=fn_simfig, units="px", width=1600, height=2800)
   print(ggplot(simsum, aes(x=window_size, y=unlist(simsum[,..i]), group=simulation)) +
           geom_line(aes(size=1, alpha=0.2)) +
           geom_point(aes(colour=window_size, size=20)) +
@@ -156,6 +156,7 @@ for (i in 5:ncol(simsum)-1) {
             axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
             axis.text.y=element_text(size=30),
             axis.text.x=element_text(size=30),
+            strip.text = element_text(size = 30),
             legend.title=element_text(size=30),
             legend.text=element_text(size=30),
             legend.key.size=unit(2,"cm")
@@ -197,6 +198,7 @@ for (i in 5:ncol(rank_simsum)-1) {
             axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
             axis.text.y=element_text(size=30),
             axis.text.x=element_text(size=30),
+            strip.text = element_text(size = 30),
             legend.title=element_text(size=30),
             legend.text=element_text(size=30),
             legend.key.size=unit(2,"cm")
