@@ -6,6 +6,8 @@ params:
 ---
 
 ```{r setup, include=FALSE}
+# install.packages("viridis")
+
 library(data.table)
 library(dplyr)
 library(ggplot2)
@@ -54,7 +56,7 @@ simsum$r <- factor(simsum$r)
 data.table::fwrite(simsum, file=fn_simsum, quote = F, sep = "\t")
 
 # visualization for all simulations
-tiff(filename=fn_acc_ws, units="px")
+tiff(filename=fn_acc_ws, units="px", width=2880, height=1800)
 print(ggplot(simsum, aes(y=accuracy, x=window_size, ymin=0, ymax=100)) + 
         geom_boxplot(outlier.shape = NA) +
         geom_point(shape=16, aes(colour=r, size=20)) +
@@ -68,6 +70,7 @@ print(ggplot(simsum, aes(y=accuracy, x=window_size, ymin=0, ymax=100)) +
           axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
           axis.text.y=element_text(size=30),
           axis.text.x=element_text(size=30),
+          strip.text = element_text(size = 30),
           legend.title=element_text(size=30),
           legend.text=element_text(size=30),
           legend.key.size=unit(2,"cm")
