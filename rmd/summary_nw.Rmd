@@ -120,18 +120,15 @@ for (i in 5:ncol(simsum)-1) {
   print(ggplot(acc_loss, aes(y=acc_loss, x=factor(r), ymin=0)) + 
           geom_boxplot(outlier.shape = NA) +
           geom_point(shape=16, aes(colour=r, size=20)) +
-          ggtitle(paste("Loss of Accuracy for Lowest", toupper(ifc))) + xlab(toupper(ifc)) + ylab("Loss of Accuracy (%)") +
-          guides(size="none", colour=guide_legend(override.aes=list(size=8))) +
+          ggtitle(paste("Loss of Accuracy for Lowest", toupper(ifc))) + xlab("Recombination rate (rho)") + ylab("Loss of Accuracy (%)") +
+          guides(size="none", colour="none") +
           theme(
             plot.title = element_text(hjust = 0.5, size = 50),
             plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
             axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
             axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
             axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            legend.title=element_text(size=30),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
+            axis.text.x=element_text(size=30)
           ))
   dev.off()
   
