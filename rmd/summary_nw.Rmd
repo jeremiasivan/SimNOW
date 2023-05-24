@@ -62,7 +62,7 @@ print(ggplot(simsum, aes(y=accuracy, x=window_size, ymin=0, ymax=100)) +
         geom_point(shape=16, aes(colour=r, size=20)) +
         facet_wrap(.~r, scales = "free", ncol = 1) +
         ggtitle("Accuracy of Non-Overlapping Windows in Simulated Datasets") + xlab("Window size (kb)") + ylab("Accuracy (%)") +
-        guides(size="none", colour=guide_legend(override.aes=list(size=8))) +
+        guides(size="none", colour="none") +
         theme(
           plot.title = element_text(hjust = 0.5, size = 50),
           plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
@@ -70,10 +70,7 @@ print(ggplot(simsum, aes(y=accuracy, x=window_size, ymin=0, ymax=100)) +
           axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
           axis.text.y=element_text(size=30),
           axis.text.x=element_text(size=30),
-          strip.text = element_text(size = 30),
-          legend.title=element_text(size=30),
-          legend.text=element_text(size=30),
-          legend.key.size=unit(2,"cm")
+          strip.text = element_text(size = 30)
         ))
 dev.off()
 
