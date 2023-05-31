@@ -1,0 +1,167 @@
+---
+title: "Two-window HiMAST from NOW"
+params:
+  # general
+  rmddir: ""
+  prefix: ""
+  outdir: ""
+  thread: 5
+  redo: FALSE
+  
+  # software
+  seqkitdir: ""
+  iqtree2dir: ""
+  
+  # masthmm
+  ic_type: "AIC"
+  mast_model: ""
+---
+
+```{r, include=FALSE}
+# install.packages("data.table")
+# install.packages("log4r")
+# install.packages("seqinr")
+# install.packages("stringr")
+
+# store initial system time
+sys_tic <- Sys.time()
+
+# load libraries
+library(dplyr)
+
+# set up working directory
+currentdir <- paste0(params$outdir, "/", params$prefix)
+if (!dir.exists(currentdir)) {
+  dir.create(currentdir, recursive = T)
+}
+
+# update variables as folder name
+fn_mast_model <- gsub('^\\_+|\\_+$', '', tolower(gsub("[[:punct:]]", "_", params$mast_model)))
+
+# set up logger
+logdir <- paste0(currentdir, "/winhmm/", fn_mast_model, "/")
+if (!dir.exists(logdir)) {
+  dir.create(logdir, recursive = T)
+}
+
+fn_log <- paste0(logdir, params$prefix, ".wh.log")
+log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
+fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
+if (params$redo) {
+  unlink(fn_log)
+}
+
+if (!file.exists(fn_log)) {
+  write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
+}
+
+# switch to working directory
+knitr::opts_knit$set(root.dir = currentdir)
+```
+
+```{r functions, include=FALSE}
+# functions
+run_seqkit <- function(seq1, seq2, seqkit, output) {
+  system(paste0(seqkit, " concat ", seq1, " ", seq2, " > ", output))
+}
+
+run_himast <- function(seq, top, blmin, model, iqtree2) {
+  mast_cl <- paste(iqtree2,
+                    "-s", seq,
+                    "-blmin", blmin,
+                    "-m", model,
+                    "-te", top,
+                    "-hmmster -hmm_min_stran 0.99999 -T 1 -redo")
+  system(mast_cl)
+}
+
+extract_hmmtrees <- function(fn_hmm, fn_logger, fn_aln_in, fn_atsum1, fn_atsum2, dt_output, ls_topology, current_start, dir_win, dir_tmp) {
+  # extract HMM per-site topology
+  hmmtrees <- system(paste("grep '^\\['", fn_hmm), intern=TRUE)
+  trees <- data.table::data.table(do.call('rbind', strsplit(as.character(hmmtrees), '\\[|,|\\]')))
+  trees[,1] <- NULL
+  
+  colnames(trees) <- c("start","stop","tree")
+  trees$start <- as.numeric(trees$start)
+  trees$stop <- as.numeric(trees$stop)
+  trees$tree <- as.numeric(trees$tree)
+  
+  # check if the first block is the first tree
+  if (trees$tree[1] != 1) {
+    log4r::warn(fn_logger, paste("Warn: first block for step", i, "is not first topology."))
+  }
+  
+  # check the number of hmm partitions
+  n <- nrow(trees)
+  if (n > 2) {
+    log4r::warn(fn_logger, paste0("Warn: ", n, " partitions for step ", i, '.'))
+  }
+
+  # update variables
+  current_length <- 0
+  current_topology <- ""
+
+  if (n == 1) {
+    # copy the file to other folder
+    system(paste0("cp ", fn_aln_in, " ", dir_tmp, fn_atsum2))
+    
+    # update variables
+    current_length <- trees$stop[1] - trees$start[1] + 1
+    current_topology <- ls_topology[trees$tree[1]]
+  
+  } else {
+    # read input FASTA file
+    s <- seqinr::read.fasta(fn_aln_in, whole.header = T)
+    
+    # loop over hmm partitions
+    for (j in 1:n) {
+      # extract the block
+      subfasta <- lapply(s, function(x) x[seq(from = trees$start[j], to = trees$stop[j])])
+      subfasta_df <- do.call(rbind,subfasta)
+      subfasta <- setNames(split(subfasta_df, seq(nrow(subfasta_df))), rownames(subfasta_df))
+      
+      # save the sequence in other file
+      fn_outfile <- ""
+      if (j != n) {
+        fn_fasta <- strsplit(fn_atsum1, ".fa")[[1]]
+        fn_outfile <- paste0(dir_win, fn_fasta, "_", j, ".fa")
+        tmp_length <- trees$stop[j] - trees$start[j] + 1
+        
+        # add entry to output data.table
+        dt_output <- rbind(dt_output, list(paste0(fn_fasta, "_", j, ".fa"),
+                                        current_start+1,
+                                        current_start+tmp_length,
+                                        tmp_length,
+                                        ls_topology[trees$tree[j]]))
+        
+        # update variables
+        current_start <- current_start + tmp_length
+        
+      } else {
+        fn_outfile <- paste0(dir_tmp, fn_atsum2)
+        
+        # update variables
+        current_length <- trees$stop[j] - trees$start[j] + 1
+        current_topology <- ls_topology[trees$tree[j]]
+      }
+      
+      # write the sequence
+      seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_outfile, nbchar=100)
+    }
+  }
+
+  return(list(out=dt_output, length=current_length, topology=current_topology, start=current_start))
+}
+```
+
+```{r child = paste(params$rmddir,"/wh_run.Rmd",sep=""), include=FALSE}
+```
+
+```{r, include=FALSE}
+# store final system time
+sys_toc <- Sys.time()
+
+# write the system time in log file
+write.table(c("", paste0("Total elapsed time: ", round(as.numeric(difftime(sys_toc, sys_tic, units = "mins")), 3), " mins")),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+```

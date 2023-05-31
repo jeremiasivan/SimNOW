@@ -1,48 +1,78 @@
-#################################
-#  Two-window HiMAST from NOW   #
-#################################
+---
+title: "Two-window HiMAST from NOW"
+---
 
-fn_mstops <- "~/sim.mstops"
-fn_atsum <- "~/sim.atsum"
-
-dir_fasta <- "~/sim/windows/alignment"
-dir_iqtree2 <- "~/iqtree-2.2.5.hmmster-Linux/bin/iqtree2"
-dir_seqkit <- "~/seqkit"
-
-dir_output <- "~/simulation"
-
-#################################
-# install.packages("data.table")
-# install.packages("log4r")
-library(dplyr)
-
-# logger
-fn_log <- paste0(dir_output, "/log.txt")
-log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
-fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
+```{r setup, include=FALSE}
+write.table(c("",
+                "####################################",
+                "####     Two-Window HiMAST      ####",
+                "####################################"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 # output directory for HiMAST-based windows
-dir_output_windows <- paste0(dir_output, "/windows/")
+dir_output_windows <- paste0(logdir, "windows/")
 if (!dir.exists(dir_output_windows)) {
   dir.create(dir_output_windows, recursive=T)
 }
 
 # output directory for concatenated sequences
-dir_output_runs <- paste0(dir_output, "/runs/")
+dir_output_runs <- paste0(logdir, "runs/")
 if (!dir.exists(dir_output_runs)) {
   dir.create(dir_output_runs, recursive=T)
 }
 
 # temporary output directory
-dir_output_tmp <- paste0(dir_output, "/tmp/")
+dir_output_tmp <- paste0(logdir, "tmp/")
 if (!dir.exists(dir_output_tmp)) {
   dir.create(dir_output_tmp, recursive=T)
 }
 
-#################################
+# tree output directory
+dir_output_tree <- paste0(logdir, "tree/")
+if (!dir.exists(dir_output_tree)) {
+  dir.create(dir_output_tree, recursive=T)
+}
+
+# variables
+mast_model <- paste0("'", params$mast_model, "'")
+ic_type <- tolower(params$ic_type)
+
+# input files
+fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
+fn_summary <- paste0(getwd(), "/windows/", params$prefix, ".sum")
+
+# output files
+fn_wh_atsum <- paste0(logdir, params$prefix, ".wh.atsum")
+fn_wh_cmp <- paste0(logdir, params$prefix, ".wh.cmp")
+```
+
+```{r run, include=FALSE}
+options(scipen=9999)
+
+# read summary file
+sum <- data.table::fread(fn_summary)
+if (!ic_type %in% colnames(sum)) {
+  errmsg <- "Error: invalid information criterion type. Exited."
+  
+  log4r::error(fn_logger, errmsg)
+  stop(errmsg)
+}
+
+# select window size according to the lowest IC
+wsize <- sum %>%
+  slice_min(!!as.name(ic_type))
+
+if (nrow(wsize) != 1) {
+  log4r::warn(fn_logger, paste("Warn: identical", toupper(ic_type), "is found in >1 window size.", wsize$window_size[1], "is selected."))
+}
+
+# update variables
+fn_atsum <- paste0(getwd(), "/windows/", wsize$window_size[1], "/summary/", params$prefix, ".atsum")
+dir_fasta <- paste0(getwd(), "/windows/", wsize$window_size[1], "/alignment/")
 
 # read atsum file
 atsum <- data.table::fread(fn_atsum)
+p <- nrow(atsum)
 
 # output data.table
 dt_output <- data.table::data.table(source = character(),
@@ -56,105 +86,6 @@ current_topology <- ""
 current_length <- ""
 current_start <- 0
 
-p <- nrow(atsum)
-options(scipen=9999)
-
-#################################
-
-# functions
-run_seqkit <- function(seq1, seq2, seqkit, output) {
-  system(paste0(seqkit, " concat ", seq1, " ", seq2, " > ", output))
-}
-
-run_himast <- function(seq, top, iqtree2) {
-  mast_cl <- paste(iqtree2,
-                    "-s", seq,
-                    "-m 'JC+T'",
-                    "-te", top,
-                    "-hmmster -hmm_min_stran 0.99999 -T 1 -redo")
-  system(mast_cl)
-}
-
-extract_hmmtrees <- function(fn_hmm, fn_logger, fn_aln_in, fn_atsum1, fn_atsum2, dt_output, ls_topology, current_start, dir_win, dir_tmp) {
-  # extract HMM per-site topology
-  hmmtrees <- system(paste("grep '^\\['", fn_hmm), intern=TRUE)
-  trees <- data.table::data.table(do.call('rbind', strsplit(as.character(hmmtrees), '\\[|,|\\]')))
-  trees[,1] <- NULL
-  
-  colnames(trees) <- c("start","stop","tree")
-  trees$start <- as.numeric(trees$start)
-  trees$stop <- as.numeric(trees$stop)
-  trees$tree <- as.numeric(trees$tree)
-  
-  # check if the first block is the first tree
-  if (trees$tree[1] != 1) {
-    log4r::warn(fn_logger, paste("Warn: first block for step", i, "is not first topology."))
-  }
-  
-  # check the number of hmm partitions
-  n <- nrow(trees)
-  if (n > 2) {
-    log4r::warn(fn_logger, paste0("Warn: ", n, " partitions for step ", i, '.'))
-  }
-
-  # update variables
-  current_length <- 0
-  current_topology <- ""
-
-  if (n == 1) {
-    # copy the file to other folder
-    system(paste0("cp ", fn_aln_in, " ", dir_tmp, fn_atsum2))
-    
-    # update variables
-    current_length <- trees$stop[1] - trees$start[1] + 1
-    current_topology <- ls_topology[trees$tree[1]]
-  
-  } else {
-    # read input FASTA file
-    s <- seqinr::read.fasta(fn_aln_in, whole.header = T)
-    
-    # loop over hmm partitions
-    for (j in 1:n) {
-      # extract the block
-      subfasta <- lapply(s, function(x) x[seq(from = trees$start[j], to = trees$stop[j])])
-      subfasta_df <- do.call(rbind,subfasta)
-      subfasta <- setNames(split(subfasta_df, seq(nrow(subfasta_df))), rownames(subfasta_df))
-      
-      # save the sequence in other file
-      fn_outfile <- ""
-      if (j != n) {
-        fn_fasta <- strsplit(fn_atsum1, ".fa")[[1]]
-        fn_outfile <- paste0(dir_win, fn_fasta, "_", j, ".fa")
-        tmp_length <- trees$stop[j] - trees$start[j] + 1
-        
-        # add entry to output data.table
-        dt_output <- rbind(dt_output, list(paste0(fn_fasta, "_", j, ".fa"),
-                                        current_start+1,
-                                        current_start+tmp_length,
-                                        tmp_length,
-                                        ls_topology[trees$tree[j]]))
-        
-        # update variables
-        current_start <- current_start + tmp_length
-        
-      } else {
-        fn_outfile <- paste0(dir_tmp, fn_atsum2)
-        
-        # update variables
-        current_length <- trees$stop[j] - trees$start[j] + 1
-        current_topology <- ls_topology[trees$tree[j]]
-      }
-      
-      # write the sequence
-      seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_outfile, nbchar=100)
-    }
-  }
-
-  return(list(out=dt_output, length=current_length, topology=current_topology, start=current_start))
-}
-
-#################################
-
 # run
 for (i in 1:p) {
   fn_current_fasta <- paste0(dir_output_tmp, atsum$source[i])
@@ -164,10 +95,7 @@ for (i in 1:p) {
     # save the last window and check if the windows have the same topology
     if (i == p || current_topology == atsum$topology[i+1]) {
       # copy the file to other folder
-      system(paste0("cp ", fn_current_fasta, " ", dir_output_windows))
-      
-      # remove the file from temporary folder
-      unlink(fn_current_fasta)
+      system(paste0("mv ", fn_current_fasta, " ", dir_output_windows))
       
       # add entry to output data.table
       dt_output <- rbind(dt_output, list(atsum$source[i],
@@ -191,7 +119,7 @@ for (i in 1:p) {
       seq1 <- paste0(dir_output_tmp, "/", atsum$source[i])
       seq2 <- paste0(dir_fasta, "/", atsum$source[i+1])
       fn_alignment <- paste0(dir_run, "concat_", i, ".fa")
-      run_seqkit(seq1, seq2, dir_seqkit, fn_alignment)
+      run_seqkit(seq1, seq2, params$seqkitdir, fn_alignment)
       
       # topology file
       fn_topology <- paste0(dir_run, paste0("topology_", i, ".txt"))
@@ -199,7 +127,8 @@ for (i in 1:p) {
       write.table(ls_topology, file = fn_topology, quote = F, row.names = F, col.names = F)
       
       # run HiMAST
-      run_himast(fn_alignment, fn_topology, dir_iqtree2)
+      seqlength <- seqinr::getLength(seqinr::read.fasta(fn_alignment))[1]
+      run_himast(fn_alignment, fn_topology, 1/seqlength, mast_model, params$iqtree2dir)
       
       # check if HMM file exists
       fn_hmm <- paste0(fn_alignment, ".hmm")
@@ -247,7 +176,7 @@ for (i in 1:p) {
       seq1 <- paste0(dir_fasta, "/", atsum$source[i])
       seq2 <- paste0(dir_fasta, "/", atsum$source[i+1])
       fn_alignment <- paste0(dir_run, "concat_", i, ".fa")
-      run_seqkit(seq1, seq2, dir_seqkit, fn_alignment)
+      run_seqkit(seq1, seq2, params$seqkitdir, fn_alignment)
       
       # topology file
       fn_topology <- paste0(dir_run, paste0("topology_", i, ".txt"))
@@ -255,7 +184,8 @@ for (i in 1:p) {
       write.table(ls_topology, file = fn_topology, quote = F, row.names = F, col.names = F)
       
       # run HiMAST
-      run_himast(fn_alignment, fn_topology, dir_iqtree2)
+      seqlength <- seqinr::getLength(seqinr::read.fasta(fn_alignment))[1]
+      run_himast(fn_alignment, fn_topology, 1/seqlength, mast_model, params$iqtree2dir)
       
       # check if HMM file exists
       fn_hmm <- paste0(fn_alignment, ".hmm")
@@ -282,10 +212,10 @@ for (i in 1:p) {
 }
 
 # write the output file
-data.table::fwrite(dt_output, paste0(dir_output, "/output.atsum"), quote=F, sep="\t")
+data.table::fwrite(dt_output, file=fn_wh_atsum, quote=F, sep="\t")
+```
 
-#################################
-
+```{r summary, include=FALSE}
 # summarize the accuracy
 msfile <- data.table::fread(fn_mstops)
 
@@ -340,11 +270,56 @@ for (k in 1:nrow(msfile)){
   rm(sites)
 }
 
-data.table::fwrite(output, file=paste0(dir_output, "/output.cmp"), quote=F, sep="\t")
+data.table::fwrite(output, file=fn_wh_cmp, quote=F, sep="\t")
 
 # calculate accuracy
 output <- as.matrix(output[,-1])
 acc <- sum(as.numeric(diag(output))) / sum(as.numeric(output)) * 100
 acc <- round(acc, 3)
 
-log4r::info(fn_logger, paste("Accuracy:",acc))
+write.table(c("",
+              paste("NOW Accuracy:", wsize$accuracy[1]),
+              paste("HMM Accuracy:", acc)),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+```
+
+```{r windowtree, include=FALSE}
+iqtree_model <- strsplit(params$mast_model, "+")[1]
+
+# set the number of threads according to the number of windows
+numw <- nrow(dt_output)
+tthread <- params$thread
+if (numw < tthread) {
+  tthread <- numw
+}
+
+prefix <- paste0(dir_output_tree, params$prefix)
+  
+# generate window treefile
+iqtree_cmd <- paste(params$iqtree2dir,
+                    "-S", dir_output_windows,
+                    "-m", iqtree_model,
+                    "-pre", prefix,
+                    "-T", tthread,
+                    "-cptime 1000000 --quiet -redo")
+
+# compare IC value
+col_idx <- match(ic_type, colnames(sum))
+fn_iqtree <- paste0(prefix, ".iqtree")
+
+now_ic <- as.numeric(sum[1,..col_idx])
+hmm_ic <- 0
+
+if (ic_type == "aic") {
+  hmm_ic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'", fn_iqtree), intern = T))
+} else if (ic_type == "bic") {
+  hmm_ic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'", fn_iqtree), intern = T))
+} else if (ic_type == "aicc") {
+  hmm_ic <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'", fn_iqtree), intern = T))
+}
+
+write.table(c("",
+              paste0("NOW ", toupper(ic_type), ": ", now_ic),
+              paste0("HMM ", toupper(ic_type), ": ", hmm_ic)),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+```
