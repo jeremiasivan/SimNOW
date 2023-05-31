@@ -33,6 +33,13 @@ if (!dir.exists(dir_output_tree)) {
   dir.create(dir_output_tree, recursive=T)
 }
 
+# delete all files
+if (params$redo) {
+  unlink(paste0(dir_output_windows, "*.fa"))
+  unlink(paste0(dir_output_runs, "*"), recursive = T)
+  unlink(paste0(dir_output_tmp, "*.fa"))
+}
+
 # variables
 mast_model <- paste0("'", params$mast_model, "'")
 ic_type <- tolower(params$ic_type)
@@ -279,12 +286,13 @@ acc <- round(acc, 3)
 
 write.table(c("",
               paste("NOW Accuracy:", wsize$accuracy[1]),
-              paste("HMM Accuracy:", acc)),
+              paste("HMM Accuracy:", acc),
+              paste("Changes in accuracy:", acc - wsize$accuracy[1])),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
 ```{r windowtree, include=FALSE}
-iqtree_model <- strsplit(params$mast_model, "+")[1]
+iqtree_model <- strsplit(params$mast_model, "\\+")[[1]][1]
 
 # set the number of threads according to the number of windows
 numw <- nrow(dt_output)
@@ -320,6 +328,7 @@ if (ic_type == "aic") {
 
 write.table(c("",
               paste0("NOW ", toupper(ic_type), ": ", now_ic),
-              paste0("HMM ", toupper(ic_type), ": ", hmm_ic)),
+              paste0("HMM ", toupper(ic_type), ": ", hmm_ic),
+              paste("Changes in IC:", hmm_ic - now_ic)),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
