@@ -11,6 +11,7 @@ params:
   # software
   seqkitdir: ""
   iqtree2dir: ""
+  masthmmdir: ""
   
   # masthmm
   ic_type: "AIC"

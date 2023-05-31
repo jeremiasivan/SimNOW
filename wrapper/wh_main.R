@@ -13,6 +13,7 @@ redo <-  TRUE
 # iqtree2 and seqkit
 seqkitdir <- "~/seqkit"
 iqtree2dir <- "~/iqtree-2.2.2.2-Linux/bin/iqtree2"
+masthmmdir <- "~/iqtree-2.2.5.hmmster-Linux/bin/iqtree2"
 
 ic_type <- "AIC"
 mast_model <- "JC+T"
@@ -31,7 +32,7 @@ for (i in alldirs[dirname]) {
   out <- paste0(outdir,"/",i,"/",i,".wh.html")
   templist <- list(out=out, params=list(prefix=i,
                                         rmddir=rmddir, outdir=outdir, thread=thread, redo=redo,
-                                        seqkitdir=seqkitdir, iqtree2dir=iqtree2dir,
+                                        seqkitdir=seqkitdir, iqtree2dir=iqtree2dir, masthmmdir=masthmmdir,
                                         ic_type=ic_type,
                                         mast_model=mast_model
   ))

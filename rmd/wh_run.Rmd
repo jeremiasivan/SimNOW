@@ -142,7 +142,7 @@ for (i in 1:p) {
       
       # run HiMAST
       seqlength <- seqinr::getLength(seqinr::read.fasta(fn_alignment))[1]
-      run_himast(fn_alignment, fn_topology, 1/seqlength, mast_model, params$iqtree2dir)
+      run_himast(fn_alignment, fn_topology, 1/seqlength, mast_model, params$masthmmdir)
       
       # check if HMM file exists
       fn_hmm <- paste0(fn_alignment, ".hmm")
@@ -199,7 +199,7 @@ for (i in 1:p) {
       
       # run HiMAST
       seqlength <- seqinr::getLength(seqinr::read.fasta(fn_alignment))[1]
-      run_himast(fn_alignment, fn_topology, 1/seqlength, mast_model, params$iqtree2dir)
+      run_himast(fn_alignment, fn_topology, 1/seqlength, mast_model, params$masthmmdir)
       
       # check if HMM file exists
       fn_hmm <- paste0(fn_alignment, ".hmm")
