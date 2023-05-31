@@ -12,7 +12,7 @@ redo <-  TRUE
 
 # iqtree2 and seqkit
 seqkitdir <- "~/seqkit"
-iqtree2dir <- "~/iqtree-2.2.5.hmmster-Linux/bin/iqtree2"
+iqtree2dir <- "~/iqtree-2.2.2.2-Linux/bin/iqtree2"
 
 ic_type <- "AIC"
 mast_model <- "JC+T"

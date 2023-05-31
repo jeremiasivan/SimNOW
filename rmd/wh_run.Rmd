@@ -81,6 +81,13 @@ dir_fasta <- paste0(getwd(), "/windows/", wsize$window_size[1], "/alignment/")
 atsum <- data.table::fread(fn_atsum)
 p <- nrow(atsum)
 
+if (length(unique(atsum$topology)) == 1) {
+  errmsg <- "Error: only one topology found. Exited."
+  
+  log4r::error(fn_logger, errmsg)
+  stop(errmsg)
+}
+
 # output data.table
 dt_output <- data.table::data.table(source = character(),
                                     start = numeric(),
@@ -310,6 +317,7 @@ iqtree_cmd <- paste(params$iqtree2dir,
                     "-pre", prefix,
                     "-T", tthread,
                     "-cptime 1000000 --quiet -redo")
+system(iqtree_cmd)
 
 # compare IC value
 col_idx <- match(ic_type, colnames(sum))
