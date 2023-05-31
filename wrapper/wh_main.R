@@ -28,7 +28,7 @@ dirname <- grepl(paste("^",prefix,"_",sep=""), alldirs)
 # create sets of parameters
 reports <- list()
 for (i in alldirs[dirname]) {
-  out <- paste(outdir,"/",i,"/",tolower(gsub("[[:punct:]]","",j)),".wh.html", sep="")
+  out <- paste0(outdir,"/",i,"/",i,".wh.html")
   templist <- list(out=out, params=list(prefix=i,
                                         rmddir=rmddir, outdir=outdir, thread=thread, redo=redo,
                                         seqkitdir=seqkitdir, iqtree2dir=iqtree2dir,
