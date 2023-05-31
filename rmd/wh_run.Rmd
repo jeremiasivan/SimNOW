@@ -294,7 +294,7 @@ acc <- round(acc, 3)
 write.table(c("",
               paste("NOW Accuracy:", wsize$accuracy[1]),
               paste("HMM Accuracy:", acc),
-              paste("Changes in accuracy:", acc - wsize$accuracy[1])),
+              paste("Changes in accuracy:", round(acc - wsize$accuracy[1], 3))),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
@@ -320,10 +320,10 @@ iqtree_cmd <- paste(params$iqtree2dir,
 system(iqtree_cmd)
 
 # compare IC value
-col_idx <- match(ic_type, colnames(sum))
+col_idx <- match(ic_type, colnames(wsize))
 fn_iqtree <- paste0(prefix, ".iqtree")
 
-now_ic <- as.numeric(sum[1,..col_idx])
+now_ic <- as.numeric(wsize[1,..col_idx])
 hmm_ic <- 0
 
 if (ic_type == "aic") {
