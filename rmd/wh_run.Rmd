@@ -323,7 +323,7 @@ system(iqtree_cmd)
 col_idx <- match(ic_type, colnames(wsize))
 fn_iqtree <- paste0(prefix, ".iqtree")
 
-now_ic <- as.numeric(wsize[1,..col_idx])
+now_ic <- wsize[1,..col_idx]
 hmm_ic <- 0
 
 if (ic_type == "aic") {
@@ -337,6 +337,6 @@ if (ic_type == "aic") {
 write.table(c("",
               paste0("NOW ", toupper(ic_type), ": ", now_ic),
               paste0("HMM ", toupper(ic_type), ": ", hmm_ic),
-              paste("Changes in IC:", hmm_ic - now_ic)),
+              paste("Changes in IC:", as.numeric(hmm_ic) - as.numeric(now_ic))),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
