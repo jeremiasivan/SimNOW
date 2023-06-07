@@ -85,7 +85,7 @@ for (i in 5:ncol(simsum)-1) {
   fn_simfig <- paste0(ifc_outdir, params$prefix, ".acc_ws.",ifc,".tiff")
   
   tiff(filename=fn_simfig, units="px", width=2880, height=1800)
-  print(ggplot(simsum, aes(y=accuracy, x=unlist(simsum[,..i]), ymin=0, ymax=100, group=simulation)) +
+  print(ggplot(simsum, aes(y=accuracy, x=as.numeric(unlist(simsum[,..i])), ymin=0, ymax=100, group=simulation)) +
           geom_line(aes(size=1, alpha=0.2)) +
           geom_point(aes(colour=window_size, size=20)) +
           facet_wrap(.~r, scales = "free") +
@@ -136,7 +136,7 @@ for (i in 5:ncol(simsum)-1) {
   fn_simfig <- paste0(ifc_outdir, params$prefix, ".ifc_ws.",ifc,".tiff")
   
   tiff(filename=fn_simfig, units="px", width=1600, height=2800)
-  print(ggplot(simsum, aes(x=window_size, y=unlist(simsum[,..i]), group=simulation)) +
+  print(ggplot(simsum, aes(x=window_size, y=as.numeric(unlist(simsum[,..i])), group=simulation)) +
           geom_line(aes(size=1, alpha=0.2)) +
           geom_point(aes(colour=window_size, size=20)) +
           facet_wrap(.~r, scales = "free", ncol = 1) +
