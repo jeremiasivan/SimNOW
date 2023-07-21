@@ -33,7 +33,13 @@ for (i in window_sizes) {
   }
   
   # read annotation summary file
-  smfile <- data.table::fread(paste0(temp_outdir, params$prefix, ".atsum"))
+  fn_smfile <- paste0(temp_outdir, params$prefix, ".atsum")
+  if (!file.exists(fn_smfile)) {
+    log4r::warn(fn_logger, paste0("Warn: ", i, "bp window annotation file not found. Skipped."))
+    next
+  }
+  
+  smfile <- data.table::fread(fn_smfile)
   smfile$start <- as.numeric(smfile$start)
   smfile$stop <- as.numeric(smfile$stop)
   
