@@ -162,6 +162,7 @@ t_accuracy <- c()
 # iterate through window sizes
 for (i in window_sizes) {
   fn_cmp <- paste0(window_outdir,i,"/summary/",params$prefix,".cmp")
+  fn_cmptw <- paste0(window_outdir,i,"/summary/",params$prefix,".cmptw")
   fn_iqtree <- paste0(window_outdir,i,"/trees/",params$prefix,".iqtree")
   fn_contiguous <- paste0(window_outdir,i,"/contiguous/trees/",params$prefix,".iqtree")
   
@@ -172,17 +173,32 @@ for (i in window_sizes) {
   acc <- sum(as.numeric(diag(cmp))) / sum(as.numeric(cmp)) * 100
   acc <- round(acc, 3)
   
+  # read and extract RMSE for topology weights
+  cmptw <- data.table::fread(fn_cmptw)
+  na_ms <- which(is.na(cmptw$ms))
+  na_now <- which(is.na(cmptw$now))
+  
+  if (length(na_ms) > 0) {
+    cmptw$ms[na_ms] <- 0
+  }
+  
+  if (length(na_now) > 0) {
+    cmptw$now[na_now] <- 0
+  }
+  
+  rmse <- mean((cmptw$ms - cmptw$now) ^ 2) %>% sqrt()
+  
   # extract information of interest
   aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
   aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
   bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
   
-  t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic))
-  rm(cmp, acc)
+  t_accuracy <- rbind(t_accuracy, c(i,acc,aic,aicc,bic,rmse))
+  rm(cmp, cmptw, acc)
 }
 
 t_accuracy <- data.table::as.data.table(t_accuracy)
-data.table::setnames(t_accuracy, c("window_size","accuracy","aic","aicc","bic"))
+data.table::setnames(t_accuracy, c("window_size","accuracy","aic","aicc","bic","rmse"))
 
 data.table::fwrite(t_accuracy, file=fn_summary, quote=F, sep="\t")
 log4r::info(fn_logger, paste0("File created/modified: summary table of NOW and ms (", params$prefix, ".sum)."))

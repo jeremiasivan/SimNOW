@@ -21,6 +21,7 @@ if (!dir.exists(simsumdir)) {
 ```{r simsum, include=FALSE}
 fn_simsum <- paste0(simsumdir, params$prefix, ".simsum")
 fn_acc_ws <- paste0(simsumdir, params$prefix, ".acc_ws.tiff")
+fn_rmse_ws <- paste0(simsumdir, params$prefix, ".rmse_ws.tiff")
 
 # extract row and column names
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
@@ -46,16 +47,17 @@ for (i in simulation) {
   command <- strsplit(system(paste("grep 'ms'",fn_ms), intern=T), " ")
   rrate <- as.numeric(command[[1]][match("-r", command[[1]]) + 1])
   
-  sumfile <- data.table::data.table("simulation" = rep(i,nrow(sumfile)), sumfile, "r" = rep(rrate,nrow(sumfile)))
+  sumfile <- data.table::data.table("simulation" = rep(i, nrow(sumfile)), sumfile, "r" = rep(rrate,nrow(sumfile)))
   simsum <- rbind(simsum, sumfile)
 }
 
 simsum$accuracy <- as.numeric(simsum$accuracy)
+simsum$rmse <- as.numeric(simsum$rmse)
 simsum$window_size <- factor(simsum$window_size/1000)
 simsum$r <- factor(simsum$r)
 data.table::fwrite(simsum, file=fn_simsum, quote = F, sep = "\t")
 
-# visualization for all simulations
+# visualization for all simulations (window size vs accuracy)
 tiff(filename=fn_acc_ws, units="px", width=1600, height=2800)
 print(ggplot(simsum, aes(y=accuracy, x=window_size, ymin=0, ymax=100)) + 
         geom_boxplot(outlier.shape = NA) +
@@ -74,7 +76,26 @@ print(ggplot(simsum, aes(y=accuracy, x=window_size, ymin=0, ymax=100)) +
         ))
 dev.off()
 
-for (i in 5:ncol(simsum)-1) {
+# visualization for all simulations (window size vs RMSE)
+tiff(filename=fn_rmse_ws, units="px", width=1600, height=2800)
+print(ggplot(simsum, aes(y=rmse, x=window_size)) + 
+        geom_boxplot(outlier.shape = NA) +
+        geom_point(shape=16, aes(colour=r, size=20)) +
+        facet_wrap(.~r, scales = "free", ncol = 1) +
+        ggtitle("RMSE of Non-Overlapping Windows in Simulated Datasets") + xlab("Window size (kb)") + ylab("RMSE") +
+        guides(size="none", colour="none") +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 50),
+          plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+          axis.text.y=element_text(size=30),
+          axis.text.x=element_text(size=30),
+          strip.text = element_text(size = 30)
+        ))
+dev.off()
+
+for (i in 5:ncol(simsum)-2) {
   ifc <- colnames(simsum)[i]
   ifc_outdir <- paste0(simsumdir, ifc, "/")
   if (!dir.exists(ifc_outdir)) {
@@ -167,7 +188,7 @@ rank_simsum <- simsum %>%
       where(is.numeric), min_rank))
 simsum$accuracy <- -1 * simsum$accuracy
 
-for (i in 5:ncol(rank_simsum)-1) {
+for (i in 5:ncol(rank_simsum)-2) {
   ifc <- colnames(rank_simsum)[i]
   ifc_outdir <- paste0(simsumdir, ifc, "/")
   if (!dir.exists(ifc_outdir)) {
