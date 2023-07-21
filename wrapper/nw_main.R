@@ -1,7 +1,7 @@
 library(doSNOW)
 
 #################################
-ms_r <- c(0,20,200, 2000)
+ms_r <- c(0,20,200,2000)
 nreps <- 10
 prefix <- "sim"
 nthread <- 50
@@ -22,7 +22,7 @@ alisim_model <- "JC"
 alisim_scale <- 0.005
 
 copy_gaps <- TRUE
-src_aln <- "~/src_aln.fa"
+src_aln <- "~/empirical_aln.fa"
 
 # non-overlapping window analysis
 set_model <- FALSE
