@@ -16,6 +16,9 @@ params:
   iqtree2dir: "~/iqtree-2.2.2.4-MacOSX/bin/iqtree2"
   alisim_model: "JC"
   alisim_scale: 0.001
+  
+  copy_gaps: TRUE
+  src_aln: "~/empirical_aln.fa"
 ---
 
 ```{r, include=FALSE}
@@ -67,6 +70,10 @@ fn_uqtops <- paste0(simulation_outdir, "/", params$prefix, ".uqtops")
 fn_nexus <- paste0(simulation_outdir, "/", params$prefix, ".nex")
 fn_alisim <- paste0(simulation_outdir, "/", params$prefix)
 fn_alisim_fa <- paste0(simulation_outdir, "/", params$prefix, ".fa")
+
+if (params$copy_gaps) {
+  fn_alisim <- paste0(fn_alisim, "_nogaps")
+}
 ```
 
 ```{r ms, include=FALSE}
@@ -229,7 +236,7 @@ if (file.exists(fn_nexus) && !params$redo) {
 ```
 
 ```{r alisim, include=FALSE}
-if (file.exists(paste0(fn_alisim, ".fa")) && !params$redo) {
+if (file.exists(fn_alisim_fa) && !params$redo) {
   log4r::info(fn_logger, paste0("File found: ", params$prefix, ".fa."))
   
 } else {
@@ -239,12 +246,37 @@ if (file.exists(paste0(fn_alisim, ".fa")) && !params$redo) {
                       "-t", fn_mttrees,
                       "-m", params$alisim_model,
                       "--length", params$ms_l,
+                      "--branch-scale", params$alisim_scale,
                       "-T 1 -af fasta -cptime 1000000 -redo --no-log")
+  system(iqtree_cmd)
   
-  if (params$alisim_scale <= 0 || is.null(params$alisim_scale)) {
-    system(iqtree_cmd)
-  } else {
-    system(paste(iqtree_cmd, "--branch-scale", params$alisim_scale))
+  # add gaps
+  if (params$copy_gaps) {
+    # read source and simulated alignments
+    srcseq <- seqinr::read.fasta(params$src_aln, whole.header=T)
+    simseq <- seqinr::read.fasta(paste0(fn_alisim, ".fa"), whole.header=T)
+    
+    names(srcseq) <- sapply(names(srcseq), function(x){trimws(x, which="both")})
+    names(simseq) <- sapply(names(simseq), function(x){trimws(x, which="both")})
+    
+    srctaxa <- sort(names(srcseq))
+    simtaxa <- sort(names(simseq))
+    
+    # stop execution if the lists of taxon do not match
+    if (!all(srctaxa == simtaxa)) {
+      err_msg <- "Error: source alignment has different taxa than the simulated one. Exited."
+        
+      log4r::error(fn_logger, err_msg)
+      stop(err_msg)
+    }
+    
+    # loop over alignment
+    for (t in srctaxa) {
+      gaps <- grep("-", srcseq[[t]])
+      simseq[[t]][gaps] <- "-"
+    }
+    
+    seqinr::write.fasta(sequences=simseq, names=names(simseq), file.out=fn_alisim_fa)
   }
   
   log4r::info(fn_logger, paste0("File created: ", params$prefix, ".fa."))

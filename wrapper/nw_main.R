@@ -20,9 +20,15 @@ ms_l <- 10000000
 iqtree2dir <- "~/iqtree-2.2.2.4-MacOSX/bin/iqtree2"
 alisim_model <- "JC"
 alisim_scale <- 0.005
-outgroup <- "7"
-  
+
+copy_gaps <- TRUE
+src_aln <- "~/empirical_aln.fa"
+
 # non-overlapping window analysis
+set_model <- FALSE
+set_blmin <- TRUE
+outgroup <- "7"
+
 window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
 
 #################################
@@ -50,13 +56,15 @@ for (i in 1:nrow(temp_table)) {
   tempsim <- list(out=out, params=list(prefix=prex,
                                        outdir=outdir, redo=redo,
                                        msdir=msdir, ms_params=ms_params, ms_r=temp_table$rrate[i], ms_l=ms_l,
-                                       iqtree2dir=iqtree2dir, alisim_model=alisim_model, alisim_scale=alisim_scale
+                                       iqtree2dir=iqtree2dir, alisim_model=alisim_model, alisim_scale=alisim_scale,
+                                       copy_gaps=copy_gaps, src_aln=src_aln
                                        ))
   
   tempnow <- list(out=out, params=list(prefix=prex,
                                        rmddir=rmddir, outdir=outdir, thread=thread, redo=redo,
                                        ms_l=ms_l,
-                                       iqtree2dir=iqtree2dir, alisim_model=alisim_model, outgroup=outgroup,
+                                       iqtree2dir=iqtree2dir, alisim_model=alisim_model,
+                                       set_model=set_model, set_blmin=set_blmin, outgroup=outgroup,
                                        window_size=window_size
                                        ))
   

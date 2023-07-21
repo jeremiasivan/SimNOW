@@ -123,17 +123,26 @@ for (i in window_sizes) {
   # generate window treefile
   iqtree_cmd <- paste(params$iqtree2dir,
                       "-S",fastadir,
-                      "-m",params$alisim_model,
                       "-pre",prefix,
                       "-T",tthread,
                       "-cptime 1000000 --quiet -redo")
   
-  if (is.null(params$outgroup) || params$outgroup == ""){
-    system(iqtree_cmd)
-  } else {
-    system(paste(iqtree_cmd, "-o", params$outgroup))
+  # set outgroup
+  if (!is.null(params$outgroup) && !params$outgroup == ""){
+    iqtree_cmd <- paste(iqtree_cmd, "-o", params$outgroup)
   }
   
+  # set substitution model
+  if (params$set_model){
+    iqtree_cmd <- paste(iqtree_cmd, "-m", params$alisim_model)
+  }
+  
+  # set minimum branch length (i.e., minimum one substitution per window)
+  if (params$set_blmin) {
+    iqtree_cmd <- paste(iqtree_cmd, "-blmin", 1/i)
+  }
+  
+  system(iqtree_cmd)
   log4r::info(fn_logger, paste0("File created: ", i, "bp window treefile."))
 }
 ```

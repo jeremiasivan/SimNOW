@@ -13,6 +13,9 @@ params:
   
   # IQ-Tree2
   iqtree2dir: "~/iqtree-2.2.2.4-MacOSX/bin/iqtree2"
+  set_model: TRUE
+  set_blmin: TRUE
+  
   alisim_model: "JC"
   outgroup: ""
   
