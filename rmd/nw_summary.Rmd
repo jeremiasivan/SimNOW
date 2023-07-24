@@ -170,7 +170,12 @@ for (i in window_sizes) {
   fn_cmp <- paste0(window_outdir,i,"/summary/",params$prefix,".cmp")
   fn_cmptw <- paste0(window_outdir,i,"/summary/",params$prefix,".cmptw")
   fn_iqtree <- paste0(window_outdir,i,"/trees/",params$prefix,".iqtree")
-  fn_contiguous <- paste0(window_outdir,i,"/contiguous/trees/",params$prefix,".iqtree")
+  # fn_contiguous <- paste0(window_outdir,i,"/contiguous/trees/",params$prefix,".iqtree")
+  
+  if (!all(file.exists(fn_cmp,fn_cmptw,fn_iqtree))) {
+    log4r::warn(fn_logger, paste0("Warn: ", i, "bp window comparison file not found. Skipped."))
+    next
+  }
   
   # read and extract accuracy of each window
   cmp <- data.table::fread(fn_cmp)
