@@ -35,6 +35,14 @@ options(scipen=999)
 # read fasta file
 s <- seqinr::read.fasta(fn_alisim, whole.header = T)
 
+if (params$filter_gaps) {
+  params$ms_l <- seqinr::getLength(s)[1]
+  sfactors <- getFactors(params$ms_l, params$min_window_size)
+  
+  indices <- seq(1, length(sfactors), length.out = params$window_len)
+  params$window_size <- sort(as.numeric(sfactors[indices]))
+}
+
 # iterate through window sizes
 for (w in sort(params$window_size)) {
   # total alignment length should be divisible by the window size

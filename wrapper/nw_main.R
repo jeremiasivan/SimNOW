@@ -23,6 +23,8 @@ alisim_scale <- 0.005
 
 copy_gaps <- TRUE
 src_aln <- "~/empirical_aln.fa"
+filter_gaps <- TRUE
+min_taxa <- 4
 
 # non-overlapping window analysis
 set_model <- FALSE
@@ -30,6 +32,8 @@ set_blmin <- TRUE
 outgroup <- "7"
 
 window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
+window_len <- 10
+min_window_size <- 1000
 #################################
 
 if (nthread / thread < 1) {
@@ -56,7 +60,7 @@ for (i in 1:nrow(temp_table)) {
                                        outdir=outdir, redo=redo,
                                        msdir=msdir, ms_params=ms_params, ms_r=temp_table$rrate[i], ms_l=ms_l,
                                        iqtree2dir=iqtree2dir, alisim_model=alisim_model, alisim_scale=alisim_scale,
-                                       copy_gaps=copy_gaps, src_aln=src_aln
+                                       copy_gaps=copy_gaps, src_aln=src_aln, filter_gaps=filter_gaps, min_taxa=min_taxa
                                        ))
   
   tempnow <- list(out=out, params=list(prefix=prex,
@@ -64,7 +68,7 @@ for (i in 1:nrow(temp_table)) {
                                        ms_l=ms_l,
                                        iqtree2dir=iqtree2dir, alisim_model=alisim_model,
                                        set_model=set_model, set_blmin=set_blmin, outgroup=outgroup,
-                                       window_size=window_size
+                                       window_size=window_size, window_len=window_len, min_window_size=min_window_size
                                        ))
   
   repsim <- append(repsim, list(tempsim))

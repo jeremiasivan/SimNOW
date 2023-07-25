@@ -10,6 +10,7 @@ params:
   
   # ms
   ms_l: 1000000
+  filter_gaps: TRUE
   
   # IQ-Tree2
   iqtree2dir: "~/iqtree-2.2.2.4-MacOSX/bin/iqtree2"
@@ -21,6 +22,8 @@ params:
   
   # non-overlapping window analysis
   window_size: !r c(50000,100000,500000,1000000)
+  window_len: 10
+  min_window_size: 1000
 ---
 
 ```{r, include=FALSE}
@@ -51,6 +54,15 @@ log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::defa
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
 
 knitr::opts_knit$set(root.dir = currentdir)
+```
+
+```{r functions, include=FALSE}
+getFactors <- function(x, min) {
+  x <- as.integer(x)
+  div <- seq_len(abs(x))
+  factors <- div[x %% div == 0L]
+  return(factors[factors >= min])
+}
 ```
 
 ```{r child = paste(params$rmddir,"/nw_run.Rmd",sep=""), include=FALSE}
