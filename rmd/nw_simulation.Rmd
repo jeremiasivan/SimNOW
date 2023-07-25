@@ -19,6 +19,8 @@ params:
   
   copy_gaps: TRUE
   src_aln: "~/empirical_aln.fa"
+  filter_gaps: TRUE
+  min_taxa: 4
 ---
 
 ```{r, include=FALSE}
@@ -274,6 +276,54 @@ if (file.exists(fn_alisim_fa) && !params$redo) {
     for (t in srctaxa) {
       gaps <- grep("-", srcseq[[t]])
       simseq[[t]][gaps] <- "-"
+    }
+    write.table(c("", "Gaps added!"),
+                file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+    
+    # filter gaps
+    if (params$filter_gaps) {
+      rm_pos <- c()
+      
+      # set the minimum number of taxa without gaps
+      if (params$min_taxa <= 0 || !is.numeric(params$min_taxa)) {
+        params$min_taxa <- ceiling(length(simseq)/2)
+      }
+      
+      # extract positions to be filtered
+      for (i in 1:params$ms_l) {
+        currentpos <- lapply(simseq, function(x){x[i]})
+        nogap_count <- sum(currentpos != "-")
+        
+        if (nogap_count < params$min_taxa) {
+          rm_pos <- c(rm_pos, i)
+        }
+      }
+      
+      # filter sequence
+      if (length(rm_pos) > 0) {
+        simseq <- lapply(simseq, function(x){x[-rm_pos]})
+      }
+      
+      # update mstops file
+      mstops <- data.table::fread(fn_mstops)
+      mstops_nrow <- nrow(mstops)
+      
+      for (i in sort(rm_pos, decreasing=TRUE)) {
+        idx <- which(mstops$start <= i & mstops$stop >= i)
+        idxplusone <- as.integer(idx+1) 
+        
+        mstops$length[idx] <- mstops$length[idx] - 1
+        mstops[idxplusone:mstops_nrow,start := mstops$start[idxplusone:mstops_nrow] - 1]
+        mstops[idx:mstops_nrow,stop := mstops$stop[idx:mstops_nrow] - 1]
+      }
+      
+      # rename old mstops file and save a new one
+      fn_mstops_old <- paste0(simulation_outdir, "/", params$prefix, "_init.mstops")
+      system(paste("mv", fn_mstops, fn_mstops_old))
+      data.table::fwrite(mstops, file=fn_mstops, sep="\t", quote=F)
+      
+      write.table(paste0("Gaps filtered! Sequence length: ", params$ms_l-length(rm_pos), "bp."),
+                file=fn_log, quote=F, row.names=F, col.names=F, append=T)
     }
     
     seqinr::write.fasta(sequences=simseq, names=names(simseq), file.out=fn_alisim_fa)
