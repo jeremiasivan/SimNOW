@@ -134,7 +134,7 @@ for (i in window_sizes) {
   
   # set substitution model
   if (params$set_model){
-    iqtree_cmd <- paste(iqtree_cmd, "-m", params$alisim_model)
+    iqtree_cmd <- paste(iqtree_cmd, "-m", params$dna_model)
   }
   
   # set minimum branch length (i.e., minimum one substitution per window)

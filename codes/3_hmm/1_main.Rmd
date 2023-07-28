@@ -2,7 +2,7 @@
 title: "Two-window HiMAST from NOW"
 params:
   # general
-  rmddir: ""
+  codedir: ""
   prefix: ""
   outdir: ""
   thread: 5
@@ -155,7 +155,7 @@ extract_hmmtrees <- function(fn_hmm, fn_logger, fn_aln_in, fn_atsum1, fn_atsum2,
 }
 ```
 
-```{r child = paste(params$rmddir,"/wh_run.Rmd",sep=""), include=FALSE}
+```{r child = paste(params$codedir,"/3_hmm/2_run.Rmd",sep=""), include=FALSE}
 ```
 
 ```{r, include=FALSE}

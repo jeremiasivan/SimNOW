@@ -7,7 +7,7 @@ prefix <- "sim"
 nthread <- 50
 
 # general
-rmddir <- "~/SimNOW/rmd"
+codedir <- "~/SimNOW/codes"
 outdir <- "~/simulation"
 thread <- 10
 redo <- FALSE
@@ -27,6 +27,8 @@ src_aln <- "~/empirical_aln.fa"
 # non-overlapping window analysis
 set_model <- FALSE
 set_blmin <- TRUE
+
+dna_model <- alisim_model
 outgroup <- "7"
 
 window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
@@ -60,10 +62,9 @@ for (i in 1:nrow(temp_table)) {
                                        ))
   
   tempnow <- list(out=out, params=list(prefix=prex,
-                                       rmddir=rmddir, outdir=outdir, thread=thread, redo=redo,
+                                       codedir=codedir, outdir=outdir, thread=thread, redo=redo,
                                        ms_l=ms_l,
-                                       iqtree2dir=iqtree2dir, alisim_model=alisim_model,
-                                       set_model=set_model, set_blmin=set_blmin, outgroup=outgroup,
+                                       iqtree2dir=iqtree2dir, set_model=set_model, set_blmin=set_blmin, dna_model=dna_model, outgroup=outgroup,
                                        window_size=window_size
                                        ))
   
@@ -76,7 +77,7 @@ make_repsim <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste(rmddir,"/nw_simulation.Rmd", sep=""),
+  rmarkdown::render(input=paste(codedir,"/1_sequence_simulation/simulation.Rmd", sep=""),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
@@ -88,7 +89,7 @@ make_repnow <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste(rmddir,"/nw_main.Rmd", sep=""),
+  rmarkdown::render(input=paste(codedir,"/2_non_overlapping_window/1_main.Rmd", sep=""),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
@@ -119,7 +120,7 @@ foreach(r=repnow, .errorhandling = 'pass') %dopar% {
 stopCluster(cl)
 
 # summary
-rmarkdown::render(input=paste(rmddir,"/summary_nw.Rmd", sep=""),
+rmarkdown::render(input=paste(codedir,"/4_all_runs_summary/summary_all.Rmd", sep=""),
                   output_file=paste(outdir, "/", prefix, ".html", sep=""),
                   params=list(prefix=prefix, outdir=outdir),
                   quiet=TRUE)

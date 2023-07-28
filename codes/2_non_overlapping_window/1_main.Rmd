@@ -2,7 +2,7 @@
 title: "Non-overlapping Windows Analysis"
 params:
   # general
-  rmddir: "~/SimNOW/rmd"
+  codedir: "~/SimNOW/codes"
   prefix: "sim"
   outdir: "~/simulation"
   thread: 5
@@ -16,7 +16,7 @@ params:
   set_model: TRUE
   set_blmin: TRUE
   
-  alisim_model: "JC"
+  dna_model: "JC"
   outgroup: ""
   
   # non-overlapping window analysis
@@ -53,10 +53,10 @@ fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-```{r child = paste(params$rmddir,"/nw_run.Rmd",sep=""), include=FALSE}
+```{r child = paste0(params$codedir,"/2_non_overlapping_window/2_run.Rmd"), include=FALSE}
 ```
 
-```{r child = paste(params$rmddir,"/nw_summary.Rmd",sep=""), include=FALSE}
+```{r child = paste0(params$codedir,"/2_non_overlapping_window/3_summary.Rmd"), include=FALSE}
 ```
 
 ```{r, include=FALSE}

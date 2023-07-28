@@ -5,7 +5,7 @@ prefix <- "sim"
 nthread <- 50
 
 # general
-rmddir <- "~/SimNOW/rmd"
+codedir <- "~/SimNOW/codes"
 outdir <- "~/simulation"
 thread <- 10
 redo <-  TRUE
@@ -31,7 +31,7 @@ reports <- list()
 for (i in alldirs[dirname]) {
   out <- paste0(outdir,"/",i,"/",i,".wh.html")
   templist <- list(out=out, params=list(prefix=i,
-                                        rmddir=rmddir, outdir=outdir, thread=thread, redo=redo,
+                                        codedir=codedir, outdir=outdir, thread=thread, redo=redo,
                                         seqkitdir=seqkitdir, iqtree2dir=iqtree2dir, masthmmdir=masthmmdir,
                                         ic_type=ic_type,
                                         mast_model=mast_model
@@ -45,7 +45,7 @@ make_report <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste(rmddir,"/wh_main.Rmd", sep=""),
+  rmarkdown::render(input=paste(codedir,"/3_hmm/1_main.Rmd", sep=""),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,

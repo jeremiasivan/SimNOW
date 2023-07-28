@@ -22,6 +22,7 @@ This pipeline requires several software and R packages to run.
 | forcats    | <a href="https://cran.r-project.org/package=forcats">Link</a>    | <a href="https://anaconda.org/conda-forge/r-forcats">Link</a>    |
 | ggplot2    | <a href="https://cran.r-project.org/package=ggplot2">Link</a>    | <a href="https://anaconda.org/conda-forge/r-ggplot2">Link</a>    |
 | log4r      | <a href="https://cran.r-project.org/package=log4r">Link</a>      | <a href="https://anaconda.org/conda-forge/r-log4r">Link</a>      |
+| rmarkdown  | <a href="https://cran.r-project.org/package=rmarkdown">Link</a>  | <a href="https://anaconda.org/conda-forge/r-rmarkdown">Link</a>  |
 | seqinr     | <a href="https://cran.r-project.org/package=seqinr">Link</a>     | <a href="https://anaconda.org/conda-forge/r-seqinr">Link</a>     |
 | stringr    | <a href="https://cran.r-project.org/package=stringr">Link</a>    | <a href="https://anaconda.org/conda-forge/r-stringr">Link</a>    |
 
@@ -40,4 +41,4 @@ This pipeline consists of **sequence simulation**, **non-overlapping window anal
 4. Wong, T., et al. (<a href="https://doi.org/10.1101/2022.10.06.511210">*in press*</a>). **MAST: Phylogenetic Inference with Mixtures Across Sites and Trees**. *bioRxiv*.
 
 ---
-*Last update: 27 July 2023 by Jeremias Ivan*
+*Last update: 28 July 2023 by Jeremias Ivan*
