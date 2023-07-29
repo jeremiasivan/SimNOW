@@ -13,15 +13,171 @@ library(dplyr)
 library(ggplot2)
 
 simsumdir <- paste0(params$outdir, "/summary/")
-if (!dir.exists(simsumdir)) {
-  dir.create(simsumdir, recursive = T)
+sitedir <- paste0(simsumdir, "site/")
+rmsedir <- paste0(simsumdir, "rmse/")
+
+# create directory if not exist
+lapply(list(simsumdir,sitedir,rmsedir), function(x){if(!dir.exists(x)) dir.create(x, recursive=T)})
+```
+
+```{r function, include=FALSE}
+f_acc_wsize <- function(df, type) {
+  plot <- NULL
+  if (type == "site") {
+    plot <- ggplot(df, aes(y=accuracy, x=window_size, ymin=0, ymax=100)) +
+      ggtitle("Site Classification Accuracy of Non-Overlapping Windows in Simulated Datasets") +
+      xlab("Window size (kb)") + ylab("Accuracy (%)")
+  } else if (type == "rmse") {
+    plot <- ggplot(df, aes(y=rmse, x=window_size, ymin=0)) +
+      ggtitle("RMSE of Non-Overlapping Windows in Simulated Datasets") +
+      xlab("Window size (kb)") + ylab("RMSE (%)")
+  }
+
+  plot <- plot +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(shape=16, aes(colour=r, size=20)) +
+    facet_wrap(.~r, scales = "free", ncol = 1) +
+    guides(size="none", colour="none") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size = 30)
+    )
+
+  return(plot)
+}
+
+f_ic_acc <- function(df, i, ifc, type) {
+  plot <- NULL
+  if (type == "site") {
+    plot <- ggplot(df, aes(y=accuracy, x=as.numeric(unlist(df[,..i])), ymin=0, ymax=100, group=simulation)) +
+      ggtitle(paste("Correlation between", toupper(ifc), "and Site Classification Accuracy")) +
+      xlab(toupper(ifc)) + ylab("Accuracy (%)")
+  } else if (type == "rmse") {
+    plot <- ggplot(df, aes(y=rmse, x=as.numeric(unlist(df[,..i])), ymin=0, ymax=100, group=simulation)) +
+      ggtitle(paste("Correlation between", toupper(ifc), "and RMSE")) +
+      xlab(toupper(ifc)) + ylab("RMSE (%)")
+  }
+  
+  plot <- plot +
+    geom_line(aes(size=1, alpha=0.2)) +
+    geom_point(aes(colour=window_size, size=20)) +
+    facet_wrap(.~r, scales = "free") +
+    viridis::scale_color_viridis(discrete = TRUE) + 
+    labs(color="w_size (kb)") +
+    guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size = 30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+  
+  return(plot)
+}
+
+f_acc_loss <- function(df, ifc, type) {
+  plot <- NULL
+  if (type == "site") {
+    plot <- ggplot(df, aes(y=site_loss, x=factor(r), ymin=0)) +
+      ggtitle(paste("Loss of Site Classification Accuracy for Lowest", toupper(ifc))) +
+      xlab("Recombination rate (rho)") + ylab("Loss of Site Classification Accuracy (%)")
+  } else if (type == "rmse") {
+    plot <- ggplot(df, aes(y=rmse_gain, x=factor(r), ymin=0)) +
+      ggtitle(paste("Increase in RMSE for Lowest", toupper(ifc))) +
+      xlab("Recombination rate (rho)") + ylab("Increase in RMSE (%)")
+  }
+  
+  plot <- plot +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(shape=16, aes(colour=r, size=20)) +
+    guides(size="none", colour="none") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30)
+    )
+  
+  return(plot)
+}
+
+f_ic_wsize <- function(df, i, ifc) {
+  plot <- ggplot(df, aes(x=window_size, y=as.numeric(unlist(df[,..i])), group=simulation)) +
+    geom_line(aes(size=1, alpha=0.2)) +
+    geom_point(aes(colour=window_size, size=20)) +
+    facet_wrap(.~r, scales = "free", ncol = 1) +
+    viridis::scale_color_viridis(discrete = TRUE) +
+    ggtitle(paste("Correlation between", toupper(ifc), "and Window Size")) + ylab(toupper(ifc)) + xlab("Window Size (kb)") +
+    guides(color="none", alpha="none", size="none") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size = 30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+  
+  return(plot)
+}
+
+f_rank_ic_acc <- function(df, i, ifc, type) {
+  plot <- NULL
+  if (type == "site") {
+    plot <- ggplot(df, aes(y=accuracy, x=unlist(df[,i]), ymin=0, group=simulation)) +
+      ggtitle(paste("Correlation between Ranked", toupper(ifc), "and Ranked Site Classification Accuracy")) +
+      xlab(paste("Ranked",toupper(ifc))) + ylab("Ranked Accuracy")
+  } else if (type == "rmse") {
+    plot <- ggplot(df, aes(y=rmse, x=unlist(df[,i]), ymin=0, group=simulation)) +
+      ggtitle(paste("Correlation between Ranked", toupper(ifc), "and Ranked RMSE")) +
+      xlab(paste("Ranked",toupper(ifc))) + ylab("Ranked RMSE")
+  }
+  
+  plot <- plot +
+    geom_line(aes(size=1, alpha=0.2)) +
+    geom_point(aes(colour=window_size, size=20)) +
+    facet_wrap(.~r, scales = "free") +
+    viridis::scale_color_viridis(discrete = TRUE) +
+    labs(color="w_size (kb)") +
+    guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size = 30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+  
+  return(plot)
 }
 ```
 
 ```{r simsum, include=FALSE}
 fn_simsum <- paste0(simsumdir, params$prefix, ".simsum")
-fn_acc_ws <- paste0(simsumdir, params$prefix, ".acc_ws.tiff")
-fn_rmse_ws <- paste0(simsumdir, params$prefix, ".rmse_ws.tiff")
+fn_site_ws <- paste0(sitedir, params$prefix, ".site_ws.tiff")
+fn_rmse_ws <- paste0(rmsedir, params$prefix, ".rmse_ws.tiff")
 
 # extract row and column names
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
@@ -29,7 +185,7 @@ simulation <- allsims[grep(paste0("^",params$prefix), allsims)]
 simulation <- simulation[simulation != "summary"]
 
 window_sizes <- list.dirs(paste0(params$outdir,"/",simulation[1],"/windows/"), full.names = F, recursive = F)
-window_sizes <- window_sizes[window_sizes != paste0(simulation[1],".summary")]
+window_sizes <- window_sizes[window_sizes != paste0(simulation[1],".sum")]
 
 # extract summary for each simulation
 cnnames <- NULL
@@ -58,124 +214,58 @@ simsum$r <- factor(simsum$r)
 data.table::fwrite(simsum, file=fn_simsum, quote = F, sep = "\t")
 
 # visualization for all simulations (window size vs accuracy)
-tiff(filename=fn_acc_ws, units="px", width=1600, height=2800)
-print(ggplot(simsum, aes(y=accuracy, x=window_size, ymin=0, ymax=100)) + 
-        geom_boxplot(outlier.shape = NA) +
-        geom_point(shape=16, aes(colour=r, size=20)) +
-        facet_wrap(.~r, scales = "free", ncol = 1) +
-        ggtitle("Accuracy of Non-Overlapping Windows in Simulated Datasets") + xlab("Window size (kb)") + ylab("Accuracy (%)") +
-        guides(size="none", colour="none") +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 50),
-          plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-          axis.text.y=element_text(size=30),
-          axis.text.x=element_text(size=30),
-          strip.text = element_text(size = 30)
-        ))
+tiff(filename=fn_site_ws, units="px", width=1600, height=2800)
+print(f_acc_wsize(simsum, "site"))
 dev.off()
 
 # visualization for all simulations (window size vs RMSE)
 tiff(filename=fn_rmse_ws, units="px", width=1600, height=2800)
-print(ggplot(simsum, aes(y=rmse, x=window_size)) + 
-        geom_boxplot(outlier.shape = NA) +
-        geom_point(shape=16, aes(colour=r, size=20)) +
-        facet_wrap(.~r, scales = "free", ncol = 1) +
-        ggtitle("RMSE of Non-Overlapping Windows in Simulated Datasets") + xlab("Window size (kb)") + ylab("RMSE") +
-        guides(size="none", colour="none") +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 50),
-          plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-          axis.text.y=element_text(size=30),
-          axis.text.x=element_text(size=30),
-          strip.text = element_text(size = 30)
-        ))
+print(f_acc_wsize(simsum, "rmse"))
 dev.off()
 
 for (i in 5:ncol(simsum)-2) {
   ifc <- colnames(simsum)[i]
-  ifc_outdir <- paste0(simsumdir, ifc, "/")
-  if (!dir.exists(ifc_outdir)) {
-    dir.create(ifc_outdir)
-  }
+  ifc_sitedir <- paste0(sitedir, ifc, "/")
+  ifc_rmsedir <- paste0(rmsedir, ifc, "/")
   
-  # information criteria vs accuracy
-  fn_simfig <- paste0(ifc_outdir, params$prefix, ".acc_ws.",ifc,".tiff")
+  # create directories if not exist
+  lapply(list(ifc_sitedir,ifc_rmsedir), function(x){if(!dir.exists(x)) dir.create(x, recursive=T)})
   
-  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
-  print(ggplot(simsum, aes(y=accuracy, x=as.numeric(unlist(simsum[,..i])), ymin=0, ymax=100, group=simulation)) +
-          geom_line(aes(size=1, alpha=0.2)) +
-          geom_point(aes(colour=window_size, size=20)) +
-          facet_wrap(.~r, scales = "free") +
-          viridis::scale_color_viridis(discrete = TRUE) +
-          ggtitle(paste("Correlation between", toupper(ifc), "and Accuracy")) + xlab(toupper(ifc)) + ylab("Accuracy (%)") +
-          labs(color="w_size (kb)") +
-          guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            strip.text = element_text(size = 30),
-            legend.title=element_text(size=30),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
-          ))
+  # information criteria vs accuracy / rmse
+  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ifc, "_site.tiff")
+  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ifc, "_rmse.tiff")
+  
+  tiff(filename=fn_sitefig, units="px", width=2880, height=1800)
+  print(f_ic_acc(simsum, i, ifc, "site"))
+  dev.off()
+  
+  tiff(filename=fn_rmsefig, units="px", width=2880, height=1800)
+  print(f_ic_acc(simsum, i, ifc, "rmse"))
   dev.off()
   
   # accuracy loss
   acc_loss <- simsum %>% 
     group_by(simulation, r) %>% 
-    mutate(max_acc = max(accuracy)) %>%
+    mutate(max_acc = max(accuracy), min_rmse = min(rmse)) %>%
     slice(which.min(!!as.name(ifc))) %>% 
-    summarise(acc_loss = max_acc - accuracy)
+    summarise(site_loss = max_acc - accuracy, rmse_gain = rmse - min_rmse)
 
-  fn_simfig <- paste0(ifc_outdir, params$prefix, ".acc_df.",ifc,".tiff")
+  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ifc, "_site_loss.tiff")
+  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ifc, "_rmse_loss.tiff")
   
-  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
-  print(ggplot(acc_loss, aes(y=acc_loss, x=factor(r), ymin=0)) + 
-          geom_boxplot(outlier.shape = NA) +
-          geom_point(shape=16, aes(colour=r, size=20)) +
-          ggtitle(paste("Loss of Accuracy for Lowest", toupper(ifc))) + xlab("Recombination rate (rho)") + ylab("Loss of Accuracy (%)") +
-          guides(size="none", colour="none") +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30)
-          ))
+  tiff(filename=fn_sitefig, units="px", width=2880, height=1800)
+  print(f_acc_loss(acc_loss, ifc, "site"))
+  dev.off()
+  
+  tiff(filename=fn_rmsefig, units="px", width=2880, height=1800)
+  print(f_acc_loss(acc_loss, ifc, "rmse"))
   dev.off()
   
   # information criterion vs window size
-  fn_simfig <- paste0(ifc_outdir, params$prefix, ".ifc_ws.",ifc,".tiff")
+  fn_simfig <- paste0(simsumdir, params$prefix, ifc, "_ws.tiff")
   
   tiff(filename=fn_simfig, units="px", width=1600, height=2800)
-  print(ggplot(simsum, aes(x=window_size, y=as.numeric(unlist(simsum[,..i])), group=simulation)) +
-          geom_line(aes(size=1, alpha=0.2)) +
-          geom_point(aes(colour=window_size, size=20)) +
-          facet_wrap(.~r, scales = "free", ncol = 1) +
-          viridis::scale_color_viridis(discrete = TRUE) +
-          ggtitle(paste("Correlation between", toupper(ifc), "and Window Size")) + ylab(toupper(ifc)) + xlab("Window Size (kb)") +
-          guides(color="none", alpha="none", size="none") +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            strip.text = element_text(size = 30),
-            legend.title=element_text(size=30),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
-          ))
+  print(f_ic_wsize(simsum, i, ifc))
   dev.off()
 }
 
@@ -190,34 +280,18 @@ simsum$accuracy <- -1 * simsum$accuracy
 
 for (i in 5:ncol(rank_simsum)-2) {
   ifc <- colnames(rank_simsum)[i]
-  ifc_outdir <- paste0(simsumdir, ifc, "/")
-  if (!dir.exists(ifc_outdir)) {
-    dir.create(ifc_outdir)
-  }
+  ifc_sitedir <- paste0(sitedir, ifc, "/")
+  ifc_rmsedir <- paste0(rmsedir, ifc, "/")
+
+  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ifc, "_site_rank.tiff")
+  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ifc, "_rmse_rank.tiff")
   
-  fn_simfig <- paste0(ifc_outdir, params$prefix, ".rank.acc_ws.",ifc,".tiff")
+  tiff(filename=fn_sitefig, units="px", width=2880, height=1800)
+  print(f_rank_ic_acc(rank_simsum, i, ifc, "site"))
+  dev.off()
   
-  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
-  print(ggplot(rank_simsum, aes(y=accuracy, x=unlist(rank_simsum[,i]), ymin=0, group=simulation)) +
-          geom_line(aes(size=1, alpha=0.2)) +
-          geom_point(aes(colour=window_size, size=20)) +
-          facet_wrap(.~r, scales = "free") +
-          viridis::scale_color_viridis(discrete = TRUE) +
-          ggtitle(paste("Correlation between Ranked", toupper(ifc), "and Ranked Accuracy")) + xlab(paste("Ranked",toupper(ifc))) + ylab("Ranked Accuracy") +
-          labs(color="w_size (kb)") +
-          guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
-          theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            strip.text = element_text(size = 30),
-            legend.title=element_text(size=30),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
-          ))
+  tiff(filename=fn_rmsefig, units="px", width=2880, height=1800)
+  print(f_rank_ic_acc(rank_simsum, i, ifc, "rmse"))
   dev.off()
 }
 ```

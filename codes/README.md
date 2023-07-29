@@ -103,6 +103,8 @@ Running the code will create a new folder called `simulation` with the following
 - `prefix.fa`: FASTA alignment from `AliSim`
 - `prefix_nogaps.fa`: FASTA alignment without gaps (only when `only_gaps` == `TRUE`)
 
+<br>
+
 > **Important Notes** <br>
 The term `topology` refers to phylogenetic tree without branch lengths (i.e., only record the speciation event and not the timing).
 

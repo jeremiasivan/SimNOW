@@ -13,7 +13,7 @@ This pipeline requires several software and R packages to run.
 - <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a>
 
 ### List of R package:
-|   *Name*   |                              *CRAN*                              |                            *Anaconda*                            |
+|    Name    |                               CRAN                               |                             Anaconda                             |
 | ---------- |:----------------------------------------------------------------:|:----------------------------------------------------------------:|
 | ape        | <a href="https://cran.r-project.org/package=ape">Link</a>        | <a href="https://anaconda.org/conda-forge/r-ape">Link</a>        |
 | data.table | <a href="https://cran.r-project.org/package=data.table">Link</a> | <a href="https://anaconda.org/conda-forge/r-data.table">Link</a> |
@@ -25,6 +25,7 @@ This pipeline requires several software and R packages to run.
 | rmarkdown  | <a href="https://cran.r-project.org/package=rmarkdown">Link</a>  | <a href="https://anaconda.org/conda-forge/r-rmarkdown">Link</a>  |
 | seqinr     | <a href="https://cran.r-project.org/package=seqinr">Link</a>     | <a href="https://anaconda.org/conda-forge/r-seqinr">Link</a>     |
 | stringr    | <a href="https://cran.r-project.org/package=stringr">Link</a>    | <a href="https://anaconda.org/conda-forge/r-stringr">Link</a>    |
+| viridis    | <a href="https://cran.r-project.org/package=viridis">Link</a>    | <a href="https://anaconda.org/conda-forge/r-viridis">Link</a>    |
 
 ---
 ## Notes
