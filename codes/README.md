@@ -103,10 +103,8 @@ Running the code will create a new folder called `simulation` with the following
 - `prefix.fa`: FASTA alignment from `AliSim`
 - `prefix_nogaps.fa`: FASTA alignment without gaps (only when `only_gaps` == `TRUE`)
 
-<br>
-
 > **Important Notes** <br>
-The term `topology` refers to phylogenetic tree without branch lengths (i.e., only record the speciation event and not the timing).
+The term `topology` refers to phylogenetic tree without branch lengths (i.e., only record the speciation events and not the timing).
 
 ### <a id="now">Non-overlapping window analysis</a>
 In this step, we use the simulated alignment to perform non-overlapping window analysis and generate the summary statistics. The parameters for this step is set in `2_non_overlapping_window/1_main.Rmd`.

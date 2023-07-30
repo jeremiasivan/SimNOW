@@ -32,6 +32,13 @@ dna_model <- alisim_model
 outgroup <- "7"
 
 window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
+
+# hmm
+seqkitdir <- "~/seqkit"
+masthmmdir <- "~/iqtree-2.2.5.hmmster-Linux/bin/iqtree2"
+mast_model <- "JC+T"
+
+ic_type <- "AIC"
 #################################
 
 if (nthread / thread < 1) {
@@ -44,10 +51,12 @@ temp_table$id <- rownames(temp_table)
 # create sets of parameters
 repsim <- list()
 repnow <- list()
+rephmm <- list()
 
 for (i in 1:nrow(temp_table)) {
-  prex <- paste(prefix,"_",temp_table$id[i], sep="")
-  out <- paste(outdir,"/",prex,"/",prex,".html", sep="")
+  prex <- paste0(prefix,"_",temp_table$id[i])
+  out <- paste0(outdir,"/",prex,"/",prex,".html")
+  hmmout <- paste0(outdir,"/",prex,"/",prex,".hmm.html")
   
   currentdir <- paste(outdir,"/",prex, sep="")
   if (!file.exists(currentdir)) {
@@ -67,9 +76,16 @@ for (i in 1:nrow(temp_table)) {
                                        iqtree2dir=iqtree2dir, set_model=set_model, set_blmin=set_blmin, dna_model=dna_model, outgroup=outgroup,
                                        window_size=window_size
                                        ))
+
+  temphmm <- list(out=hmmout, params=list(prefix=prex,
+                                          codedir=codedir, outdir=outdir, thread=thread, redo=redo,
+                                          seqkitdir=seqkitdir, iqtree2dir=iqtree2dir, masthmmdir=masthmmdir,
+                                          ic_type=ic_type, mast_model=mast_model
+                                          ))                                     
   
   repsim <- append(repsim, list(tempsim))
   repnow <- append(repnow, list(tempnow))
+  rephmm <- append(rephmm, list(temphmm))
 }
 
 # function to create reports for independent run
@@ -77,7 +93,7 @@ make_repsim <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste(codedir,"/1_sequence_simulation/simulation.Rmd", sep=""),
+  rmarkdown::render(input=paste0(codedir,"/1_sequence_simulation/simulation.Rmd"),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
@@ -89,7 +105,19 @@ make_repnow <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste(codedir,"/2_non_overlapping_window/1_main.Rmd", sep=""),
+  rmarkdown::render(input=paste0(codedir,"/2_non_overlapping_window/1_main.Rmd"),
+                    output_file=r$out,
+                    intermediates_dir=tf,
+                    params=r$params,
+                    quiet=TRUE)
+  unlink(tf)
+}
+
+make_rephmm <- function(r) {
+  tf <- tempfile()
+  dir.create(tf)
+  
+  rmarkdown::render(input=paste0(codedir,"/3_hmm/1_main.Rmd"),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
@@ -114,6 +142,12 @@ registerDoSNOW(cl)
 
 foreach(r=repnow, .errorhandling = 'pass') %dopar% {
   make_repnow(r)
+  NULL
+}
+
+# run parallelizaed HMM analysis
+foreach(r=rephmm, .errorhandling = 'pass') %dopar% {
+  make_rephmm(r)
   NULL
 }
 
