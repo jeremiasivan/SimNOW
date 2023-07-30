@@ -142,8 +142,23 @@ Additionally, the `windows` folder will contain the following files:
 - `prefix.sum`: summary table of window sizes and their respective information criteria scores
 
 ### <a id="hmm">HMM</a>
-In this step, we use MAST-HMM to refine the breakpoints between windows. We simplify the process by running MAST-HMM on two consecutive windows if the windows have different topology.
-*(to be continued...)*
+In this step, we use MAST-HMM to refine the breakpoints between windows. We simplify the process by running MAST-HMM on two consecutive windows if the windows have different topology. The parameters for this step is set in `3_hmm/1_main.Rmd`.
+
+| Parameters   | Definition                                                                             |
+| ------------ | -------------------------------------------------------------------------------------- |
+| `codedir`    | Directory for folder `SimNOW/codes`                                                    |
+| `prefix`     | Prefix for output files and folder                                                     | 
+| `outdir`     | Output directory                                                                       |
+| `thread`     | Number of threads for parallelization                                                  |
+| `redo`       | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results |
+| `seqkitdir`  | Directory for `Seqkit` executable                                                      |
+| `iqtree2dir` | Directory for `IQ-Tree2` executable                                                    |
+| `masthmmdir` | Directory for `IQ-Tree2` executable with `MAST-HMM`                                    |
+| `ic_type`    | Information criterion (i.e., `AIC`, `BIC`, or `AICc`)                                  |
+| `mast_model` | DNA substitution model for `MAST` analysis                                             |
+
+#### Output
+Running the code will create a new folder called `winhmm` with `MAST-HMM` output. *Further details will be provided in the near future.*
 
 ## <a id="notes">Notes</a>
 If you want to run more than one analysis at the same time, you can run `run_all.R`. There are several parameters that are new or changed:
@@ -179,6 +194,12 @@ dna_model <- alisim_model
 outgroup <- "7"
 
 window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
+
+seqkitdir <- "~/seqkit"
+masthmmdir <- "~/iqtree-2.2.5.hmmster-Linux/bin/iqtree2"
+mast_model <- "JC+T"
+
+ic_type <- "AIC"
 ```
 
 Specific parameters (in `codes/run_all.R`) for each scenario: <br>
@@ -213,4 +234,4 @@ alisim_scale <- 0.041
 ```
 
 ---
-*Last update: 28 July 2023 by Jeremias Ivan*
+*Last update: 30 July 2023 by Jeremias Ivan*

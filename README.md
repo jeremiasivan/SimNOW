@@ -11,6 +11,7 @@ This pipeline requires several software and R packages to run.
 - <a href="http://www.iqtree.org/doc/AliSim">AliSim</a>
 - <a href="http://www.iqtree.org">IQ-TREE 2</a>
 - <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a>
+- <a href="https://bioinf.shenwei.me/seqkit/">Seqkit</a>
 
 ### List of R package:
 |    Name    |                               CRAN                               |                             Anaconda                             |
@@ -42,4 +43,4 @@ This pipeline consists of **sequence simulation**, **non-overlapping window anal
 4. Wong, T., et al. (<a href="https://doi.org/10.1101/2022.10.06.511210">*in press*</a>). **MAST: Phylogenetic Inference with Mixtures Across Sites and Trees**. *bioRxiv*.
 
 ---
-*Last update: 28 July 2023 by Jeremias Ivan*
+*Last update: 30 July 2023 by Jeremias Ivan*
