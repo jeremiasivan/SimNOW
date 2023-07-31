@@ -1,7 +1,6 @@
 # SimNOW
 
 ## Table of Content
-- <a href="#genpipe">General Pipeline</a>
 - <a href="#foldstr">Folder Structure</a>
 - <a href="#analyses">Analyses</a>
     - <a href="#seqsim">Sequence simulation</a>
@@ -9,20 +8,6 @@
     - <a href="#hmm">HMM</a>
 - <a href="#notes">Notes</a>
     - <a href="#example">Example from publication</a>
-
-## <a id="genpipe">General Pipeline</a>
-1. **Clone the Git repository** <br>
-    ```
-    git clone git@github.com:jeremiasivan/SimNOW.git
-    ```
-2. **Install the prerequisites** <br>
-    All software have to be executable, while the R packages should be installed either in your local directory or virtual environment. We recommend you to use environment management system (e.g. `conda`) to install the packages, but you can also use `install.packages()` built-in function in R or RStudio.
-
-    For setting up `conda` environment, please visit the <a href="https://conda.io/projects/conda/en/latest/user-guide/index.html">user guide</a>.
-3. **Update the parameters in the code file** <br>
-    The details of each parameter is described below.
-4. **Run the code file** <br>
-    The details for running the code is described below.
 
 ## <a id="foldstr">Folder Structure</a>
 The following chart shows the general folder structure after running the first two steps. Explanation of each output file is described below.
