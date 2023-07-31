@@ -15,7 +15,7 @@ This pipeline requires several software and R packages to run. All software have
 - <a href="http://home.uchicago.edu/~rhudson1/source/mksamples.html">ms</a>
 - <a href="http://www.iqtree.org/doc/AliSim">AliSim</a>
 - <a href="http://www.iqtree.org">IQ-TREE 2</a>
-- <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a>
+- <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a>-HMM
 - <a href="https://bioinf.shenwei.me/seqkit/">Seqkit</a> (can also be installed via <a href="https://anaconda.org/bioconda/seqkit">Anaconda</a>)
 
 ### R packages:
@@ -41,7 +41,7 @@ This pipeline requires several software and R packages to run. All software have
 
 2. **Install the prerequisites** <br>
     > **Important Notes** <br>
-    `AliSim` and `MAST` are integrated into `IQ-TREE 2`, but they are available in different releases. As a result, you need to individually download the latest version of `IQ-TREE 2` for both.
+    `AliSim` and `MAST-HMM` are integrated into `IQ-TREE 2`, but they are available in different releases. As a result, you need to individually download the latest version of `IQ-TREE 2` for both.
 
     Please download `ms` and `IQ-TREE 2` from the links above. For `Seqkit` and `R` packages, I prefer to download them from `Anaconda` as below.
 
@@ -55,7 +55,7 @@ This pipeline requires several software and R packages to run. All software have
         conda install seqkit
         conda install -c conda-forge r-ape r-data.table r-dplyr r-dosnow r-forcats r-ggplot2 r-log4r r-rmarkdown r-seqinr r-stringr r-viridis
         ```
-        In this example, I list all packages that are used in the pipeline, which is not ideal if you have a lot of packages. In that case, you can start by installing <a href="https://anaconda.org/conda-forge/r-essentials">`r-essentials`</a> which contains commonly-used packages in R.
+        Notes: Here, I list all packages that are used in the pipeline, which is not ideal if you have a lot of packages. In that case, you can start by installing <a href="https://anaconda.org/conda-forge/r-essentials">`r-essentials`</a> which includes commonly-used packages in R.
 
 3. **Update the parameters in the file** <br>
     Please refer to `codes/README.md` for the details of each parameter and which files to be updated. 
@@ -77,7 +77,7 @@ This pipeline requires several software and R packages to run. All software have
     In UNIX-based operating systems (e.g., Linux and MacOS), it is advisable to use `nohup` or `tmux` to run the whole pipeline. For Windows, you can use `start`, but I have never tried it before. 
 
 ## <a id="timecom">Time Complexity</a>
-Running `codes/run_all.R` with mid ILS (see <a href="codes/README.md#example">here</a>) using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step is as follows:
+Running the whole pipeline with the second scenario (see <a href="/codes/README.md#example">here</a>) using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step per replicate is as follows:
 - Sequence simulation: up to 1 hour for `ms_r = 2000`
 - Non-overlapping windows: ~2.25 hours
 - HMM: up to 5 minutes for `ms_r = 2000`
@@ -95,4 +95,4 @@ Running `codes/run_all.R` with mid ILS (see <a href="codes/README.md#example">he
 5. Shen, W., et al. (<a href="https://doi.org/10.1371/journal.pone.0163962">2016</a>). **SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation**. *PLoS ONE*, *11*(10), e0163962.
 
 ---
-*Last update: 30 July 2023 by Jeremias Ivan*
+*Last update: 31 July 2023 by Jeremias Ivan*

@@ -118,7 +118,7 @@ Running the code will create a new folder called `windows` with individual folde
     - prefix.cmptw: comparison table of `ms` and non-overlapping windows topology distribution
     - prefix.cnsum: frequency of consecutive windows that recover the same topology
     - prefix.topsum: table of unique topologies sorted from the most common one
-- `trees/`: folder with window trees generated using `IQ-Tree2`
+- `trees/`: folder with window trees generated using `IQ-TREE 2`
 
 Additionally, the `windows` folder will contain the following files:
 - `prefix.aic.tiff`: correlation plot between AIC and window size
@@ -137,8 +137,8 @@ In this step, we use MAST-HMM to refine the breakpoints between windows. We simp
 | `thread`     | Number of threads for parallelization                                                  |
 | `redo`       | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results |
 | `seqkitdir`  | Directory for `Seqkit` executable                                                      |
-| `iqtree2dir` | Directory for `IQ-Tree2` executable                                                    |
-| `masthmmdir` | Directory for `IQ-Tree2` executable with `MAST-HMM`                                    |
+| `iqtree2dir` | Directory for `IQ-TREE 2` executable                                                    |
+| `masthmmdir` | Directory for `IQ-TREE 2` executable with `MAST-HMM`                                    |
 | `ic_type`    | Information criterion (i.e., `AIC`, `BIC`, or `AICc`)                                  |
 | `mast_model` | DNA substitution model for `MAST` analysis                                             |
 
@@ -188,7 +188,7 @@ ic_type <- "AIC"
 ```
 
 Specific parameters (in `codes/run_all.R`) for each scenario: <br>
-*Low ILS*
+*First scenario*
 ```
 ms_r <- c(0,2,20,200)
 prefix <- "low"
@@ -198,7 +198,7 @@ ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 16.0 2 1 -ej 42.0 3 1 -ej 53.0 4 1 -
 alisim_scale <- 0.0007
 ```
 
-*Mid ILS*
+*Second scenario*
 ```
 ms_r <- c(0,20,200,2000)
 prefix <- "mid"
@@ -208,7 +208,7 @@ ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 2.13 2 1 -ej 5.60 3 1 -ej 7.07 4 1 -
 alisim_scale <- 0.005
 ```
 
-*High ILS*
+*Third scenario*
 ```
 ms_r <- c(0,30,300,3000)
 prefix <- "high"
@@ -219,4 +219,4 @@ alisim_scale <- 0.041
 ```
 
 ---
-*Last update: 30 July 2023 by Jeremias Ivan*
+*Last update: 31 July 2023 by Jeremias Ivan*
