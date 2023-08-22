@@ -51,6 +51,32 @@ f_acc_wsize <- function(df, type) {
   return(plot)
 }
 
+f_acc_rmse <- function(df) {
+  plot <- ggplot(df, aes(y=accuracy, x=rmse, ymin=0, xmin=0, group=simulation)) +
+    ggtitle("Correlation between Site Classification Accuracy and RMSE") +
+    xlab("RMSE (%)") + ylab("Accuracy (%)") +
+    geom_point(aes(colour=window_size, size=20)) +
+    geom_smooth(method = lm) +
+    facet_wrap(.~r, scales = "free") +
+    viridis::scale_color_viridis(discrete = TRUE) +
+    labs(color="w_size (kb)") +
+    guides(size="none", colour=guide_legend(override.aes=list(size=8))) +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size = 30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+  return(plot)
+}
+
 f_ic_acc <- function(df, i, ifc, type) {
   plot <- NULL
   if (type == "site") {
@@ -58,7 +84,7 @@ f_ic_acc <- function(df, i, ifc, type) {
       ggtitle(paste("Correlation between", toupper(ifc), "and Site Classification Accuracy")) +
       xlab(toupper(ifc)) + ylab("Accuracy (%)")
   } else if (type == "rmse") {
-    plot <- ggplot(df, aes(y=rmse, x=as.numeric(unlist(df[,..i])), ymin=0, ymax=100, group=simulation)) +
+    plot <- ggplot(df, aes(y=rmse, x=as.numeric(unlist(df[,..i])), ymin=0, group=simulation)) +
       ggtitle(paste("Correlation between", toupper(ifc), "and RMSE")) +
       xlab(toupper(ifc)) + ylab("RMSE (%)")
   }
@@ -176,6 +202,7 @@ f_rank_ic_acc <- function(df, i, ifc, type) {
 
 ```{r simsum, include=FALSE}
 fn_simsum <- paste0(simsumdir, params$prefix, ".simsum")
+fn_site_rmse <- paste0(simsumdir, params$prefix, ".site_rmse.tiff")
 fn_site_ws <- paste0(sitedir, params$prefix, ".site_ws.tiff")
 fn_rmse_ws <- paste0(rmsedir, params$prefix, ".rmse_ws.tiff")
 
@@ -223,7 +250,12 @@ tiff(filename=fn_rmse_ws, units="px", width=1600, height=2800)
 print(f_acc_wsize(simsum, "rmse"))
 dev.off()
 
-for (i in 5:ncol(simsum)-2) {
+# visualization for all simulations (site accuracy vs RMSE)
+tiff(filename=fn_site_rmse, units="px", width=2880, height=1800)
+print(f_acc_rmse(simsum))
+dev.off()
+
+for (i in 6:ncol(simsum)-2) {
   ifc <- colnames(simsum)[i]
   ifc_sitedir <- paste0(sitedir, ifc, "/")
   ifc_rmsedir <- paste0(rmsedir, ifc, "/")
@@ -232,8 +264,8 @@ for (i in 5:ncol(simsum)-2) {
   lapply(list(ifc_sitedir,ifc_rmsedir), function(x){if(!dir.exists(x)) dir.create(x, recursive=T)})
   
   # information criteria vs accuracy / rmse
-  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ifc, "_site.tiff")
-  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ifc, "_rmse.tiff")
+  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ".", ifc, "_site.tiff")
+  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ".", ifc, "_rmse.tiff")
   
   tiff(filename=fn_sitefig, units="px", width=2880, height=1800)
   print(f_ic_acc(simsum, i, ifc, "site"))
@@ -250,8 +282,8 @@ for (i in 5:ncol(simsum)-2) {
     slice(which.min(!!as.name(ifc))) %>% 
     summarise(site_loss = max_acc - accuracy, rmse_gain = rmse - min_rmse)
 
-  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ifc, "_site_loss.tiff")
-  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ifc, "_rmse_loss.tiff")
+  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ".", ifc, "_site_loss.tiff")
+  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ".", ifc, "_rmse_loss.tiff")
   
   tiff(filename=fn_sitefig, units="px", width=2880, height=1800)
   print(f_acc_loss(acc_loss, ifc, "site"))
@@ -278,13 +310,13 @@ rank_simsum <- simsum %>%
       where(is.numeric), min_rank))
 simsum$accuracy <- -1 * simsum$accuracy
 
-for (i in 5:ncol(rank_simsum)-2) {
+for (i in 6:ncol(rank_simsum)-2) {
   ifc <- colnames(rank_simsum)[i]
   ifc_sitedir <- paste0(sitedir, ifc, "/")
   ifc_rmsedir <- paste0(rmsedir, ifc, "/")
 
-  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ifc, "_site_rank.tiff")
-  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ifc, "_rmse_rank.tiff")
+  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ".", ifc, "_site_rank.tiff")
+  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ".", ifc, "_rmse_rank.tiff")
   
   tiff(filename=fn_sitefig, units="px", width=2880, height=1800)
   print(f_rank_ic_acc(rank_simsum, i, ifc, "site"))
