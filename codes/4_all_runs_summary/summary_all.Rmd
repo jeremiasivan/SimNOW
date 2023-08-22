@@ -52,15 +52,14 @@ f_acc_wsize <- function(df, type) {
 }
 
 f_acc_rmse <- function(df) {
-  plot <- ggplot(df, aes(y=accuracy, x=rmse, ymin=0, xmin=0, group=simulation)) +
+  plot <- ggplot(df, aes(y=accuracy, x=rmse, ymin=0, xmin=0)) +
     ggtitle("Correlation between Site Classification Accuracy and RMSE") +
     xlab("RMSE (%)") + ylab("Accuracy (%)") +
-    geom_point(aes(colour=window_size, size=20)) +
+    geom_point(aes(colour=simulation, size=20)) +
     geom_smooth(method = lm) +
     facet_wrap(.~r, scales = "free") +
     viridis::scale_color_viridis(discrete = TRUE) +
-    labs(color="w_size (kb)") +
-    guides(size="none", colour=guide_legend(override.aes=list(size=8))) +
+    guides(size="none", colour="none") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
       plot.margin = margin(1.25, 0, 1.25, 0, "cm"),
