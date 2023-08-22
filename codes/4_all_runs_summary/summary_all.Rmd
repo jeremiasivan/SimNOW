@@ -262,7 +262,7 @@ for (i in 5:ncol(simsum)-2) {
   dev.off()
   
   # information criterion vs window size
-  fn_simfig <- paste0(simsumdir, params$prefix, ifc, "_ws.tiff")
+  fn_simfig <- paste0(simsumdir, params$prefix, ".", ifc, "_ws.tiff")
   
   tiff(filename=fn_simfig, units="px", width=1600, height=2800)
   print(f_ic_wsize(simsum, i, ifc))

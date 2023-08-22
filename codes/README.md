@@ -171,7 +171,7 @@ Additionally, the `windows` folder will contain the following files:
 - `prefix.sum`: summary table of window sizes and their respective information criteria scores
 
 ### <a id="hmm">HMM</a>
-In this step, we use MAST-HMM to refine the breakpoints between windows. We simplify the process by running MAST-HMM on two consecutive windows if the windows have different topology. The parameters for this step is set in `3_hmm/1_main.Rmd`.
+In this step, we use MAST-HMM to refine the breakpoints between windows. We simplify the process by: (i) selecting window size with the best IC score, and (ii) running MAST-HMM on two consecutive windows if the windows have different topology. The parameters for this step is set in `3_hmm/1_main.Rmd`.
 
 | Parameters   | Definition                                                                             |
 | ------------ | -------------------------------------------------------------------------------------- |
