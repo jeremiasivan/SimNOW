@@ -10,7 +10,7 @@
     - <a href="#example">Example from publication</a>
 
 ## <a id="foldstr">Folder Structure</a>
-The following chart shows the general folder structure after running the first two steps. Explanation of each output file is described below.
+The following chart shows the general folder structure after running the first three analyses. Explanation of each output file is described below.
 ```
 prefix/
 ├── simulation/
@@ -51,6 +51,50 @@ prefix/
 │   ├── prefix.bic.tiff
 │   ├── prefix.aicc.tiff
 │   └── prefix.sum
+├── winhmm/
+│   └── jc_t/
+│       ├── runs/
+│       │   ├── 1/
+│       │   │   ├── concat_1.fa
+│       │   │   ├── concat_1.fa.ckp.gz
+│       │   │   ├── concat_1.fa.hmm
+│       │   │   ├── concat_1.fa.iqtree
+│       │   │   ├── concat_1.fa.log
+│       │   │   ├── concat_1.fa.treefile
+│       │   │   └── topology_1.txt
+│       │   ├── 2/
+│       │   │   ├── concat_2.fa
+│       │   │   ├── concat_2.fa.ckp.gz
+│       │   │   ├── concat_2.fa.hmm
+│       │   │   ├── concat_2.fa.iqtree
+│       │   │   ├── concat_2.fa.log
+│       │   │   ├── concat_2.fa.treefile
+│       │   │   └── topology_2.txt
+│       │   └── 4/
+│       │       ├── concat_4.fa
+│       │       ├── concat_4.fa.ckp.gz
+│       │       ├── concat_4.fa.hmm
+│       │       ├── concat_4.fa.iqtree
+│       │       ├── concat_4.fa.log
+│       │       ├── concat_4.fa.treefile
+│       │       └── topology_4.txt
+│       ├── tmp/
+│       ├── tree/
+│       │   ├── prefix.best_model.nex
+│       │   ├── prefix.ckp.gz
+│       │   ├── prefix.iqtree
+│       │   ├── prefix.log
+│       │   ├── prefix.parstree
+│       │   └── prefix.treefile
+│       ├── windows/
+│       │   ├── window_01.fa
+│       │   ├── window_02.fa
+│       │   ├── window_03.fa
+│       │   ├── window_04.fa
+│       │   └── window_05.fa
+│       ├── prefix.wh.atsum
+│       ├── prefix.wh.cmp
+│       └── prefix.wh.log
 ├── prefix.html
 └── prefix.log 
 ```
@@ -113,11 +157,11 @@ In this step, we use the simulated alignment to perform non-overlapping window a
 Running the code will create a new folder called `windows` with individual folder for each window size. Each window size folder consists of three folders:
 - `alignment/`: folder with all window alignments
 - `summary/`
-    - prefix.atsum: table of window boundaries and trees
-    - prefix.cmp: matrix of sites that recover specific topology according to `ms` (row) and non-overlapping windows (column)
-    - prefix.cmptw: comparison table of `ms` and non-overlapping windows topology distribution
-    - prefix.cnsum: frequency of consecutive windows that recover the same topology
-    - prefix.topsum: table of unique topologies sorted from the most common one
+    - `prefix.atsum`: table of window boundaries and trees
+    - `prefix.cmp`: matrix of sites that recover specific topology according to `ms` (row) and non-overlapping windows (column)
+    - `prefix.cmptw`: comparison table of `ms` and non-overlapping windows topology distribution
+    - `prefix.cnsum`: frequency of consecutive windows that recover the same topology
+    - `prefix.topsum`: table of unique topologies sorted from the most common one
 - `trees/`: folder with window trees generated using `IQ-TREE 2`
 
 Additionally, the `windows` folder will contain the following files:
@@ -143,7 +187,16 @@ In this step, we use MAST-HMM to refine the breakpoints between windows. We simp
 | `mast_model` | DNA substitution model for `MAST` analysis                                             |
 
 #### Output
-Running the code will create a new folder called `winhmm` with `MAST-HMM` output. *Further details will be provided in the near future.*
+Running the code will create a nested folder called `winhmm/{mast_model}` (e.g., if `mast_model` is set to be `JC+T`, then the full path will be `winhmm/jc_t`). Inside this subfolder, there will be four more folders:
+- `runs/`: folder that contains per-step, two-window HMM outputs generated using `MAST-HMM`
+- `tmp/`: folder with temporary window alignments
+- `tree/`: folder with window trees generated using `IQ-TREE 2`
+- `windows/`: folder with all window alignments
+
+Additionally, the `{mast_model}` folder will contain the following files:
+- `prefix.wh.atsum`: table of window boundaries and trees
+- `prefix.wh.cmp`: matrix of sites that recover specific topology according to `ms` (row) and non-overlapping windows (column)
+- `prefix.wh.log`: log file of the HMM analysis
 
 ## <a id="notes">Notes</a>
 If you want to run more than one analysis at the same time, you can run `run_all.R`. There are several parameters that are new or changed:
@@ -219,4 +272,4 @@ alisim_scale <- 0.041
 ```
 
 ---
-*Last update: 31 July 2023 by Jeremias Ivan*
+*Last update: 22 August 2023 by Jeremias Ivan*

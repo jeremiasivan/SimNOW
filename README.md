@@ -90,9 +90,9 @@ Running the whole pipeline with the second scenario (see <a href="/codes/README.
 
 3. Minh, B.Q., et al. (<a href="https://doi.org/10.1093/molbev/msaa015">2020</a>). **IQ-TREE 2: New Models and Efficient Methods for Phylogenetic Inference in the Genomic Era**. *Molecular Biology and Evolution*, *37*(5), 1530–1534.
  
-4. Wong, T., et al. (<a href="https://doi.org/10.1101/2022.10.06.511210">*in press*</a>). **MAST: Phylogenetic Inference with Mixtures Across Sites and Trees**. *bioRxiv*.
+4. Wong, T., et al. (<a href="https://doi.org/10.1101/2022.10.06.511210">2022</a>). **MAST: Phylogenetic Inference with Mixtures Across Sites and Trees**. *bioRxiv*.
 
 5. Shen, W., et al. (<a href="https://doi.org/10.1371/journal.pone.0163962">2016</a>). **SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation**. *PLoS ONE*, *11*(10), e0163962.
 
 ---
-*Last update: 31 July 2023 by Jeremias Ivan*
+*Last update: 22 August 2023 by Jeremias Ivan*
