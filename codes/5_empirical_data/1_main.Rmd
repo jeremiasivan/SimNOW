@@ -1,0 +1,86 @@
+---
+title: "Non-overlapping Window Analysis for Empirical Datasets"
+params:
+  # general
+  codedir: "~/SimNOW/codes"
+  prefix: "sim"
+  outdir: "~/simulation"
+  thread: 5
+  redo: FALSE
+  
+  # IQ-Tree2
+  iqtree2dir: "~/iqtree2"
+  set_blmin: TRUE
+  set_model: TRUE
+  dna_model: "JC"
+  outgroup: ""
+  
+  # NOW analysis
+  input_aln: "~/input.fa"
+  
+  window_len: 20
+  window_size: !r c(50000)
+  min_window_size: 1000
+---
+
+```{r, include=FALSE}
+# install.packages("ape")
+# install.packages("forcats")
+# install.packages("ggplot2")
+# install.packages("log4r")
+# install.packages("numbers)
+# install.packages("seqinr")
+# install.packages("stringr")
+
+# store initial system time
+sys_tic <- Sys.time()
+
+# load libraries
+library(data.table)
+library(dplyr)
+library(doSNOW)
+
+# create outdir
+currentdir <- paste0(params$outdir, "/", params$prefix)
+if (!dir.exists(currentdir)) {
+  dir.create(currentdir, recursive = T)
+}
+
+# create log file
+fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".log")
+log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
+fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
+if (params$redo) {
+  unlink(fn_log)
+}
+
+if (!file.exists(fn_log)) {
+  write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
+}
+
+knitr::opts_knit$set(root.dir = currentdir)
+```
+
+```{r functions, include=FALSE}
+getFactors <- function(x, min) {
+  x <- as.integer(x)
+  div <- seq_len(abs(x))
+  factors <- div[x %% div == 0L]
+  return(factors[factors >= min])
+}
+```
+
+```{r child = paste0(params$codedir,"/5_empirical_data/2_run.Rmd"), include=FALSE}
+```
+
+```{r child = paste0(params$codedir,"/5_empirical_data/3_summary.Rmd"), include=FALSE}
+```
+
+```{r, include=FALSE}
+# store final system time
+sys_toc <- Sys.time()
+
+# write the system time in log file
+write.table(c("", paste0("Total elapsed time: ", round(as.numeric(difftime(sys_toc, sys_tic, units = "mins")), 3), " mins")),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+```

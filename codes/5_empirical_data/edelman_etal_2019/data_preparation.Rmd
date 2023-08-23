@@ -8,7 +8,7 @@ params:
   
   # data preparation
   fn_hal: ""
-  fn_refseq: "data/refseq.txt"
+  fn_refseq: "refseq.txt"
 
   dir_hal2maf: ""
   dir_singleCopy: ""
@@ -204,6 +204,12 @@ stopCluster(nwcl)
 ```
 
 ```{r filter, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####       Data Filtering       ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
 ls_chr <- list.dirs(params$outdir, full.names=F, recursive=F)
 ls_chr <- subset(ls_chr, grepl("chr+", ls_chr))
 
@@ -217,7 +223,7 @@ foreach (i=ls_chr) %dopar% {
                       paste0(params$data_outdir,"/",i,"/fasta/concatenation/",i,"_concat.fa"))
   output_aln <- ifelse(i=="chr_all",
                        paste0(params$data_outdir,"/",i,"/all_concat_filtered.fa"),
-                       paste0(params$data_outdir,"/",i,"/fasta/concatenation/",i,"_conca_filtered_.fa"))
+                       paste0(params$data_outdir,"/",i,"/fasta/concatenation/",i,"_concat_filtered_.fa"))
   
   if (!file.exists(input_aln)) {
     log4r::warn(fn_logger, paste0("File not found: concatenated FASTA alignment for ", i, ". Skipped."))
@@ -235,8 +241,10 @@ foreach (i=ls_chr) %dopar% {
 
   # extract index for leading and trailing gaps
   gap_props <- apply(df_alignment, 1, function(x){length(which(x=="-"))/length(x)})
-  idx_leading_gap <- head(which(gap_props < params$gaps_threshold), 1)
-  idx_trailing_gap <- tail(which(gap_props < params$gaps_threshold), 1)
+  gap_props_threshold <- which(gap_props < params$gaps_threshold)
+
+  idx_leading_gap <- head(gap_props_threshold, 1)
+  idx_trailing_gap <- tail(gap_props_threshold, 1)
 
   # save the filtered FASTA file
   subfasta <- lapply(alignment, function(x){x[idx_leading_gap:idx_trailing_gap]})

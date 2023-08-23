@@ -1,0 +1,109 @@
+---
+title: "Summary of Non-overlapping Windows"
+---
+
+```{r sumsetup, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####         NOW Summary        ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+window_outdir <- paste0(getwd(), "/windows/")
+window_sizes <- stringr::str_sort(list.dirs(window_outdir, full.names=F, recursive=F), numeric=TRUE)
+
+# output files
+fn_summary <- paste0(window_outdir, params$prefix, ".sum")
+fn_topdist_tiff <- paste0(window_outdir, params$prefix, ".topdist.tiff")
+```
+
+```{r sumwindow, include=FALSE}
+t_accuracy <- c()
+
+# iterate through window sizes
+for (i in window_sizes) {
+  fn_iqtree <- paste0(window_outdir,i,"/trees/",params$prefix,".iqtree")
+
+  # extract information of interest
+  aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
+  aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
+  bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
+  
+  t_accuracy <- rbind(t_accuracy, c(as.numeric(i)/1000,aic,aicc,bic))
+}
+
+t_accuracy <- data.table::as.data.table(t_accuracy)
+data.table::setnames(t_accuracy, c("window_size","aic","aicc","bic"))
+
+data.table::fwrite(t_accuracy, file=fn_summary, quote=F, sep="\t")
+log4r::info(fn_logger, paste0("File created/modified: summary table of NOW (", params$prefix, ".sum)."))
+
+# plot information criterion vs window size
+t_accuracy$window_size <- factor(t_accuracy$window_size, levels=t_accuracy$window_size)
+
+library(ggplot2)
+for (i in 2:ncol(t_accuracy)) {
+  ifc <- colnames(t_accuracy)[i]
+  fn_simfig <- paste0(window_outdir, params$prefix, ".sum_",ifc,".tiff")
+  
+  tiff(filename=fn_simfig, units="px", width=2880, height=1800)
+  print(ggplot(t_accuracy, aes(x=window_size, y=as.numeric(unlist(t_accuracy[,..i])), group=1)) +
+          geom_line(aes(size=1, alpha=0.2)) +
+          geom_point(aes(colour=window_size, size=20)) +
+          viridis::scale_color_viridis(discrete = TRUE) +
+          ggtitle(paste("Correlation between", toupper(ifc), "and Window Size")) + ylab(toupper(ifc)) + xlab("Window Size (kb)") +
+          guides(color="none", alpha="none", size="none") +
+          theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=30),
+            axis.text.x=element_text(size=30),
+            legend.title=element_text(size=30),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+          ))
+  dev.off()
+}
+```
+
+```{r sumtopology, include=FALSE}
+top_dist <- data.table::data.table(wsize=character(), topology=character(), proportion=numeric())
+
+# iterate through window sizes
+for (i in window_sizes) {
+  fn_topsum <- paste0(window_outdir,i,"/summary/",params$prefix,".topsum")
+
+  dt_temp <- data.table::fread(fn_topsum)
+  dt_temp <- dt_temp %>%
+    mutate(wsize=as.numeric(i)/1000, proportion=count/sum(count)) %>%
+    select(wsize, topology, proportion)
+  
+  top_dist <- rbind(top_dist, dt_temp)
+  rm(df_temp)
+}
+
+# visualization
+top_dist$wsize <- factor(top_dist$wsize, levels=as.numeric(window_sizes)/1000)
+
+library(ggplot2)
+tiff(filename=fn_topdist_tiff, units="px", width=2880, height=1800)
+print(ggplot(top_dist, aes(x=wsize, y=proportion, fill=topology)) +
+        geom_bar(position="stack", stat="identity", colour="red") +
+        viridis::scale_fill_viridis(discrete = TRUE) +
+        ggtitle("Topology Distribution of Different NOW Window Size") + ylab("Proportion") + xlab("Window Size (kb)") +
+        guides(fill="none") +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 50),
+          plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+          axis.text.y=element_text(size=30),
+          axis.text.x=element_text(size=30),
+          legend.title=element_text(size=30),
+          legend.text=element_text(size=30),
+          legend.key.size=unit(2,"cm")
+        ))
+dev.off()
+```
