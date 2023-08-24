@@ -218,13 +218,13 @@ ls_chr <- subset(ls_chr, grepl("chr+", ls_chr))
 nwcl <- makeCluster(params$thread)
 doSNOW::registerDoSNOW(nwcl)
 
-foreach (i=ls_chr) %dopar% {
-  input_aln <- ifelse(i=="chr_all",
-                      paste0(params$outdir,"/",i,"/all_concat.fa"),
-                      paste0(params$outdir,"/",i,"/fasta/concatenation/",i,"_concat.fa"))
-  output_aln <- ifelse(i=="chr_all",
-                       paste0(params$outdir,"/",i,"/all_concat_filtered.fa"),
-                       paste0(params$outdir,"/",i,"/fasta/concatenation/",i,"_concat_filtered.fa"))
+ls_filtered <- foreach (i=ls_chr, .combine='c') %dopar% {
+  if (i=="chr_all") {
+    return(NULL)
+  }
+
+  input_aln <- paste0(params$outdir,"/",i,"/fasta/concatenation/",i,"_concat.fa")
+  output_aln <- paste0(params$outdir,"/",i,"/fasta/concatenation/",i,"_concat_filtered.fa")
   
   if (!file.exists(input_aln)) {
     log4r::warn(fn_logger, paste0("File not found: concatenated FASTA alignment for ", i, ". Skipped."))
@@ -233,7 +233,7 @@ foreach (i=ls_chr) %dopar% {
 
   if (file.exists(output_aln) && !params$redo) {
     log4r::warn(fn_logger, paste0("File found: filtered FASTA alignment for ", i, ". Skipped."))
-    return(NULL)
+    return(output_aln)
   }
   
   # read the alignment
@@ -249,10 +249,32 @@ foreach (i=ls_chr) %dopar% {
 
   # save the filtered FASTA file
   subfasta <- lapply(alignment, function(x){x[idx_leading_gap:idx_trailing_gap]})
-  seqinr::write.fasta(sequences=subfasta, names=names(alignment), file.out=output_aln, nbchar = 100)
+  seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=output_aln, nbchar = 100)
 
   log4r::info(fn_logger, paste0("File saved: filtered FASTA alignment for ", i, "."))
-  return(NULL)
+  return(output_aln)
+}
+
+# concatenation of all chromosomes
+write.table(c("", "--------------- ALL ----------------"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+fn_concat_filtered <- paste0(all_dir, "all_concat_filtered.fa")
+
+if (!file.exists(fn_concat_filtered) || params$redo) {
+  ls_filtered <- stringr::str_sort(ls_filtered, numeric=T)
+  str_filtered <- paste(ls_filtered, collapse = " ")
+
+  # clean filenames for log file
+  log_ls_filtered <- lapply(ls_filtered, function(x){tail(strsplit(x, "/")[[1]], 1)})
+  log_str_filtered <- paste(log_ls_filtered, collapse = " ")
+
+  cmd <- paste(params$dir_msaview,
+                "--aggregate HmelRef,HeraRef,Hhim,Hhsa,Htel,Hdem,Hsar",
+                str_filtered, ">", fn_concat_filtered)
+  
+  system(cmd)
+  log4r::info(fn_logger, paste0("Run: Concatenation (", log_str_filtered, ")."))
 }
 
 stopCluster(nwcl)
