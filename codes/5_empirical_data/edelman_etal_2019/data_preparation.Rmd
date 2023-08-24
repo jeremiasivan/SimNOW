@@ -248,8 +248,12 @@ ls_filtered <- foreach (i=ls_chr, .combine='c') %dopar% {
   idx_trailing_gap <- tail(gap_props_threshold, 1)
 
   # save the filtered FASTA file
-  subfasta <- lapply(alignment, function(x){x[idx_leading_gap:idx_trailing_gap]})
-  seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=output_aln, nbchar = 100)
+  s <- lapply(alignment, function(x) x[seq(from = idx_leading_gap, to = idx_trailing_gap)])
+  s <- do.call(rbind, s)
+  s <- setNames(split(s, seq(nrow(s))), rownames(s))
+    
+  # save the alignment
+  seqinr::write.fasta(sequences=s, names=names(s), file.out=output_aln, nbchar=100)
 
   log4r::info(fn_logger, paste0("File saved: filtered FASTA alignment for ", i, "."))
   return(output_aln)
