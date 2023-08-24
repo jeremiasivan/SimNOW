@@ -186,7 +186,7 @@ if (!dir.exists(all_dir)) {
 
 fn_concat_all <- paste0(all_dir, "all_concat.fa")
 if (!file.exists(fn_concat_all) || params$redo) {
-  ls_concat <- stringr::str_rank(ls_concat, numeric=T)
+  ls_concat <- stringr::str_sort(ls_concat, numeric=T)
   str_concat <- paste(ls_concat, collapse = " ")
 
   # clean filenames for log file
@@ -224,7 +224,7 @@ foreach (i=ls_chr) %dopar% {
                       paste0(params$outdir,"/",i,"/fasta/concatenation/",i,"_concat.fa"))
   output_aln <- ifelse(i=="chr_all",
                        paste0(params$outdir,"/",i,"/all_concat_filtered.fa"),
-                       paste0(params$outdir,"/",i,"/fasta/concatenation/",i,"_concat_filtered_.fa"))
+                       paste0(params$outdir,"/",i,"/fasta/concatenation/",i,"_concat_filtered.fa"))
   
   if (!file.exists(input_aln)) {
     log4r::warn(fn_logger, paste0("File not found: concatenated FASTA alignment for ", i, ". Skipped."))
