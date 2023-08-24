@@ -237,7 +237,7 @@ ls_filtered <- foreach (i=ls_chr, .combine='c') %dopar% {
   }
   
   # read the alignment
-  alignment <- seqinr::read.fasta(input_aln)
+  alignment <- seqinr::read.fasta(input_aln, whole.header = T)
   df_alignment <- data.table::as.data.table(alignment)
 
   # extract index for leading and trailing gaps
