@@ -316,8 +316,8 @@ for (i in 6:ncol(simsum)-2) {
   dev.off()
 
   # delta information criteria vs delta accuracy / rmse
-  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ".delta_", ifc, "_site.tiff")
-  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ".delta_", ifc, "_rmse.tiff")
+  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ".", ifc, "_site_delta.tiff")
+  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ".", ifc, "_rmse_delta.tiff")
   
   tiff(filename=fn_sitefig, units="px", width=2880, height=1800)
   print(f_delta_ic_acc(simsum, i, ifc, "site"))

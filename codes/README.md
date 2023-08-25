@@ -6,7 +6,7 @@
     - <a href="#seqsim">Sequence simulation</a>
     - <a href="#now">Non-overlapping window analysis</a>
     - <a href="#hmm">HMM</a>
-- <a href="#notes">Notes</a>
+- <a href="#multiple">Running multiple analyses</a>
     - <a href="#example">Example from publication</a>
 
 ## <a id="foldstr">Folder Structure</a>
@@ -198,13 +198,34 @@ Additionally, the `{mast_model}` folder will contain the following files:
 - `prefix.wh.cmp`: matrix of sites that recover specific topology according to `ms` (row) and non-overlapping windows (column)
 - `prefix.wh.log`: log file of the HMM analysis
 
-## <a id="notes">Notes</a>
+## <a id="multiple">Running multiple analyses</a>
 If you want to run more than one analysis at the same time, you can run `run_all.R`. There are several parameters that are new or changed:
 | Parameters | Definition                                                                       |
 | ---------- | -------------------------------------------------------------------------------- |
 | `ms_r`     | Vector of `ms` recombination rate                                                |
 | `nreps`    | Number of replicate per `ms` recombination rate                                  |
 | `nthread`  | Total number of threads; it is divided by `thread` to parallelize the replicates |
+
+#### Output
+Running the code will create a new folder called `summary` in `outdir` that stores the summary of all simulations. It contains the following folders/files:
+- `prefix.simsum`: summary table for all simulations
+- `prefix.aic_ws.tiff`: plot between AIC vs. window size
+- `prefix.bic_ws.tiff`: plot between BIC vs. window size
+- `prefix.aicc_ws.tiff`: plot between AICc vs. window size
+- `prefix.site_rmse.tiff`: plot between site accuracy vs. RMSE
+- `site/`
+    - `prefix.site_ws.tiff`: plot of site accuracy vs. window size
+    - `aic/`
+        - `prefix.aic_site_loss.tiff`: plot of site accuracy loss when choosing window size with the best AIC score
+        - `prefix.aic_site_rank.tiff`: plot of ranked site accuracy vs. ranked AIC
+        - `prefix.aic_site.tiff`: plot of site accuracy vs. AIC
+        - `prefix.aic_site_delta.tiff`: plot of delta site accuracy vs. delta AIC
+    - `bic/`
+        - ... (exactly the same with `aic/` but with BIC)
+    - `aicc/`
+        - ... (exactly the same with `aic/` but with AICc) 
+- `rmse/`
+    - ... (exactly the same with `site/` but with RMSE)
 
 ### <a id="example">Example from publication</a>
 In the paper, we ran three different simulation scenarios with different degree of incomplete lineage sorting (ILS) but the same percentage of informative sites. Please do refer to the publication for more detailed explanation.
@@ -272,4 +293,4 @@ alisim_scale <- 0.041
 ```
 
 ---
-*Last update: 22 August 2023 by Jeremias Ivan*
+*Last update: 25 August 2023 by Jeremias Ivan*
