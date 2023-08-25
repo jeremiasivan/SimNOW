@@ -59,7 +59,7 @@ for (c in ls_chr) {
   
   input_aln <- ifelse(c=="chr_all",
                       paste0(outdir,"/",c,"/all_concat_filtered.fa"),
-                      paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered_.fa"))
+                      paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa"))
   
   temprun <- list(out=out, params=list(codedir=codedir,
                                        prefix=c, outdir=run_outdir, thread=thread, redo=redo,

@@ -14,6 +14,7 @@ window_sizes <- stringr::str_sort(list.dirs(window_outdir, full.names=F, recursi
 
 # output files
 fn_summary <- paste0(window_outdir, params$prefix, ".sum")
+fn_topdist <- paste0(window_outdir, params$prefix, ".topdist")
 fn_topdist_tiff <- paste0(window_outdir, params$prefix, ".topdist.tiff")
 ```
 
@@ -23,6 +24,10 @@ t_accuracy <- c()
 # iterate through window sizes
 for (i in window_sizes) {
   fn_iqtree <- paste0(window_outdir,i,"/trees/",params$prefix,".iqtree")
+  if (!file.exists(fn_iqtree)) {
+    log4r::warn(fn_logger, paste0("Warning: ", i, "bp window iqtree file is not found. Skipped."))
+    next
+  }
 
   # extract information of interest
   aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
@@ -74,6 +79,10 @@ top_dist <- data.table::data.table(wsize=character(), topology=character(), prop
 # iterate through window sizes
 for (i in window_sizes) {
   fn_topsum <- paste0(window_outdir,i,"/summary/",params$prefix,".topsum")
+  if (!file.exists(fn_topsum)) {
+    log4r::warn(fn_logger, paste0("Warning: ", i, "bp window topsum file is not found. Skipped."))
+    next
+  }
 
   dt_temp <- data.table::fread(fn_topsum)
   dt_temp <- dt_temp %>%
@@ -83,6 +92,9 @@ for (i in window_sizes) {
   top_dist <- rbind(top_dist, dt_temp)
   rm(df_temp)
 }
+
+data.table::fwrite(top_dist, file=fn_topdist, quote=F, sep="\t")
+log4r::info(fn_logger, paste0("File created/modified: topology distribution of NOW (", params$prefix, ".topdist)."))
 
 # visualization
 top_dist$wsize <- factor(top_dist$wsize, levels=as.numeric(window_sizes)/1000)
