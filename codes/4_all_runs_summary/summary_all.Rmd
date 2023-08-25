@@ -110,6 +110,48 @@ f_ic_acc <- function(df, i, ifc, type) {
   return(plot)
 }
 
+f_delta_ic_acc <- function(df, i, ifc, type) {
+  col_ifc <- sym(ifc)
+  
+  sdf <- df %>%
+    group_by(simulation) %>%
+    mutate(max_acc = max(accuracy), min_rmse = min(rmse), min_ifc = min(!!col_ifc)) %>%
+    mutate(d_acc = abs(accuracy-max_acc), d_rmse = abs(rmse-min_rmse), d_ifc = abs(!!col_ifc-min_ifc))
+  
+  plot <- NULL
+  if (type == "site") {
+    plot <- ggplot(sdf, aes(y=d_acc, x=d_ifc, ymin=0, group=simulation)) +
+      ggtitle(paste0("Correlation between \u0394", toupper(ifc), " and \u0394", "Site Classification Accuracy")) +
+      xlab(paste0("\u0394", toupper(ifc))) + ylab(paste0("\u0394", "Accuracy (%)"))
+  } else if (type == "rmse") {
+    plot <- ggplot(sdf, aes(y=d_rmse, x=d_ifc, ymin=0, group=simulation)) +
+      ggtitle(paste0("Correlation between \u0394", toupper(ifc), "and \u0394", "RMSE")) +
+      xlab(paste0("\u0394", toupper(ifc))) + ylab(paste0("\u0394", "RMSE (%)"))
+  }
+  
+  plot <- plot +
+    geom_line(aes(size=1, alpha=0.2)) +
+    geom_point(aes(colour=window_size, size=20)) +
+    facet_wrap(.~r, scales = "free") +
+    viridis::scale_color_viridis(discrete = TRUE) + 
+    labs(color="w_size (kb)") +
+    guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size = 30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+  
+  return(plot)
+}
+
 f_acc_loss <- function(df, ifc, type) {
   plot <- NULL
   if (type == "site") {
@@ -271,6 +313,18 @@ for (i in 6:ncol(simsum)-2) {
   
   tiff(filename=fn_rmsefig, units="px", width=2880, height=1800)
   print(f_ic_acc(simsum, i, ifc, "rmse"))
+  dev.off()
+
+  # delta information criteria vs delta accuracy / rmse
+  fn_sitefig <- paste0(ifc_sitedir, params$prefix, ".delta_", ifc, "_site.tiff")
+  fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ".delta_", ifc, "_rmse.tiff")
+  
+  tiff(filename=fn_sitefig, units="px", width=2880, height=1800)
+  print(f_delta_ic_acc(simsum, i, ifc, "site"))
+  dev.off()
+  
+  tiff(filename=fn_rmsefig, units="px", width=2880, height=1800)
+  print(f_delta_ic_acc(simsum, i, ifc, "rmse"))
   dev.off()
   
   # accuracy loss
