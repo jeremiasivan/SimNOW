@@ -43,8 +43,7 @@ prefix/
 │   │       ├── prefix.log
 │   │       ├── prefix.parstree
 │   │       └── prefix.treefile
-│   ├── 25000/
-│   │   └── ...
+│   ├── ...
 │   ├── 50000/
 │   │   └── ...
 │   ├── prefix.aic.tiff
@@ -62,14 +61,7 @@ prefix/
 │       │   │   ├── concat_1.fa.log
 │       │   │   ├── concat_1.fa.treefile
 │       │   │   └── topology_1.txt
-│       │   ├── 2/
-│       │   │   ├── concat_2.fa
-│       │   │   ├── concat_2.fa.ckp.gz
-│       │   │   ├── concat_2.fa.hmm
-│       │   │   ├── concat_2.fa.iqtree
-│       │   │   ├── concat_2.fa.log
-│       │   │   ├── concat_2.fa.treefile
-│       │   │   └── topology_2.txt
+│       │   ├── ...
 │       │   └── 4/
 │       │       ├── concat_4.fa
 │       │       ├── concat_4.fa.ckp.gz
@@ -293,4 +285,4 @@ alisim_scale <- 0.041
 ```
 
 ---
-*Last update: 25 August 2023 by Jeremias Ivan*
+*Last update: 26 August 2023 by Jeremias Ivan*
