@@ -3,8 +3,11 @@
 ## Table of Content
 - <a href="#analyses">Analyses</a>
     - <a href="#now">Non-overlapping window analysis</a>
+    - <a href="#hmm">HMM</a>
+    - <a href="#foldstr">Folder Structure</a>
 - <a href="#datasets">Datasets</a>
     - <a href="#edelman">Edelman et al. (2019)</a>
+- <a href="#refs">References</a>
 
 ## <a id="analyses">Analyses</a>
 
@@ -45,9 +48,10 @@ Additionally, the `windows` folder will contain the following files:
 - `prefix.topdist`: summary table of topology distribution per window size
 - `prefix.topdist.tiff`: plot of topology distribution per window size
 
-#### Folder Structure
-The folder structure might differ between datasets. More details are available in the <a href="#datasets">Datasets</a> section. 
+### <a id="hmm">HMM</a>
+*(to be updated)*
 
+### <a id="foldstr">Folder Structure</a>
 *Running `edelman_etal_2019/run_all.R` with datasets from <a href="#edelman">Edelman et al. (2019)</a>*
 ```
 prefix/
@@ -98,7 +102,7 @@ The dataset consists of 21 chromosomes of six *erato-sara Heliconius* species (*
 #### Data Preparation
 Following the original publication, we extract FASTA alignments from HAL by following these steps:
 1. Convert HAL to MAF format using `hal2maf` from <a href="https://github.com/ComparativeGenomicsToolkit/hal">`HAL Toolkit`</a>
-2. Retrieve single-copy MAF blocks using `getSingleCopy.py` from Edelman et al. <a href="https://doi.org/10.5281/zenodo.3401692">(2019)</a>
+2. Retrieve single-copy MAF blocks using `getSingleCopy.py` from <a href="https://doi.org/10.5281/zenodo.3401692">Edelman et al. (2019)</a>
 3. Sort the taxa of each MAF block using `maf-sort.sh` from <a href="https://github.com/UCSantaCruzComputationalGenomicsLab/last">`last`</a>
 4. Convert MAF blocks to FASTA alignments using `msa_view` from <a href="http://compgen.cshl.edu/phast/">`PHAST`</a>
 5. Concatenate the FASTA alignments using `msa_view`
@@ -110,7 +114,7 @@ Additionally, we trim the leading and trailing positions of each chromosome base
 | `outdir`         | Output directory                                                                                                |
 | `thread`         | Number of threads for parallelization                                                                           |
 | `redo`           | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                          |
-| `fn_hal`         | HAL file from Edelman et al. (2019), available at <a href="https://doi.org/10.5061/dryad.b7bj832">Dryad</a>     |
+| `fn_hal`         | HAL file from Edelman et al. (2019), available <a href="https://doi.org/10.5061/dryad.b7bj832">here</a>     |
 | `fn_refseq`      | List of reference sequence for HAL to MAF conversion, available <a href="edelman_etal_2019/refseq.txt">here</a> |
 | `dir_hal2maf`    | Directory for `hal2maf` executable                                                                              |
 | `dir_singleCopy` | Directory for `singleCopy.py` executable                                                                        |
@@ -120,11 +124,11 @@ Additionally, we trim the leading and trailing positions of each chromosome base
 
 #### Output
 Running the code will create individual folder for each chromosome (i.e., chr1 to chr21 and concatenation). Each folder will contain the following subfolders:
-- `raw/`: store the raw MAF blocks from Data Preparation - Step 1
-- `singleCopy/`: store single-copy MAF blocks from Data Preparation - Step 2
-- `sorted/`: store sorted MAF blocks from Data Preparation - Step 3
-- `fasta/`: store FASTA alignments from Data Preparation - Step 4
-    - `concatenation/`: store raw and filtered concatenated alignments from Data Preparation - Step 5
+- `raw/`: store the raw MAF blocks
+- `singleCopy/`: store single-copy MAF blocks
+- `sorted/`: store sorted MAF blocks
+- `fasta/`: store FASTA alignment per MAF block
+    - `concatenation/`: store raw and filtered concatenated FASTA alignments
 
 ```
 outdir/
@@ -149,6 +153,14 @@ outdir/
 ├── edelman.html
 └── edelman.log 
 ```
+
+---
+## <a id="refs">References</a>
+1. Edelman, et al. (<a href="https://doi.org/10.1126/science.aaw2090">2019</a>). Genomic architecture and introgression shape a butterfly radiation. *Science*, *366*(6465), 594–599.
+
+2. Hickey, et al. (<a href="https://doi.org/10.1093/bioinformatics/btt128">2013</a>). HAL: a hierarchical format for storing and analyzing multiple genome alignments. *Bioinformatics*, *29*(10), 1341–1342.
+
+3. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). PHAST and RPHAST: phylogenetic analysis with space/time models. *Briefings in Bioinformatics*, *12*(1), 41–51.
 
 ---
 *Last update: 28 August 2023 by Jeremias Ivan*
