@@ -6,19 +6,20 @@
 - <a href="#prereqs">Prerequisites</a>
 - <a href="#genpipe">General Pipeline</a>
 - <a href="#timecom">Time Complexity</a>
+- <a href="#emps">Empirical Analyses</a>
 - <a href="#refs">References</a>
 
 ## <a id="prereqs">Prerequisites</a>
 This pipeline requires several software and R packages to run. All software have to be executable, while the R packages should be installed either in your local directory or virtual environment. We recommend you to use environment management system (e.g. `conda`) to install the packages, but you can also use `install.packages()` built-in function in R or RStudio.
 
-### Software:
+### Software
 - <a href="http://home.uchicago.edu/~rhudson1/source/mksamples.html">ms</a>
 - <a href="http://www.iqtree.org/doc/AliSim">AliSim</a>
 - <a href="http://www.iqtree.org">IQ-TREE 2</a>
 - <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a>-HMM
 - <a href="https://bioinf.shenwei.me/seqkit/">Seqkit</a> (can also be installed via <a href="https://anaconda.org/bioconda/seqkit">Anaconda</a>)
 
-### R packages:
+### R packages
 |    Name    |                               CRAN                               |                             Anaconda                             |
 | ---------- |:----------------------------------------------------------------:|:----------------------------------------------------------------:|
 | ape        | <a href="https://cran.r-project.org/package=ape">Link</a>        | <a href="https://anaconda.org/conda-forge/r-ape">Link</a>        |
@@ -82,6 +83,22 @@ Running the whole pipeline with the second scenario (see <a href="/codes/README.
 - Non-overlapping windows: ~2.25 hours
 - HMM: up to 5 minutes for `ms_r = 2000`
 
+## <a id="emps">Empirical Analyses</a>
+In order to run non-overlapping windows on empirical datasets, please refer to <a href="codes/5_empirical_data/README.md">`codes/5_empirical_data/README.md`</a>. There are additional software and R packages required to run the pipeline, specific for each dataset:
+
+### Edelman et al. (2019)
+#### Software
+- `hal2maf` from <a href="https://github.com/ComparativeGenomicsToolkit/hal">`HAL Toolkit`</a>
+- `getSingleCopy.py` from <a href="https://doi.org/10.5281/zenodo.3401692">Edelman et al. (2019)</a>
+- `maf-sort.sh` from <a href="https://github.com/UCSantaCruzComputationalGenomicsLab/last">`last`</a>
+- `msa_view` from <a href="http://compgen.cshl.edu/phast/">`PHAST`</a>
+
+#### R packages
+|    Name    |                               CRAN                               |                             Anaconda                             |
+| ---------- |:----------------------------------------------------------------:|:----------------------------------------------------------------:|
+| numbers    | <a href="https://cran.r-project.org/package=numbers">Link</a>    | <a href="https://anaconda.org/conda-forge/r-numbers">Link</a>    |
+| tidyr      | <a href="https://cran.r-project.org/package=tidyr">Link</a>      | <a href="https://anaconda.org/conda-forge/r-tidyr">Link</a>      |
+
 ---
 ## <a id="refs">References</a>
 1. Hudson, R. (<a href="https://doi.org/10.1093/bioinformatics/18.2.337">2002</a>). **Generating samples under a Wright–Fisher neutral model of genetic variation**. *Bioinformatics*, *18*(2), 337–338.
@@ -94,5 +111,11 @@ Running the whole pipeline with the second scenario (see <a href="/codes/README.
 
 5. Shen, W., et al. (<a href="https://doi.org/10.1371/journal.pone.0163962">2016</a>). **SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation**. *PLoS ONE*, *11*(10), e0163962.
 
+6. Edelman, et al. (<a href="https://doi.org/10.1126/science.aaw2090">2019</a>). **Genomic architecture and introgression shape a butterfly radiation**. *Science*, *366*(6465), 594–599.
+
+7. Hickey, et al. (<a href="https://doi.org/10.1093/bioinformatics/btt128">2013</a>). **HAL: a hierarchical format for storing and analyzing multiple genome alignments**. *Bioinformatics*, *29*(10), 1341–1342.
+
+8. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). **PHAST and RPHAST: phylogenetic analysis with space/time models**. *Briefings in Bioinformatics*, *12*(1), 41–51.
+
 ---
-*Last update: 22 August 2023 by Jeremias Ivan*
+*Last update: 29 August 2023 by Jeremias Ivan*
