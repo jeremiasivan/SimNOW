@@ -12,6 +12,10 @@ write.table(c("",
 # create windows dir
 window_outdir <- paste0(getwd(), "/windows/")
 fn_summary <- paste0(window_outdir, params$prefix, ".sum")
+if (!file.exists(fn_summary)){
+  log4r::info(fn_logger, paste0("File not found: ", params$prefix, ".sum. Exited."))
+  knitr::knit_exit()
+}
 ```
 
 ```{r window-size, include=FALSE}
@@ -23,11 +27,6 @@ options(scipen=999)
 
 # extract the best window size
 sumfile <- data.table::fread(fn_summary)
-if (!file.exists(sumfile)){
-  log4r::info(fn_logger, paste0("File not found: ", params$prefix, ".sum. Exited."))
-  knitr::knit_exit()
-}
-
 min_ic <- sumfile %>%
   slice_min(!!sym(lower(params$ic_type)))
 best_wsize <- as.numeric(min_ic$window_size)
