@@ -1,0 +1,225 @@
+---
+title: "NOW for Empirical Dataset"
+---
+
+```{r nowsetup, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####     Rerun NOW Analysis     ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+# create windows dir
+window_outdir <- paste0(getwd(), "/windows/")
+fn_summary <- paste0(window_outdir, params$prefix, ".sum")
+```
+
+```{r window-size, include=FALSE}
+write.table(c("",
+              "---------- Window Alignment --------"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+options(scipen=999)
+
+# extract the best window size
+sumfile <- data.table::fread(fn_summary)
+if (!file.exists(sumfile)){
+  log4r::info(fn_logger, paste0("File not found: ", params$prefix, ".sum. Exited."))
+  knitr::knit_exit()
+}
+
+min_ic <- sumfile %>%
+  slice_min(!!sym(lower(params$ic_type)))
+best_wsize <- as.numeric(min_ic$window_size)
+
+write.table(paste0("Best window size according to ", toupper(params$ic_type), ": ", best_wsize, "bp"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+```
+
+```{r window-aln, include=FALSE}
+options(scipen=999)
+
+# read fasta file
+s <- seqinr::read.fasta(params$input_aln, whole.header = T)
+empty_columns <- which(s[[1]] == " ")
+
+if (length(empty_columns) != 0) {
+  s <- lapply(s, function(x) {x[-empty_columns]})
+}
+
+s_ln <- seqinr::getLength(s)[1]
+write.table(paste0("Number of sites: ", s_ln, "bp"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+# set working directory
+best_wsize_outdir <- paste0(window_outdir, best_wsize, "/full/")
+if (!dir.exists(best_wsize_outdir)) {
+  dir.create(best_wsize_outdir, recursive = T)
+}
+
+# create outdir
+temp_outdir <- paste0(best_wsize_outdir, "alignment/")
+if (!dir.exists(temp_outdir)) {
+  dir.create(temp_outdir, recursive = T)
+}
+
+# check if window alignments exist
+numw <- floor(s_ln/best_wsize)
+if (length(list.files(temp_outdir, pattern='fa')) == numw && !params$redo) {
+  log4r::info(fn_logger, paste0("File found: ", best_wsize, "bp window alignment."))
+
+} else {
+  # remove all alignments in the folder
+  unlink(paste0(temp_outdir,"*.fa"))
+
+  # generate window alignments
+  start <- 1
+  wi <- ceiling(log(numw) / log(10)) + 1
+
+  for (i in 1:numw) {
+    last_idx <- i*best_wsize
+
+    if (i == numw) {
+      last_idx <- s_ln
+    }
+
+    subfasta <- lapply(s, function(x) x[seq(from = start, to = last_idx)])
+    subfasta <- do.call(rbind,subfasta)
+    subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
+    
+    fn_out <- paste0(temp_outdir,"window_",formatC(i,width=wi,format="d",flag="0"),".fa")
+    seqinr::write.fasta(sequences=subfasta, names=names(subfasta),
+                        file.out=fn_out, nbchar=100)
+      
+    start <- start + best_wsize
+    rm(subfasta, fn_out)
+  }
+
+  log4r::info(fn_logger, paste0("File created: ", best_wsize, "bp window alignment."))
+}
+
+rm(s)
+```
+
+```{r window-tree, include=FALSE}
+write.table(c("",
+              "------------ Window Tree -----------"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+options(scipen=999)
+
+# create outdir
+temp_outdir <- paste0(best_wsize_outdir, "trees/")
+if (!dir.exists(temp_outdir)) {
+  dir.create(temp_outdir, recursive = T)
+}
+
+# check input alignments
+fastadir <- paste0(best_wsize_outdir, "alignment/")
+numf <- length(list.files(fastadir, pattern='fa'))
+numw <- floor(s_ln/best_wsize)
+if (numw != numf) {
+  log4r::warn(fn_logger, paste0("Warning: ", best_wsize, "bp window has ", numf, "/", numw, " alignments. Exited."))
+  knitr::knit_exit()
+}
+
+prefix <- paste0(temp_outdir, params$prefix)
+if (file.exists(paste0(prefix, ".treefile")) && !params$redo) {
+  log4r::info(fn_logger, paste0("File found: ", best_wsize, "bp window treefile."))
+
+} else {
+  # set the number of threads according to the number of windows
+  tthread <- params$thread
+  if (numw < tthread) {
+    tthread <- numw
+  }
+
+  # generate window treefile
+  iqtree_cmd <- paste(params$iqtree2dir,
+                      "-S", fastadir,
+                      "-pre", prefix,
+                      "-T", tthread,
+                      "-cptime 1000000 --quiet -redo")
+
+  if (!is.null(params$outgroup) && !params$outgroup == ""){
+    iqtree_cmd <- paste(iqtree_cmd, "-o", params$outgroup)
+  }
+
+  if (params$set_blmin) {
+    iqtree_cmd <- paste(iqtree_cmd, "-blmin", 1/best_wsize)
+  }
+
+  if (params$set_model) {
+    iqtree_cmd <- paste(iqtree_cmd, "-m", params$dna_model)
+  }
+
+  system(iqtree_cmd)
+  log4r::info(fn_logger, paste0("File created: ", best_wsize, "bp window treefile."))
+}
+```
+
+```{r nowsummary, include=FALSE}
+options(scipen=999)
+
+temp_outdir <- paste0(best_wsize_outdir, "summary/")
+if (!dir.exists(temp_outdir)) {
+  dir.create(temp_outdir, recursive = T)
+}
+
+fn_atsum <- paste0(temp_outdir, params$prefix, ".atsum")
+fn_cnsum <- paste0(temp_outdir, params$prefix, ".cnsum")
+fn_tops <- paste0(temp_outdir, params$prefix, ".topsum")
+if (all(file.exists(fn_atsum, fn_cnsum, fn_tops)) && !params$redo) {
+  log4r::info(fn_logger, paste0("File found: ", best_wsize, "bp window summary files."))
+  knitr::knit_exit()
+}
+
+# retrieve each fasta file and its respective topology
+fn_treefile <- paste0(best_wsize_outdir, "trees/", params$prefix, ".treefile")
+if (!file.exists(fn_treefile)) {
+  log4r::warn(fn_logger, paste0("Warning: ", best_wsize, "bp window treefile is not found. Exited."))
+  knitr::knit_exit()
+}
+
+seq_list <- stringr::str_sort(list.files(paste0(best_wsize_outdir, "alignment/")), numeric=TRUE)
+iqtree_file <- file(description = fn_treefile, open="r", blocking = TRUE)
+
+seq_len <- c()
+start <- 0
+
+while (length(trl <- readLines(iqtree_file, n=1))) {
+  tl <- ape::read.tree(text=trl)
+  tl$edge.length <- NULL
+  tree <- ape::write.tree(tl)
+  
+  # store the values in dataframe
+  pl <- seq_list[start/best_wsize+1]
+  seq_len <- rbind(seq_len, c(pl,start+1,start+best_wsize,best_wsize,tree))
+  
+  start <- start+best_wsize
+}
+close(iqtree_file)
+
+seq_len <- data.table::as.data.table(seq_len)
+data.table::setnames(seq_len, c("source", "start", "stop", "length", "topology"))
+data.table::fwrite(seq_len, file=fn_atsum, quote=F, sep="\t")
+
+# extract top topologies
+top_tops <- seq_len %>%
+  group_by(topology) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  mutate(cum.percentage = round(cumsum(count)/nrow(seq_len),3))
+data.table::fwrite(top_tops, file=fn_tops, quote=F, sep="\t")
+
+# count consecutive/contiguous windows per topology
+count_contiguous <- seq_len %>%
+  group_by(topology,
+            group_run = data.table::rleid(topology)) %>%
+  summarise(count = n()) %>%
+  arrange(group_run)
+count_contiguous$group_run <- NULL
+data.table::fwrite(count_contiguous, file=fn_cnsum, quote=F, sep="\t")  
+
+log4r::info(fn_logger, paste0("File created: ", best_wsize, "bp summary files"))
+```

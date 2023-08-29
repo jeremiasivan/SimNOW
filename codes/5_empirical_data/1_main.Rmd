@@ -21,6 +21,8 @@ params:
   window_len: 20
   window_size: !r c(50000)
   min_window_size: 1000
+
+  ic_type: "aic"
 ---
 
 ```{r, include=FALSE}
@@ -74,6 +76,9 @@ getFactors <- function(x, min) {
 ```
 
 ```{r child = paste0(params$codedir,"/5_empirical_data/3_summary.Rmd"), include=FALSE}
+```
+
+```{r child = paste0(params$codedir,"/5_empirical_data/4_rerun.Rmd"), include=FALSE}
 ```
 
 ```{r, include=FALSE}
