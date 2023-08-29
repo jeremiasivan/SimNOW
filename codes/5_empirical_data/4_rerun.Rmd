@@ -28,8 +28,8 @@ options(scipen=999)
 # extract the best window size
 sumfile <- data.table::fread(fn_summary)
 min_ic <- sumfile %>%
-  slice_min(!!sym(lower(params$ic_type)))
-best_wsize <- as.numeric(min_ic$window_size)
+  slice_min(!!sym(tolower(params$ic_type)))
+best_wsize <- as.numeric(min_ic$window_size)*1000
 
 write.table(paste0("Best window size according to ", toupper(params$ic_type), ": ", best_wsize, "bp"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
@@ -190,10 +190,15 @@ while (length(trl <- readLines(iqtree_file, n=1))) {
   tl <- ape::read.tree(text=trl)
   tl$edge.length <- NULL
   tree <- ape::write.tree(tl)
-  
+
   # store the values in dataframe
   pl <- seq_list[start/best_wsize+1]
-  seq_len <- rbind(seq_len, c(pl,start+1,start+best_wsize,best_wsize,tree))
+
+  if (start == best_wsize*(numw-1)+1) {
+    seq_len <- rbind(seq_len, c(pl,start+1,s_ln,s_ln-start+1,tree))
+  } else {
+    seq_len <- rbind(seq_len, c(pl,start+1,start+best_wsize,best_wsize,tree))
+  }
   
   start <- start+best_wsize
 }
