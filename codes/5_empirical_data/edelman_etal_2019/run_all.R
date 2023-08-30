@@ -59,9 +59,11 @@ for (c in ls_chr) {
     dir.create(currentdir, recursive = T)
   }
   
-  input_aln <- ifelse(c=="chr_all",
-                      paste0(outdir,"/",c,"/all_concat_filtered.fa"),
-                      paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa"))
+  # input_aln <- ifelse(c=="chr_all",
+  #                     paste0(outdir,"/",c,"/all_concat_filtered.fa"),
+  #                     paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa"))
+
+  input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa")
   
   temprun <- list(out=out, params=list(codedir=codedir,
                                        prefix=c, outdir=run_outdir, thread=thread, redo=redo,
@@ -96,5 +98,11 @@ foreach(r=runs, .errorhandling = 'pass') %dopar% {
 }
 
 stopCluster(cl)
+
+# summary for all chromosomes
+rmarkdown::render(input=paste0(codedir,"/5_empirical_data/edelman_etal_2019/summary_all.Rmd"),
+                  output_file=paste0(outdir,"/",prefix,"/edelman_summary.html"),
+                  params=list(prefix=prefix, outdir=outdir, ic_type=ic_type),
+                  quiet=TRUE)
 
 #################################

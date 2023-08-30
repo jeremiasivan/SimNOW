@@ -92,7 +92,7 @@ f_ic_acc <- function(df, i, ifc, type) {
     geom_point(aes(colour=window_size, size=20)) +
     facet_wrap(.~r, scales = "free") +
     viridis::scale_color_viridis(discrete = TRUE) + 
-    labs(color="w_size (kb)") +
+    labs(color="wsize (kb)") +
     guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
@@ -115,18 +115,18 @@ f_delta_ic_acc <- function(df, i, ifc, type) {
   
   sdf <- df %>%
     group_by(simulation) %>%
-    mutate(max_acc = max(accuracy), min_rmse = min(rmse), min_ifc = min(!!col_ifc)) %>%
-    mutate(d_acc = abs(accuracy-max_acc), d_rmse = abs(rmse-min_rmse), d_ifc = abs(!!col_ifc-min_ifc))
+    mutate(min_ifc = min(!!col_ifc)) %>%
+    mutate(d_ifc = abs(!!col_ifc-min_ifc))
   
   plot <- NULL
   if (type == "site") {
-    plot <- ggplot(sdf, aes(y=d_acc, x=d_ifc, ymin=0, group=simulation)) +
-      ggtitle(paste0("Correlation between \u0394", toupper(ifc), " and \u0394", "Site Classification Accuracy")) +
-      xlab(paste0("\u0394", toupper(ifc))) + ylab(paste0("\u0394", "Accuracy (%)"))
+    plot <- ggplot(sdf, aes(y=acc, x=d_ifc, ymin=0, ymax=100, group=simulation)) +
+      ggtitle(paste0("Correlation between \u0394", toupper(ifc), " and Site Classification Accuracy")) +
+      xlab(paste0("\u0394", toupper(ifc))) + ylab("Accuracy (%)")
   } else if (type == "rmse") {
-    plot <- ggplot(sdf, aes(y=d_rmse, x=d_ifc, ymin=0, group=simulation)) +
-      ggtitle(paste0("Correlation between \u0394", toupper(ifc), "and \u0394", "RMSE")) +
-      xlab(paste0("\u0394", toupper(ifc))) + ylab(paste0("\u0394", "RMSE (%)"))
+    plot <- ggplot(sdf, aes(y=rmse, x=d_ifc, ymin=0, group=simulation)) +
+      ggtitle(paste0("Correlation between \u0394", toupper(ifc), " and RMSE")) +
+      xlab(paste0("\u0394", toupper(ifc))) + ylab("RMSE (%)")
   }
   
   plot <- plot +
@@ -134,7 +134,7 @@ f_delta_ic_acc <- function(df, i, ifc, type) {
     geom_point(aes(colour=window_size, size=20)) +
     facet_wrap(.~r, scales = "free") +
     viridis::scale_color_viridis(discrete = TRUE) + 
-    labs(color="w_size (kb)") +
+    labs(color="wsize (kb)") +
     guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
@@ -221,7 +221,7 @@ f_rank_ic_acc <- function(df, i, ifc, type) {
     geom_point(aes(colour=window_size, size=20)) +
     facet_wrap(.~r, scales = "free") +
     viridis::scale_color_viridis(discrete = TRUE) +
-    labs(color="w_size (kb)") +
+    labs(color="wsize (kb)") +
     guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),

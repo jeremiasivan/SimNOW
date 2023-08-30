@@ -87,9 +87,7 @@ prefix/
 │       ├── prefix.topdist
 │       └── prefix.topdist.tiff
 ...
-├── chr21/
-│   └── ...
-└── chr_all/
+└── chr21/
     └── ...
 ```
 
@@ -124,7 +122,7 @@ Following the original publication, we extract FASTA alignments from HAL by foll
 In `edelman_etal_2019/refseq.txt`, I comment out `Herato_chr17_3` as it does not contain single-copy MAF block, thus resulting in zero-length FASTA alignment.
 
 #### Output
-Running the code will create individual folder for each chromosome (i.e., chr1 to chr21 and concatenation). Each folder will contain the following subfolders:
+Running the code will create individual folder for each chromosome (i.e., chr1 to chr21). Each folder will contain the following subfolders:
 - `raw/`: store the raw MAF blocks
 - `singleCopy/`: store single-copy MAF blocks
 - `sorted/`: store sorted MAF blocks
@@ -148,9 +146,6 @@ outdir/
 ...
 ├── chr21/
 │   └── ...
-├── chr_all/
-│   ├── all_concat.fa
-│   └── all_concat_filtered.fa
 ├── edelman.html
 └── edelman.log 
 ```

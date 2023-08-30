@@ -1,0 +1,121 @@
+---
+title: "Summary of Multiple Non-overlapping Windows Analyses"
+params:
+  prefix: "sim"
+  outdir: "~/simulation"
+
+  ic_type: "aic"
+---
+
+```{r setup, include=FALSE}
+# install.packages("viridis")
+
+library(data.table)
+library(dplyr)
+library(ggplot2)
+
+simsumdir <- paste0(params$outdir, "/", params$prefix, "/summary/")
+if (!dir.exists(simsumdir)) {
+  dir.create(simsumdir, recursive=T)
+}
+
+fn_topsimsum <- paste0(simsumdir, params$prefix, ".topsimsum")
+fn_topsimsum_fig <- paste0(simsumdir, params$prefix, ".topsimsum.tiff")
+fn_cnsimsum <- paste0(simsumdir, params$prefix, ".cnsimsum")
+fn_cnsimsum_fig <- paste0(simsumdir, params$prefix, ".cnsimsum.tiff")
+```
+
+```{r summary, include=FALSE}
+allsims <- list.dirs(paste0(params$outdir,"/",params$prefix), full.names = F, recursive = F)
+chrs <- allsims[grep("^chr", allsims)]
+
+# iterate through chromosomes
+df_topsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), cum.percentage=numeric())
+df_cnsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric())
+
+for (c in chrs) {
+  window_outdir <- paste0(params$outdir,"/",params$prefix,"/",c,"/windows/")
+
+  fn_summary <- paste0(window_outdir, c, ".sum")
+  if (!file.exists(fn_summary)){
+    next
+  }
+
+  # extract the best window size
+  sumfile <- data.table::fread(fn_summary)
+  min_ic <- sumfile %>%
+    slice_min(!!sym(tolower(params$ic_type)))
+  best_wsize <- as.numeric(min_ic$window_size)*1000
+
+  fn_topsum <- paste0(window_outdir, best_wsize, "/full/summary/", c, ".topsum")
+  fn_cnsum <- paste0(window_outdir, best_wsize, "/full/summary/", c, ".cnsum")
+  if (!all(file.exists(fn_topsum, fn_cnsum))) {
+    next
+  }
+
+  df_topsum <- data.table::fread(fn_topsum)
+  df_topsum$chr <- rep(c, nrow(df_topsum))
+  df_topsimsum <- rbind(df_topsimsum, df_topsum)
+
+  df_cnsum <- data.table::fread(fn_cnsum)
+  df_cnsum$chr <- rep(c, nrow(df_cnsum))
+  df_cnsimsum <- rbind(df_cnsimsum, df_cnsum)
+}
+
+data.table::fwrite(df_topsimsum, file=fn_topsimsum, quote=F, sep="\t")
+data.table::fwrite(df_cnsimsum, file=fn_cnsimsum, quote=F, sep="\t")
+```
+
+```{r visualization, include=FALSE}
+# topsimsum
+df_topsimsum <- df_topsimsum %>%
+  select(topology, count) %>%
+  group_by(topology) %>%
+  summarise_all(sum) %>%
+  mutate(cum.percentage = count / sum(count))
+
+tiff(filename=fn_topsimsum_fig, units="px", width=2880, height=1800)
+print(ggplot(df_topsimsum, aes(x=topology, y=count, fill=topology)) +
+        geom_bar(position="dodge", stat="identity") +
+        geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5) +
+        viridis::scale_fill_viridis(discrete = TRUE) +
+        ggtitle("Topology Distribution of erato-sara Heliconius genome") + ylab("Count") + xlab("Topology") +
+        guides(fill="none") +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 50),
+          plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+          axis.text.y=element_text(size=30),
+          axis.text.x=element_text(size=30, angle = 90, vjust = 0.5, hjust=1),
+          legend.title=element_text(size=30),
+          legend.text=element_text(size=30),
+          legend.key.size=unit(2,"cm")
+        ))
+dev.off()
+
+# cnsimsum
+df_cnsimsum <- df_cnsimsum %>%
+  group_by(topology, count) %>%
+  summarise(n=n())
+
+tiff(filename=fn_cnsimsum_fig, units="px", width=1600, height=2800)
+print(ggplot(df_cnsimsum, aes(x=as.factor(count), y=n, fill=topology)) +
+        geom_bar(position="dodge", stat="identity") +
+        viridis::scale_fill_viridis(discrete = TRUE) +
+        facet_wrap(.~topology, scales = "free") +
+        ggtitle("Number of consecutive windows per topology") + ylab("Frequency") + xlab("Number of consecutive windows") +
+        guides(fill="none") +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 50),
+          plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+          axis.text.y=element_text(size=30),
+          axis.text.x=element_text(size=30),
+          legend.title=element_text(size=30),
+          legend.text=element_text(size=30),
+          legend.key.size=unit(2,"cm")
+        ))
+dev.off()
+```
