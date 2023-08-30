@@ -194,8 +194,8 @@ while (length(trl <- readLines(iqtree_file, n=1))) {
   # store the values in dataframe
   pl <- seq_list[start/best_wsize+1]
 
-  if (start == best_wsize*(numw-1)+1) {
-    seq_len <- rbind(seq_len, c(pl,start+1,s_ln,s_ln-start+1,tree))
+  if (start == best_wsize*(numw-1)) {
+    seq_len <- rbind(seq_len, c(pl,start+1,s_ln,s_ln-start,tree))
   } else {
     seq_len <- rbind(seq_len, c(pl,start+1,start+best_wsize,best_wsize,tree))
   }
