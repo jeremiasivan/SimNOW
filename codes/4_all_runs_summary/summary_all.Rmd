@@ -120,7 +120,7 @@ f_delta_ic_acc <- function(df, i, ifc, type) {
   
   plot <- NULL
   if (type == "site") {
-    plot <- ggplot(sdf, aes(y=acc, x=d_ifc, ymin=0, ymax=100, group=simulation)) +
+    plot <- ggplot(sdf, aes(y=accuracy, x=d_ifc, ymin=0, ymax=100, group=simulation)) +
       ggtitle(paste0("Correlation between \u0394", toupper(ifc), " and Site Classification Accuracy")) +
       xlab(paste0("\u0394", toupper(ifc))) + ylab("Accuracy (%)")
   } else if (type == "rmse") {

@@ -29,6 +29,9 @@ window_len <- 20
 window_size <- c(50000)
 min_window_size <- 1000
 
+window_size_nogaps <- c(25000)
+min_window_size_nogaps <- 100
+
 ic_type <- "aic"
 #################################
 
@@ -64,12 +67,19 @@ for (c in ls_chr) {
   #                     paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa"))
 
   input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa")
-  
   temprun <- list(out=out, params=list(codedir=codedir,
                                        prefix=c, outdir=run_outdir, thread=thread, redo=redo,
                                        iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, outgroup=outgroup,
                                        input_aln=input_aln, window_len=window_len, window_size=window_size, min_window_size=min_window_size,
                                        ic_type=ic_type
+  )
+
+  input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_nogaps.fa")
+  temprun <- list(out=out, params=list(codedir=codedir,
+                                       prefix=paste0("nogaps_",c), outdir=run_outdir, thread=thread, redo=redo,
+                                       iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, outgroup=outgroup,
+                                       input_aln=input_aln, window_len=window_len, window_size=window_size_nogaps, min_window_size=min_window_size_nogaps,
+                                       ic_type=ic_type                                     
   ))
   
   runs <- append(runs, list(temprun))

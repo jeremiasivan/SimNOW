@@ -225,13 +225,14 @@ ls_filtered <- foreach (i=ls_chr, .combine='c') %dopar% {
 
   input_aln <- paste0(params$outdir,"/",i,"/fasta/concatenation/",i,"_concat.fa")
   output_aln <- paste0(params$outdir,"/",i,"/fasta/concatenation/",i,"_concat_filtered.fa")
+  nogaps_aln <- paste0(params$outdir,"/",i,"/fasta/concatenation/",i,"_concat_nogaps.fa")
   
   if (!file.exists(input_aln)) {
     log4r::warn(fn_logger, paste0("File not found: concatenated FASTA alignment for ", i, ". Skipped."))
     return(NULL)
   }
 
-  if (file.exists(output_aln) && !params$redo) {
+  if (!all(file.exists(output_aln, nogaps_aln)) && !params$redo) {
     log4r::warn(fn_logger, paste0("File found: filtered FASTA alignment for ", i, ". Skipped."))
     return(output_aln)
   }
@@ -251,9 +252,14 @@ ls_filtered <- foreach (i=ls_chr, .combine='c') %dopar% {
   s <- lapply(alignment, function(x) x[seq(from = idx_leading_gap, to = idx_trailing_gap)])
   s <- do.call(rbind, s)
   s <- setNames(split(s, seq(nrow(s))), rownames(s))
-    
+
+  s_nogaps <- lapply(alignment, function(x) x[gap_props_threshold])
+  s_nogaps <- do.call(rbind, s_nogaps)
+  s_nogaps <- setNames(split(s_nogaps, seq(nrow(s_nogaps))), rownames(s_nogaps))
+
   # save the alignment
   seqinr::write.fasta(sequences=s, names=names(s), file.out=output_aln, nbchar=100)
+  seqinr::write.fasta(sequences=s_nogaps, names=names(s_nogaps), file.out=nogaps_aln, nbchar=100)
 
   log4r::info(fn_logger, paste0("File saved: filtered FASTA alignment for ", i, "."))
   return(output_aln)
