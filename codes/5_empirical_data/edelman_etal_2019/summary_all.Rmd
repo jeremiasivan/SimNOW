@@ -77,10 +77,12 @@ df_topsimsum <- df_topsimsum %>%
   mutate(cum.percentage = round(count/sum(count)*100, 3)) %>%
   arrange(desc(count))
 
-tiff(filename=fn_topsimsum_fig, units="px", width=2880, height=1800)
+df_topsimsum$topology <- forcats::fct_inorder(df_topsimsum$topology)
+
+tiff(filename=fn_topsimsum_fig, units="px", width=3200, height=1800)
 print(ggplot(df_topsimsum, aes(x=topology, y=count, fill=topology)) +
         geom_bar(position="dodge", stat="identity") +
-        geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5) +
+        geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=5) +
         viridis::scale_fill_viridis(discrete = TRUE) +
         ggtitle("Topology distribution of erato-sara Heliconius genome") + ylab("Count") + xlab("Topology") +
         guides(fill="none") +
@@ -99,9 +101,9 @@ dev.off()
 
 # top-10 topologies
 tiff(filename=fn_topsimsum_ten_fig, units="px", width=2880, height=1800)
-print(ggplot(df_topsimsum[1:10], aes(x=topology, y=count, fill=topology)) +
+print(ggplot(df_topsimsum[1:10,], aes(x=topology, y=count, fill=topology)) +
         geom_bar(position="dodge", stat="identity") +
-        geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5) +
+        geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=10) +
         viridis::scale_fill_viridis(discrete = TRUE) +
         ggtitle("Top 10 topologies of erato-sara Heliconius genome") + ylab("Count") + xlab("Topology") +
         guides(fill="none") +
@@ -124,7 +126,7 @@ df_cnsimsum <- df_cnsimsum %>%
   summarise(n=n())
 
 tiff(filename=fn_cnsimsum_fig, units="px", width=2880, height=1800)
-print(ggplot(df_cnsimsum, aes(x=as.factor(count), y=n, fill=topology)) +
+print(ggplot(df_cnsimsum, aes(x=count, y=n, fill=topology)) +
         geom_bar(position="dodge", stat="identity") +
         viridis::scale_fill_viridis(discrete = TRUE) +
         facet_wrap(.~topology, scales = "free") +
@@ -148,7 +150,7 @@ top_ten_tops <- df_topsimsum$topology[1:10]
 df_cnsimsum_ten <- subset(df_cnsimsum, topology %in% top_ten_tops)
 
 tiff(filename=fn_cnsimsum_ten_fig, units="px", width=2880, height=1800)
-print(ggplot(df_cnsimsum_ten, aes(x=as.factor(count), y=n, fill=topology)) +
+print(ggplot(df_cnsimsum_ten, aes(x=count, y=n, fill=topology)) +
         geom_bar(position="dodge", stat="identity") +
         viridis::scale_fill_viridis(discrete = TRUE) +
         facet_wrap(.~topology, scales = "free") +
