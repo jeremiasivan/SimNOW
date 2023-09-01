@@ -58,7 +58,7 @@ f_topsimsum <- function(df, type) {
       legend.key.size=unit(2,"cm")
     )
 
-  plot2 <- ggplot(df_topsimsum[1:10,], aes(x=topology, y=count, fill=topology)) +
+  plot2 <- ggplot(df[1:10,], aes(x=topology, y=count, fill=topology)) +
     geom_bar(position="dodge", stat="identity") +
     geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=10) +
     viridis::scale_fill_viridis(discrete = TRUE) +
@@ -87,7 +87,7 @@ f_topsimsum <- function(df, type) {
   return(c(plot1, plot2))
 }
 
-f_cnsimsum <- function(df1, df2, type){
+f_cnsimsum <- function(df1, df2, type) {
   plot1 <- ggplot(df1, aes(x=count, y=n, fill=topology)) +
     geom_bar(position="dodge", stat="identity") +
     viridis::scale_fill_viridis(discrete = TRUE) +
@@ -247,7 +247,7 @@ df_cnsimsum <- df_cnsimsum %>%
 top_ten_tops <- df_topsimsum$topology[1:10]
 df_cnsimsum_ten <- subset(df_cnsimsum, topology %in% top_ten_tops)
 
-plots <- f_topsimsum(df_cnsimsum, df_cnsimsum_ten, "best")
+plots <- f_cnsimsum(df_cnsimsum, df_cnsimsum_ten, "best")
 tiff(filename=fn_cnsimsum_fig, units="px", width=2880, height=1800)
 print(plots[1])
 dev.off()
@@ -264,7 +264,7 @@ df_cnsimsum_50kb <- df_cnsimsum_50kb %>%
 top_ten_tops <- df_topsimsum_50kb$topology[1:10]
 df_cnsimsum_ten_50kb <- subset(df_cnsimsum_50kb, topology %in% top_ten_tops)
 
-plots <- f_topsimsum(df_cnsimsum_50kb, df_cnsimsum_ten_50kb, "50kb")
+plots <- f_cnsimsum(df_cnsimsum_50kb, df_cnsimsum_ten_50kb, "50kb")
 tiff(filename=fn_cnsimsum_fig_50kb, units="px", width=2880, height=1800)
 print(plots[1])
 dev.off()
