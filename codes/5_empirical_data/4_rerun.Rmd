@@ -2,7 +2,7 @@
 title: "NOW for Empirical Dataset"
 ---
 
-```{r nowsetup, include=FALSE}
+```{r nowsetup-rerun, include=FALSE}
 write.table(c("",
               "####################################",
               "####     Rerun NOW Analysis     ####",
@@ -18,7 +18,7 @@ if (!file.exists(fn_summary)){
 }
 ```
 
-```{r window-size, include=FALSE}
+```{r window-size-rerun, include=FALSE}
 write.table(c("",
               "---------- Window Alignment --------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
@@ -35,7 +35,7 @@ write.table(paste0("Best window size according to ", toupper(params$ic_type), ":
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
-```{r window-aln, include=FALSE}
+```{r window-aln-rerun, include=FALSE}
 options(scipen=999)
 
 # read fasta file
@@ -100,7 +100,7 @@ if (length(list.files(temp_outdir, pattern='fa')) == numw && !params$redo) {
 rm(s)
 ```
 
-```{r window-tree, include=FALSE}
+```{r window-tree-rerun, include=FALSE}
 write.table(c("",
               "------------ Window Tree -----------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
@@ -157,7 +157,7 @@ if (file.exists(paste0(prefix, ".treefile")) && !params$redo) {
 }
 ```
 
-```{r nowsummary, include=FALSE}
+```{r nowsummary-rerun, include=FALSE}
 options(scipen=999)
 
 temp_outdir <- paste0(best_wsize_outdir, "summary/")
