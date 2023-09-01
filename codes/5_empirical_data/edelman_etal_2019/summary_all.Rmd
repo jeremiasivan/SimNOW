@@ -6,7 +6,6 @@ params:
 
   ic_type: "aic"
 ---
-
 ```{r setup, include=FALSE}
 # install.packages("viridis")
 
@@ -19,12 +18,123 @@ if (!dir.exists(simsumdir)) {
   dir.create(simsumdir, recursive=T)
 }
 
+simsumdir_50kb <- paste0(simsumdir, "50000/")
+if (!dir.exists(simsumdir_50kb)) {
+  dir.create(simsumdir_50kb, recursive=T)
+}
+
 fn_topsimsum <- paste0(simsumdir, params$prefix, ".topsimsum")
 fn_topsimsum_fig <- paste0(simsumdir, params$prefix, ".topsimsum.tiff")
 fn_topsimsum_ten_fig <- paste0(simsumdir, params$prefix, ".topsimsum_ten.tiff")
 fn_cnsimsum <- paste0(simsumdir, params$prefix, ".cnsimsum")
 fn_cnsimsum_fig <- paste0(simsumdir, params$prefix, ".cnsimsum.tiff")
 fn_cnsimsum_ten_fig <- paste0(simsumdir, params$prefix, ".cnsimsum_ten.tiff")
+
+fn_topsimsum_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.topsimsum")
+fn_topsimsum_fig_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.topsimsum.tiff")
+fn_topsimsum_ten_fig_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.topsimsum_ten.tiff")
+fn_cnsimsum_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.cnsimsum")
+fn_cnsimsum_fig_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.cnsimsum.tiff")
+fn_cnsimsum_ten_fig_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.cnsimsum_ten.tiff")
+```
+
+```{r functions, include=FALSE}
+f_topsimsum <- function(df, type) {
+  plot1 <- ggplot(df, aes(x=topology, y=count, fill=topology)) +
+    geom_bar(position="dodge", stat="identity") +
+    geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=5) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    ylab("Count") + xlab("Topology") +
+    guides(fill="none") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30, angle = 90, vjust = 0.5, hjust=1),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+  plot2 <- ggplot(df_topsimsum[1:10,], aes(x=topology, y=count, fill=topology)) +
+    geom_bar(position="dodge", stat="identity") +
+    geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=10) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    ylab("Count") + xlab("Topology") +
+    guides(fill="none") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30, angle = 90, vjust = 0.5, hjust=1),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+  if (type == "best") {
+    plot1 <- plot1 + ggtitle("Topology distribution of erato-sara Heliconius genome")
+    plot2 <- plot2 + ggtitle("Top 10 topologies of erato-sara Heliconius genome")
+  } else if (type == "50kb") {
+    plot1 <- plot1 + ggtitle("Topology distribution of erato-sara Heliconius genome based on 50kb-window")
+    plot2 <- plot2 + ggtitle("Top 10 topologies of erato-sara Heliconius genome based on 50kb-window")
+  }
+
+  return(c(plot1, plot2))
+}
+
+f_cnsimsum <- function(df1, df2, type){
+  plot1 <- ggplot(df1, aes(x=count, y=n, fill=topology)) +
+    geom_bar(position="dodge", stat="identity") +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    facet_wrap(.~topology, scales = "free") +
+    ylab("Frequency") + xlab("Number of consecutive windows") +
+    guides(fill="none") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+  plot2 <- ggplot(df2, aes(x=count, y=n, fill=topology)) +
+    geom_bar(position="dodge", stat="identity") +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    facet_wrap(.~topology, scales = "free") +
+    ylab("Frequency") + xlab("Number of consecutive windows") +
+    guides(fill="none") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size = 20),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+  if (type == "best") {
+    plot1 <- plot1 + ggtitle("Number of consecutive windows per topology")
+    plot2 <- plot2 + ggtitle("Number of consecutive windows per topology based on 50kb-window")
+  } else if (type == "50kb") {
+    plot1 <- plot1 + ggtitle("Number of consecutive windows for the top-10 topologies")
+    plot2 <- plot2 + ggtitle("Number of consecutive windows for the top-10 topologies based on 50kb-window")
+  }
+
+  return(c(plot1, plot2))
+}
 ```
 
 ```{r summary, include=FALSE}
@@ -34,6 +144,9 @@ chrs <- allsims[grep("^chr", allsims)]
 # iterate through chromosomes
 df_topsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), cum.percentage=numeric())
 df_cnsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric())
+
+df_topsimsum_50kb <- data.table::data.table(chr=character(), topology=character(), count=numeric(), cum.percentage=numeric())
+df_cnsimsum_50kb <- data.table::data.table(chr=character(), topology=character(), count=numeric())
 
 for (c in chrs) {
   window_outdir <- paste0(params$outdir,"/",params$prefix,"/",c,"/windows/")
@@ -62,10 +175,27 @@ for (c in chrs) {
   df_cnsum <- data.table::fread(fn_cnsum)
   df_cnsum$chr <- rep(c, nrow(df_cnsum))
   df_cnsimsum <- rbind(df_cnsimsum, df_cnsum)
+
+  # 50kb-window
+  fn_topsum <- paste0(window_outdir, "/50000/summary/", c, ".topsum")
+  fn_cnsum <- paste0(window_outdir, "/50000/summary/", c, ".cnsum")
+  if (!all(file.exists(fn_topsum, fn_cnsum))) {
+    next
+  }
+
+  df_topsum <- data.table::fread(fn_topsum)
+  df_topsum$chr <- rep(c, nrow(df_topsum))
+  df_topsimsum_50kb <- rbind(df_topsimsum_50kb, df_topsum)
+
+  df_cnsum <- data.table::fread(fn_cnsum)
+  df_cnsum$chr <- rep(c, nrow(df_cnsum))
+  df_cnsimsum_50kb <- rbind(df_cnsimsum_50kb, df_cnsum)
 }
 
 data.table::fwrite(df_topsimsum, file=fn_topsimsum, quote=F, sep="\t")
 data.table::fwrite(df_cnsimsum, file=fn_cnsimsum, quote=F, sep="\t")
+data.table::fwrite(df_topsimsum_50kb, file=fn_topsimsum_50kb, quote=F, sep="\t")
+data.table::fwrite(df_cnsimsum_50kb, file=fn_cnsimsum_50kb, quote=F, sep="\t")
 ```
 
 ```{r visualization, include=FALSE}
@@ -79,45 +209,34 @@ df_topsimsum <- df_topsimsum %>%
 
 df_topsimsum$topology <- forcats::fct_inorder(df_topsimsum$topology)
 
+plots <- f_topsimsum(df_topsimsum, "best")
 tiff(filename=fn_topsimsum_fig, units="px", width=3200, height=1800)
-print(ggplot(df_topsimsum, aes(x=topology, y=count, fill=topology)) +
-        geom_bar(position="dodge", stat="identity") +
-        geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=5) +
-        viridis::scale_fill_viridis(discrete = TRUE) +
-        ggtitle("Topology distribution of erato-sara Heliconius genome") + ylab("Count") + xlab("Topology") +
-        guides(fill="none") +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 50),
-          plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-          axis.text.y=element_text(size=30),
-          axis.text.x=element_text(size=30, angle = 90, vjust = 0.5, hjust=1),
-          legend.title=element_text(size=30),
-          legend.text=element_text(size=30),
-          legend.key.size=unit(2,"cm")
-        ))
+print(plots[1])
 dev.off()
 
 # top-10 topologies
 tiff(filename=fn_topsimsum_ten_fig, units="px", width=2880, height=1800)
-print(ggplot(df_topsimsum[1:10,], aes(x=topology, y=count, fill=topology)) +
-        geom_bar(position="dodge", stat="identity") +
-        geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=10) +
-        viridis::scale_fill_viridis(discrete = TRUE) +
-        ggtitle("Top 10 topologies of erato-sara Heliconius genome") + ylab("Count") + xlab("Topology") +
-        guides(fill="none") +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 50),
-          plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-          axis.text.y=element_text(size=30),
-          axis.text.x=element_text(size=30, angle = 90, vjust = 0.5, hjust=1),
-          legend.title=element_text(size=30),
-          legend.text=element_text(size=30),
-          legend.key.size=unit(2,"cm")
-        ))
+print(plots[2])
+dev.off()
+
+# 50kb-window
+df_topsimsum_50kb <- df_topsimsum_50kb %>%
+  select(topology, count) %>%
+  group_by(topology) %>%
+  summarise_all(sum) %>%
+  mutate(cum.percentage = round(count/sum(count)*100, 3)) %>%
+  arrange(desc(count))
+
+df_topsimsum_50kb$topology <- forcats::fct_inorder(df_topsimsum_50kb$topology)
+
+plots <- f_topsimsum(df_topsimsum_50kb, "50kb")
+tiff(filename=fn_topsimsum_fig_50kb, units="px", width=3200, height=1800)
+print(plots[1])
+dev.off()
+
+# top-10 topologies
+tiff(filename=fn_topsimsum_ten_fig_50kb, units="px", width=2880, height=1800)
+print(plots[2])
 dev.off()
 
 # cnsimsum
@@ -125,48 +244,32 @@ df_cnsimsum <- df_cnsimsum %>%
   group_by(topology, count) %>%
   summarise(n=n())
 
-tiff(filename=fn_cnsimsum_fig, units="px", width=2880, height=1800)
-print(ggplot(df_cnsimsum, aes(x=count, y=n, fill=topology)) +
-        geom_bar(position="dodge", stat="identity") +
-        viridis::scale_fill_viridis(discrete = TRUE) +
-        facet_wrap(.~topology, scales = "free") +
-        ggtitle("Number of consecutive windows per topology") + ylab("Frequency") + xlab("Number of consecutive windows") +
-        guides(fill="none") +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 50),
-          plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-          axis.text.y=element_text(size=30),
-          axis.text.x=element_text(size=30),
-          legend.title=element_text(size=30),
-          legend.text=element_text(size=30),
-          legend.key.size=unit(2,"cm")
-        ))
-dev.off()
-
-# top-10 topologies
 top_ten_tops <- df_topsimsum$topology[1:10]
 df_cnsimsum_ten <- subset(df_cnsimsum, topology %in% top_ten_tops)
 
+plots <- f_topsimsum(df_cnsimsum, df_cnsimsum_ten, "best")
+tiff(filename=fn_cnsimsum_fig, units="px", width=2880, height=1800)
+print(plots[1])
+dev.off()
+
 tiff(filename=fn_cnsimsum_ten_fig, units="px", width=2880, height=1800)
-print(ggplot(df_cnsimsum_ten, aes(x=count, y=n, fill=topology)) +
-        geom_bar(position="dodge", stat="identity") +
-        viridis::scale_fill_viridis(discrete = TRUE) +
-        facet_wrap(.~topology, scales = "free") +
-        ggtitle("Number of consecutive windows for the top-10 topologies") + ylab("Frequency") + xlab("Number of consecutive windows") +
-        guides(fill="none") +
-        theme(
-          plot.title = element_text(hjust = 0.5, size = 50),
-          plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-          axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-          axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-          axis.text.y=element_text(size=30),
-          axis.text.x=element_text(size=30),
-          strip.text = element_text(size = 20),
-          legend.title=element_text(size=30),
-          legend.text=element_text(size=30),
-          legend.key.size=unit(2,"cm")
-        ))
+print(plots[2])
+dev.off()
+
+# 50kb-window
+df_cnsimsum_50kb <- df_cnsimsum_50kb %>%
+  group_by(topology, count) %>%
+  summarise(n=n())
+
+top_ten_tops <- df_topsimsum_50kb$topology[1:10]
+df_cnsimsum_ten_50kb <- subset(df_cnsimsum_50kb, topology %in% top_ten_tops)
+
+plots <- f_topsimsum(df_cnsimsum_50kb, df_cnsimsum_ten_50kb, "50kb")
+tiff(filename=fn_cnsimsum_fig_50kb, units="px", width=2880, height=1800)
+print(plots[1])
+dev.off()
+
+tiff(filename=fn_cnsimsum_ten_fig_50kb, units="px", width=2880, height=1800)
+print(plots[2])
 dev.off()
 ```
