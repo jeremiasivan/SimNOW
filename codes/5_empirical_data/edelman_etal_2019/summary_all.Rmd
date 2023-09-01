@@ -84,7 +84,7 @@ f_topsimsum <- function(df, type) {
     plot2 <- plot2 + ggtitle("Top 10 topologies of erato-sara Heliconius genome based on 50kb-window")
   }
 
-  return(c(plot1, plot2))
+  return(list(plot1=plot1, plot2=plot2))
 }
 
 f_cnsimsum <- function(df1, df2, type) {
@@ -133,7 +133,7 @@ f_cnsimsum <- function(df1, df2, type) {
     plot2 <- plot2 + ggtitle("Number of consecutive windows for the top-10 topologies based on 50kb-window")
   }
 
-  return(c(plot1, plot2))
+  return(list(plot1=plot1, plot2=plot2))
 }
 ```
 
@@ -211,12 +211,12 @@ df_topsimsum$topology <- forcats::fct_inorder(df_topsimsum$topology)
 
 plots <- f_topsimsum(df_topsimsum, "best")
 tiff(filename=fn_topsimsum_fig, units="px", width=3200, height=1800)
-print(plots[1])
+print(plots$plot1)
 dev.off()
 
 # top-10 topologies
 tiff(filename=fn_topsimsum_ten_fig, units="px", width=2880, height=1800)
-print(plots[2])
+print(plots$plot2)
 dev.off()
 
 # 50kb-window
@@ -231,12 +231,12 @@ df_topsimsum_50kb$topology <- forcats::fct_inorder(df_topsimsum_50kb$topology)
 
 plots <- f_topsimsum(df_topsimsum_50kb, "50kb")
 tiff(filename=fn_topsimsum_fig_50kb, units="px", width=3200, height=1800)
-print(plots[1])
+print(plots$plot1)
 dev.off()
 
 # top-10 topologies
 tiff(filename=fn_topsimsum_ten_fig_50kb, units="px", width=2880, height=1800)
-print(plots[2])
+print(plots$plot2)
 dev.off()
 
 # cnsimsum
@@ -249,11 +249,11 @@ df_cnsimsum_ten <- subset(df_cnsimsum, topology %in% top_ten_tops)
 
 plots <- f_cnsimsum(df_cnsimsum, df_cnsimsum_ten, "best")
 tiff(filename=fn_cnsimsum_fig, units="px", width=2880, height=1800)
-print(plots[1])
+print(plots$plot1)
 dev.off()
 
 tiff(filename=fn_cnsimsum_ten_fig, units="px", width=2880, height=1800)
-print(plots[2])
+print(plots$plot2)
 dev.off()
 
 # 50kb-window
@@ -266,10 +266,10 @@ df_cnsimsum_ten_50kb <- subset(df_cnsimsum_50kb, topology %in% top_ten_tops)
 
 plots <- f_cnsimsum(df_cnsimsum_50kb, df_cnsimsum_ten_50kb, "50kb")
 tiff(filename=fn_cnsimsum_fig_50kb, units="px", width=2880, height=1800)
-print(plots[1])
+print(plots$plot1)
 dev.off()
 
 tiff(filename=fn_cnsimsum_ten_fig_50kb, units="px", width=2880, height=1800)
-print(plots[2])
+print(plots$plot2)
 dev.off()
 ```
