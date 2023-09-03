@@ -232,7 +232,7 @@ ls_filtered <- foreach (i=ls_chr, .combine='c') %dopar% {
     return(NULL)
   }
 
-  if (!all(file.exists(output_aln, nogaps_aln)) && !params$redo) {
+  if (all(file.exists(output_aln, nogaps_aln)) && !params$redo) {
     log4r::warn(fn_logger, paste0("File found: filtered FASTA alignment for ", i, ". Skipped."))
     return(output_aln)
   }
@@ -261,7 +261,11 @@ ls_filtered <- foreach (i=ls_chr, .combine='c') %dopar% {
   seqinr::write.fasta(sequences=s, names=names(s), file.out=output_aln, nbchar=100)
   seqinr::write.fasta(sequences=s_nogaps, names=names(s_nogaps), file.out=nogaps_aln, nbchar=100)
 
-  log4r::info(fn_logger, paste0("File saved: filtered FASTA alignment for ", i, "."))
+  log4r::info(fn_logger, paste0("File saved: filtered FASTA alignment for ", i, ". ",
+                                "Lengths: ", seqinr::getLength(alignment), " (initial) / ",
+                                             seqinr::getLength(s), " (filtered) / ",
+                                             seqinr::getLength(s_nogaps), " (no_gaps)"
+                                ))
   return(output_aln)
 }
 
