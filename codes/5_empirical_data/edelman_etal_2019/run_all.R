@@ -55,13 +55,13 @@ run_outdir <- paste0(outdir,"/",prefix,"/")
 runs <- list()
 
 for (c in ls_chr) {
-  out <- paste0(run_outdir,"/",c,"/",c,".html")
-  
   currentdir <- paste0(run_outdir,"/",c,"/")
   if (!dir.exists(currentdir)) {
     dir.create(currentdir, recursive = T)
   }
 
+  # filtered sequence
+  out <- paste0(run_outdir,"/",c,"/",c,".html")
   input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa")
   temprun <- list(out=out, params=list(codedir=codedir,
                                        prefix=c, outdir=run_outdir, thread=thread, redo=redo,
@@ -69,15 +69,18 @@ for (c in ls_chr) {
                                        input_aln=input_aln, window_len=window_len, window_size=window_size, min_window_size=min_window_size,
                                        ic_type=ic_type
   ))
+  runs <- append(runs, list(temprun))
 
+  # no_gaps sequence
+  no_gaps_c <- paste0("nogaps_",c)
+  out <- paste0(run_outdir,"/",no_gaps_c,"/",no_gaps_c,".html")
   input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_nogaps.fa")
   temprun <- list(out=out, params=list(codedir=codedir,
-                                       prefix=paste0("nogaps_",c), outdir=run_outdir, thread=thread, redo=redo,
+                                       prefix=no_gaps_c, outdir=run_outdir, thread=thread, redo=redo,
                                        iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, outgroup=outgroup,
                                        input_aln=input_aln, window_len=window_len, window_size=window_size_nogaps, min_window_size=min_window_size_nogaps,
                                        ic_type=ic_type                                     
   ))
-  
   runs <- append(runs, list(temprun))
 }
 
