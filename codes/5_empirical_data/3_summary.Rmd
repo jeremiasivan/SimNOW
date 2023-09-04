@@ -49,7 +49,7 @@ t_accuracy$window_size <- factor(t_accuracy$window_size, levels=t_accuracy$windo
 library(ggplot2)
 for (i in 2:ncol(t_accuracy)) {
   ifc <- colnames(t_accuracy)[i]
-  fn_simfig <- paste0(window_outdir, params$prefix, ".sum_",ifc,".tiff")
+  fn_simfig <- paste0(window_outdir, params$prefix, ".", ifc, ".tiff")
   
   tiff(filename=fn_simfig, units="px", width=2880, height=1800)
   print(ggplot(t_accuracy, aes(x=window_size, y=as.numeric(unlist(t_accuracy[,..i])), group=1)) +

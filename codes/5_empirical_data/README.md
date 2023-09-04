@@ -13,22 +13,24 @@
 ### <a id="now">Non-overlapping window analysis</a>
 In this step, we run non-overlapping window analysis on empirical alignment and generate the summary statistics. The parameters for this step is set in `1_main.Rmd`.
 
-| Parameters        | Definition                                                                                                                            |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `codedir`         | Directory for folder `SimNOW/codes`                                                                                                   |
-| `prefix`          | Prefix for output files and folder                                                                                                    | 
-| `outdir`          | Output directory                                                                                                                      |
-| `thread`          | Number of threads for parallelization                                                                                                 |
-| `redo`            | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                                                |
-| `iqtree2dir`      | Directory for `IQ-Tree2` executable                                                                                                   |
-| `set_model`       | If `TRUE`, set the substitution model of window trees to be `dna_model`; if `FALSE` use ModelFinder to find the best model per window |
-| `set_blmin`       | If `TRUE`, set the minimum branch length to be 1/window_size                                                                          |
-| `dna_model`       | DNA substitution model for window trees                                                                                               |
-| `outgroup`        | Outgroup of window trees (optional)                                                                                                   |
-| `input_aln`       | Input FASTA alignment                                                                                                                 |
-| `window_len`      | Number of window sizes                                                                                                                |
-| `window_size`     | Vector of window sizes; if any, trailing positions of `input_aln` will be removed to match the least common multiple of the vector    |
-| `min_window_size` | Minimum window size                                                                                                                   |
+| Parameters               | Definition                                                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `codedir`                | Directory for folder `SimNOW/codes`                                                                                                   |
+| `prefix`                 | Prefix for output files and folder                                                                                                    | 
+| `outdir`                 | Output directory                                                                                                                      |
+| `thread`                 | Number of threads for parallelization                                                                                                 |
+| `redo`                   | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                                                |
+| `iqtree2dir`             | Directory for `IQ-Tree2` executable                                                                                                   |
+| `set_model`              | If `TRUE`, set the substitution model of window trees to be `dna_model`; if `FALSE` use ModelFinder to find the best model per window |
+| `set_blmin`              | If `TRUE`, set the minimum branch length to be 1/window_size                                                                          |
+| `dna_model`              | DNA substitution model for window trees                                                                                               |
+| `outgroup`               | Outgroup of window trees (optional)                                                                                                   |
+| `input_aln`              | Input FASTA alignment                                                                                                                 |
+| `window_len`             | Number of window sizes                                                                                                                |
+| `window_size`            | Vector of window sizes; if any, trailing positions of `input_aln` will be removed to match the least common multiple of the vector    |
+| `min_window_size`        | Minimum window size                                                                                                                   |
+| `window_size_nogaps`     | Similar with `window_size`, but only applied for `no_gaps` alignments                                                                 |
+| `min_window_size_nogaps` | Similar with `min_window_size`, but only applied for `no_gaps` alignments                                                             |
 
 #### Output
 Running the code will create a new folder called `windows` with individual folder for each window size. Each window size folder consists of three folders:
@@ -41,9 +43,9 @@ Running the code will create a new folder called `windows` with individual folde
 
 Additionally, the `windows` folder will contain the following files:
 - `prefix.sum`: summary table of window sizes and their respective information criteria scores
-- `prefix.sum_aic.tiff`: correlation plot between AIC and window size
-- `prefix.sum_bic.tiff`: correlation plot between BIC and window size
-- `prefix.sum_aicc.tiff`: correlation plot between AICc and window size
+- `prefix.aic.tiff`: correlation plot between AIC and window size
+- `prefix.bic.tiff`: correlation plot between BIC and window size
+- `prefix.aicc.tiff`: correlation plot between AICc and window size
 - `prefix.topdist`: summary table of topology distribution per window size
 - `prefix.topdist.tiff`: plot of topology distribution per window size
 
@@ -81,9 +83,9 @@ prefix/
 │       ├── 50000/
 │       │   └── ...
 │       ├── prefix.sum
-│       ├── prefix.sum_aicc.tiff
-│       ├── prefix.sum_aic.tiff
-│       ├── prefix.sum_bic.tiff
+│       ├── prefix.aicc.tiff
+│       ├── prefix.aic.tiff
+│       ├── prefix.bic.tiff
 │       ├── prefix.topdist
 │       └── prefix.topdist.tiff
 ...
@@ -104,19 +106,20 @@ Following the original publication, we extract FASTA alignments from HAL by foll
 4. Convert MAF blocks to FASTA alignments using `msa_view`
 5. Concatenate the FASTA alignments using `msa_view`
 6. (Additional step) Trim the leading and trailing positions of each chromosome based on the `gaps_threshold` value (see below).
+7. (Additional step) Trim all positions of each chromosome based on the `gaps_threshold` value (see below).
 
 | Parameters       | Definition                                                                                                      |
 | ---------------- | --------------------------------------------------------------------------------------------------------------- |
 | `outdir`         | Output directory                                                                                                |
 | `thread`         | Number of threads for parallelization                                                                           |
 | `redo`           | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                          |
-| `fn_hal`         | HAL file from Edelman et al. (2019), available <a href="https://doi.org/10.5061/dryad.b7bj832">here</a>     |
+| `fn_hal`         | HAL file from Edelman et al. (2019), available <a href="https://doi.org/10.5061/dryad.b7bj832">here</a>         |
 | `fn_refseq`      | List of reference sequence for HAL to MAF conversion, available <a href="edelman_etal_2019/refseq.txt">here</a> |
 | `dir_hal2maf`    | Directory for `hal2maf` executable                                                                              |
 | `dir_singleCopy` | Directory for `singleCopy.py` executable                                                                        |
 | `dir_mafsort`    | Directory for `maf-sort.sh` executable                                                                          |
 | `dir_msaview`    | Directory for `msa_view` executable                                                                             |
-| `gaps_threshold` | Maximum gap proportion for leading and trailing positions                                                       |
+| `gaps_threshold` | Maximum gap proportion per site                                                                                 |
 
 > **Important Notes** <br>
 In `edelman_etal_2019/refseq.txt`, I comment out `Herato_chr17_3` as it does not contain single-copy MAF block, thus resulting in zero-length FASTA alignment.
@@ -142,6 +145,7 @@ outdir/
 │       ├── chr1_1.fa
 │       └── concatenation/
 │           ├── chr1_concat.fa
+│           ├── chr1_concat_nogaps.fa
 │           └── chr1_concat_filtered.fa
 ...
 ├── chr21/
@@ -150,5 +154,10 @@ outdir/
 └── edelman.log 
 ```
 
+#### Time complexity
+Running `run_all.R` using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step is as follows:
+- Data preparation and filtering: ~1.6 hours with 50 threads
+- Non-overlapping window analysis: xxx hours
+
 ---
-*Last update: 29 August 2023 by Jeremias Ivan*
+*Last update: 04 September 2023 by Jeremias Ivan*

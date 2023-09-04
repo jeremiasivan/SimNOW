@@ -115,12 +115,6 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$re
   mstrees[, c("cmd", "empty") := NULL]
   mstrees$length <- as.numeric(mstrees$length)
   
-  # combine contiguous trees together  
-  # summary <- mstrees %>%
-  #   group_by(tree, group_run = data.table::rleid(tree)) %>%
-  #   summarise_all(sum) %>%
-  #   arrange(group_run)
-  # summary$group_run <- NULL
   summary <- data.table::as.data.table(mstrees)
     
   # store first tree without branch lengths  

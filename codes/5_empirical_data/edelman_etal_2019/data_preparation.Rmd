@@ -175,32 +175,6 @@ ls_concat <- foreach (chr=unique(refseq$chr), .combine='c') %dopar% {
   return(fn_concat)
 }
 
-# # concatenation of all chromosomes
-# write.table(c("", "--------------- ALL ----------------"),
-#             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-# 
-# all_dir <- paste0(params$outdir, "/chr_all/")
-# if (!dir.exists(all_dir)) {
-#   dir.create(all_dir, recursive=T)
-# }
-# 
-# fn_concat_all <- paste0(all_dir, "all_concat.fa")
-# if (!file.exists(fn_concat_all) || params$redo) {
-#   ls_concat <- stringr::str_sort(ls_concat, numeric=T)
-#   str_concat <- paste(ls_concat, collapse = " ")
-# 
-#   # clean filenames for log file
-#   log_ls_concat <- lapply(ls_concat, function(x){tail(strsplit(x, "/")[[1]], 1)})
-#   log_str_concat <- paste(log_ls_concat, collapse = " ")
-# 
-#   cmd <- paste(params$dir_msaview,
-#                 "--aggregate HmelRef,HeraRef,Hhim,Hhsa,Htel,Hdem,Hsar",
-#                 str_concat, ">", fn_concat_all)
-#   
-#   system(cmd)
-#   log4r::info(fn_logger, paste0("Run: Concatenation (", log_str_concat, ")."))
-# }
-
 stopCluster(nwcl)
 ```
 
@@ -262,34 +236,12 @@ ls_filtered <- foreach (i=ls_chr, .combine='c') %dopar% {
   seqinr::write.fasta(sequences=s_nogaps, names=names(s_nogaps), file.out=nogaps_aln, nbchar=100)
 
   log4r::info(fn_logger, paste0("File saved: filtered FASTA alignment for ", i, ". ",
-                                "Lengths: ", seqinr::getLength(alignment), " (initial) / ",
-                                             seqinr::getLength(s), " (filtered) / ",
-                                             seqinr::getLength(s_nogaps), " (no_gaps)"
+                                "Lengths: ", seqinr::getLength(alignment)[1], " (initial) / ",
+                                             seqinr::getLength(s)[1], " (filtered) / ",
+                                             seqinr::getLength(s_nogaps)[1], " (no_gaps)"
                                 ))
   return(output_aln)
 }
-
-# # concatenation of all chromosomes
-# write.table(c("", "--------------- ALL ----------------"),
-#             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-# 
-# fn_concat_filtered <- paste0(all_dir, "all_concat_filtered.fa")
-# 
-# if (!file.exists(fn_concat_filtered) || params$redo) {
-#   ls_filtered <- stringr::str_sort(ls_filtered, numeric=T)
-#   str_filtered <- paste(ls_filtered, collapse = " ")
-# 
-#   # clean filenames for log file
-#   log_ls_filtered <- lapply(ls_filtered, function(x){tail(strsplit(x, "/")[[1]], 1)})
-#   log_str_filtered <- paste(log_ls_filtered, collapse = " ")
-# 
-#   cmd <- paste(params$dir_msaview,
-#                 "--aggregate HmelRef,HeraRef,Hhim,Hhsa,Htel,Hdem,Hsar",
-#                 str_filtered, ">", fn_concat_filtered)
-#   
-#   system(cmd)
-#   log4r::info(fn_logger, paste0("Run: Concatenation (", log_str_filtered, ")."))
-# }
 
 stopCluster(nwcl)
 ```

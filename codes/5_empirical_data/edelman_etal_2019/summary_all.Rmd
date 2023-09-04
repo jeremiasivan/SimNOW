@@ -40,6 +40,15 @@ fn_cnsimsum_ten_fig_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.cnsimsu
 
 ```{r functions, include=FALSE}
 f_topsimsum <- function(df, type) {
+  df <- df %>%
+    select(topology, count) %>%
+    group_by(topology) %>%
+    summarise_all(sum) %>%
+    mutate(cum.percentage = round(count/sum(count)*100, 3)) %>%
+    arrange(desc(count))
+
+  df$topology <- forcats::fct_inorder(df$topology)
+
   plot1 <- ggplot(df, aes(x=topology, y=count, fill=topology)) +
     geom_bar(position="dodge", stat="identity") +
     geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=5) +
@@ -84,10 +93,14 @@ f_topsimsum <- function(df, type) {
     plot2 <- plot2 + ggtitle("Top 10 topologies of erato-sara Heliconius genome based on 50kb-window")
   }
 
-  return(list(plot1=plot1, plot2=plot2))
+  return(list(plot1=plot1, plot2=plot2, df=df))
 }
 
 f_cnsimsum <- function(df1, df2, type) {
+  df1 <- df1 %>%
+    group_by(topology, count) %>%
+    summarise(n=n())
+
   plot1 <- ggplot(df1, aes(x=count, y=n, fill=topology)) +
     geom_bar(position="dodge", stat="identity") +
     viridis::scale_fill_viridis(discrete = TRUE) +
@@ -105,6 +118,9 @@ f_cnsimsum <- function(df1, df2, type) {
       legend.text=element_text(size=30),
       legend.key.size=unit(2,"cm")
     )
+
+  top_ten_tops <- df2$topology[1:10]
+  df2 <- subset(df1, topology %in% top_ten_tops)
 
   plot2 <- ggplot(df2, aes(x=count, y=n, fill=topology)) +
     geom_bar(position="dodge", stat="identity") +
@@ -200,54 +216,27 @@ data.table::fwrite(df_cnsimsum_50kb, file=fn_cnsimsum_50kb, quote=F, sep="\t")
 
 ```{r visualization, include=FALSE}
 # topsimsum
-df_topsimsum <- df_topsimsum %>%
-  select(topology, count) %>%
-  group_by(topology) %>%
-  summarise_all(sum) %>%
-  mutate(cum.percentage = round(count/sum(count)*100, 3)) %>%
-  arrange(desc(count))
-
-df_topsimsum$topology <- forcats::fct_inorder(df_topsimsum$topology)
-
 plots <- f_topsimsum(df_topsimsum, "best")
 tiff(filename=fn_topsimsum_fig, units="px", width=3200, height=1800)
 print(plots$plot1)
 dev.off()
 
-# top-10 topologies
 tiff(filename=fn_topsimsum_ten_fig, units="px", width=2880, height=1800)
 print(plots$plot2)
 dev.off()
 
 # 50kb-window
-df_topsimsum_50kb <- df_topsimsum_50kb %>%
-  select(topology, count) %>%
-  group_by(topology) %>%
-  summarise_all(sum) %>%
-  mutate(cum.percentage = round(count/sum(count)*100, 3)) %>%
-  arrange(desc(count))
-
-df_topsimsum_50kb$topology <- forcats::fct_inorder(df_topsimsum_50kb$topology)
-
-plots <- f_topsimsum(df_topsimsum_50kb, "50kb")
+plots_50kb <- f_topsimsum(df_topsimsum_50kb, "50kb")
 tiff(filename=fn_topsimsum_fig_50kb, units="px", width=3200, height=1800)
-print(plots$plot1)
+print(plots_50kb$plot1)
 dev.off()
 
-# top-10 topologies
 tiff(filename=fn_topsimsum_ten_fig_50kb, units="px", width=2880, height=1800)
-print(plots$plot2)
+print(plots_50kb$plot2)
 dev.off()
 
 # cnsimsum
-df_cnsimsum <- df_cnsimsum %>%
-  group_by(topology, count) %>%
-  summarise(n=n())
-
-top_ten_tops <- df_topsimsum$topology[1:10]
-df_cnsimsum_ten <- subset(df_cnsimsum, topology %in% top_ten_tops)
-
-plots <- f_cnsimsum(df_cnsimsum, df_cnsimsum_ten, "best")
+plots <- f_cnsimsum(df_cnsimsum, plots$df, "best")
 tiff(filename=fn_cnsimsum_fig, units="px", width=2880, height=1800)
 print(plots$plot1)
 dev.off()
@@ -257,19 +246,12 @@ print(plots$plot2)
 dev.off()
 
 # 50kb-window
-df_cnsimsum_50kb <- df_cnsimsum_50kb %>%
-  group_by(topology, count) %>%
-  summarise(n=n())
-
-top_ten_tops <- df_topsimsum_50kb$topology[1:10]
-df_cnsimsum_ten_50kb <- subset(df_cnsimsum_50kb, topology %in% top_ten_tops)
-
-plots <- f_cnsimsum(df_cnsimsum_50kb, df_cnsimsum_ten_50kb, "50kb")
+plots_50kb <- f_cnsimsum(df_cnsimsum_50kb, plots_50kb$df, "50kb")
 tiff(filename=fn_cnsimsum_fig_50kb, units="px", width=2880, height=1800)
-print(plots$plot1)
+print(plots_50kb$plot1)
 dev.off()
 
 tiff(filename=fn_cnsimsum_ten_fig_50kb, units="px", width=2880, height=1800)
-print(plots$plot2)
+print(plots_50kb$plot2)
 dev.off()
 ```

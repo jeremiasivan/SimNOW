@@ -61,10 +61,6 @@ for (c in ls_chr) {
   if (!dir.exists(currentdir)) {
     dir.create(currentdir, recursive = T)
   }
-  
-  # input_aln <- ifelse(c=="chr_all",
-  #                     paste0(outdir,"/",c,"/all_concat_filtered.fa"),
-  #                     paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa"))
 
   input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa")
   temprun <- list(out=out, params=list(codedir=codedir,
