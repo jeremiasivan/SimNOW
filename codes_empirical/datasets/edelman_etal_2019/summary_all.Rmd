@@ -30,27 +30,29 @@ fn_cnsimsum_eight_fig <- paste0(simsumdir, params$prefix, ".cnsimsum_eight.tiff"
 
 ```{r functions, include=FALSE}
 f_topsimsum <- function(df) {
+  row_sums <- sum(df$count)
+
   df <- df %>%
     group_by(topology, colour) %>%
     summarise(count=sum(count)) %>%
-    mutate(cum.percentage = round(count/sum(count)*100, 3)) %>%
+    mutate(cum.percentage = round(count/row_sums*100, 3)) %>%
     arrange(desc(count))
 
   df$topology <- forcats::fct_inorder(df$topology)
 
-  plot1 <- NULL
+  plot1 <- ggplot(df, aes(x=topology, y=count))
   plot2 <- NULL
   
   # check if colour column is empty
   if (!all(is.na(df$colour))) {
-    plot1 <- ggplot(df, aes(x=topology, y=count, fill=colour))
-    plot2 <- ggplot(subset(df, colour!="#000000"), aes(x=topology, y=count, fill=colour))
+    plot1 <- plot1 + geom_bar(position="dodge", stat="identity", aes(fill=colour))
+    plot2 <- ggplot(subset(df, colour!="#000000"), aes(x=topology, y=count)) + geom_bar(position="dodge", stat="identity", aes(fill=colour))
   } else {
-    plot1 <- ggplot(df, aes(x=topology, y=count, fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
-    plot2 <- ggplot(df[1:8,], aes(x=topology, y=count, fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
+    plot1 <- plot1 + geom_bar(position="dodge", stat="identity") + viridis::scale_fill_viridis(discrete = TRUE)
+    plot2 <- ggplot(df[1:8,], aes(x=topology, y=count)) + geom_bar(position="dodge", stat="identity") + viridis::scale_fill_viridis(discrete = TRUE)
   }
 
-  plot1 <- plot1 + geom_bar(position="dodge", stat="identity") +
+  plot1 <- plot1 + 
     geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=5) +
     ggtitle("Topology distribution of erato-sara Heliconius genome") + ylab("Count") + xlab("Topology") +
     guides(fill="none") +
@@ -66,7 +68,7 @@ f_topsimsum <- function(df) {
       legend.key.size=unit(2,"cm")
     )
 
-  plot2 <- plot2 + geom_bar(position="dodge", stat="identity") +
+  plot2 <- plot2 +
     geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=10) +
     ggtitle("Top 8 topologies of erato-sara Heliconius genome") + ylab("Count") + xlab("Topology") +
     guides(fill="none") +
