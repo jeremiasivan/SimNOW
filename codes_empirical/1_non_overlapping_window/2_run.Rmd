@@ -219,7 +219,6 @@ ls_seqlen <- foreach (i = wsize, .combine='c') %dopar% {
   }
   
   # fn_atsumf <- paste0(temp_outdir, params$prefix, ".atsum.tiff")
-  # fn_cnsumf <- paste0(temp_outdir, params$prefix, ".cnsum.tiff")
   fn_atsum <- paste0(temp_outdir, params$prefix, ".atsum")
   fn_cnsum <- paste0(temp_outdir, params$prefix, ".cnsum")
   fn_tops <- paste0(temp_outdir, params$prefix, ".topsum")

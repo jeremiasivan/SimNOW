@@ -92,7 +92,7 @@ for (i in window_sizes) {
   
   # iterate through ms topology file
   for (k in 1:nrow(msfile)){
-    # extract the hmm topology based on ms topology switching
+    # extract the topology based on ms topology switching
     start_idx <- tail(which(smfile$start <= msfile$start[k]), 1)
     stop_idx <- head(which(smfile$stop >= msfile$stop[k]), 1)
     

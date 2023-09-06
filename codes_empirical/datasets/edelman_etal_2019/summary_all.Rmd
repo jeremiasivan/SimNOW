@@ -5,9 +5,11 @@ params:
   outdir: "~/simulation"
 
   ic_type: "aic"
+  colour_scheme: ""
 ---
 ```{r setup, include=FALSE}
 # install.packages("viridis")
+# install.packages("ape")
 
 library(data.table)
 library(dplyr)
@@ -18,94 +20,95 @@ if (!dir.exists(simsumdir)) {
   dir.create(simsumdir, recursive=T)
 }
 
-simsumdir_50kb <- paste0(simsumdir, "50000/")
-if (!dir.exists(simsumdir_50kb)) {
-  dir.create(simsumdir_50kb, recursive=T)
-}
-
 fn_topsimsum <- paste0(simsumdir, params$prefix, ".topsimsum")
 fn_topsimsum_fig <- paste0(simsumdir, params$prefix, ".topsimsum.tiff")
-fn_topsimsum_ten_fig <- paste0(simsumdir, params$prefix, ".topsimsum_ten.tiff")
+fn_topsimsum_eight_fig <- paste0(simsumdir, params$prefix, ".topsimsum_eight.tiff")
 fn_cnsimsum <- paste0(simsumdir, params$prefix, ".cnsimsum")
 fn_cnsimsum_fig <- paste0(simsumdir, params$prefix, ".cnsimsum.tiff")
-fn_cnsimsum_ten_fig <- paste0(simsumdir, params$prefix, ".cnsimsum_ten.tiff")
-
-fn_topsimsum_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.topsimsum")
-fn_topsimsum_fig_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.topsimsum.tiff")
-fn_topsimsum_ten_fig_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.topsimsum_ten.tiff")
-fn_cnsimsum_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.cnsimsum")
-fn_cnsimsum_fig_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.cnsimsum.tiff")
-fn_cnsimsum_ten_fig_50kb <- paste0(simsumdir_50kb, params$prefix, "_50kb.cnsimsum_ten.tiff")
+fn_cnsimsum_eight_fig <- paste0(simsumdir, params$prefix, ".cnsimsum_eight.tiff")
 ```
 
 ```{r functions, include=FALSE}
-f_topsimsum <- function(df, type) {
+f_topsimsum <- function(df) {
   df <- df %>%
-    select(topology, count) %>%
+    select(topology, count, colour) %>%
     group_by(topology) %>%
-    summarise_all(sum) %>%
+    summarise(count=sum(count)) %>%
     mutate(cum.percentage = round(count/sum(count)*100, 3)) %>%
     arrange(desc(count))
 
   df$topology <- forcats::fct_inorder(df$topology)
 
-  plot1 <- ggplot(df, aes(x=topology, y=count, fill=topology)) +
-    geom_bar(position="dodge", stat="identity") +
-    geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=5) +
-    viridis::scale_fill_viridis(discrete = TRUE) +
-    ylab("Count") + xlab("Topology") +
-    guides(fill="none") +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 50),
-      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-      axis.text.y=element_text(size=30),
-      axis.text.x=element_text(size=30, angle = 90, vjust = 0.5, hjust=1),
-      legend.title=element_text(size=30),
-      legend.text=element_text(size=30),
-      legend.key.size=unit(2,"cm")
-    )
-
-  plot2 <- ggplot(df[1:10,], aes(x=topology, y=count, fill=topology)) +
-    geom_bar(position="dodge", stat="identity") +
-    geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=10) +
-    viridis::scale_fill_viridis(discrete = TRUE) +
-    ylab("Count") + xlab("Topology") +
-    guides(fill="none") +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 50),
-      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-      axis.text.y=element_text(size=30),
-      axis.text.x=element_text(size=30, angle = 90, vjust = 0.5, hjust=1),
-      legend.title=element_text(size=30),
-      legend.text=element_text(size=30),
-      legend.key.size=unit(2,"cm")
-    )
-
-  if (type == "best") {
-    plot1 <- plot1 + ggtitle("Topology distribution of erato-sara Heliconius genome")
-    plot2 <- plot2 + ggtitle("Top 10 topologies of erato-sara Heliconius genome")
-  } else if (type == "50kb") {
-    plot1 <- plot1 + ggtitle("Topology distribution of erato-sara Heliconius genome based on 50kb-window")
-    plot2 <- plot2 + ggtitle("Top 10 topologies of erato-sara Heliconius genome based on 50kb-window")
+  plot1 <- NULL
+  plot2 <- NULL
+  
+  # check if colour column is empty
+  if (!is.na(df$colour)) {
+    plot1 <- ggplot(df, aes(x=topology, y=count, fill=colour))
+    plot2 <- ggplot(df[colour!="#000000"], aes(x=topology, y=count, fill=colour))
+  } else {
+    plot1 <- ggplot(df, aes(x=topology, y=count, fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
+    plot2 <- ggplot(df[1:8,], aes(x=topology, y=count, fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
   }
+
+  plot1 <- plot1 + geom_bar(position="dodge", stat="identity") +
+    geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=5) +
+    ggtitle("Topology distribution of erato-sara Heliconius genome") + ylab("Count") + xlab("Topology") +
+    guides(fill="none") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30, angle = 90, vjust = 0.5, hjust=1),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+  plot2 <- plot2 + geom_bar(position="dodge", stat="identity") +
+    geom_text(aes(label=cum.percentage), position=position_dodge(width=0.9), vjust=-0.5, size=10) +
+    ggtitle("Top 8 topologies of erato-sara Heliconius genome") + ylab("Count") + xlab("Topology") +
+    guides(fill="none") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30, angle = 90, vjust = 0.5, hjust=1),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
 
   return(list(plot1=plot1, plot2=plot2, df=df))
 }
 
-f_cnsimsum <- function(df1, df2, type) {
+f_cnsimsum <- function(df1, df2) {
   df1 <- df1 %>%
     group_by(topology, count) %>%
     summarise(n=n())
 
-  plot1 <- ggplot(df1, aes(x=count, y=n, fill=topology)) +
-    geom_bar(position="dodge", stat="identity") +
-    viridis::scale_fill_viridis(discrete = TRUE) +
+  plot1 <- NULL
+  plot2 <- NULL
+  
+  # check if colour column is empty
+  if (!is.na(df$colour)) {
+    plot1 <- ggplot(df1, aes(x=count, y=n, fill=colour))
+    plot2 <- ggplot(df[colour!="#000000"], aes(x=count, y=n, fill=colour))
+  } else {
+    top_eight_tops <- df2$topology[1:8]
+    df2 <- subset(df1, topology %in% top_eight_tops)
+
+    plot1 <- ggplot(df1, aes(x=count, y=n, fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
+    plot2 <- ggplot(df2, aes(x=count, y=n, fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
+  }
+
+  plot1 <- plot1 + geom_bar(position="dodge", stat="identity") +
     facet_wrap(.~topology, scales = "free") +
-    ylab("Frequency") + xlab("Number of consecutive windows") +
+    ggtitle("Number of consecutive windows per topology") + ylab("Frequency") + xlab("Number of consecutive windows") +
     guides(fill="none") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
@@ -119,14 +122,9 @@ f_cnsimsum <- function(df1, df2, type) {
       legend.key.size=unit(2,"cm")
     )
 
-  top_ten_tops <- df2$topology[1:10]
-  df2 <- subset(df1, topology %in% top_ten_tops)
-
-  plot2 <- ggplot(df2, aes(x=count, y=n, fill=topology)) +
-    geom_bar(position="dodge", stat="identity") +
-    viridis::scale_fill_viridis(discrete = TRUE) +
+  plot2 <- plot2 + geom_bar(position="dodge", stat="identity") +
     facet_wrap(.~topology, scales = "free") +
-    ylab("Frequency") + xlab("Number of consecutive windows") +
+    ggtitle("Number of consecutive windows for 8 top topologies") + ylab("Frequency") + xlab("Number of consecutive windows") +
     guides(fill="none") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
@@ -139,15 +137,7 @@ f_cnsimsum <- function(df1, df2, type) {
       legend.title=element_text(size=30),
       legend.text=element_text(size=30),
       legend.key.size=unit(2,"cm")
-    )
-
-  if (type == "best") {
-    plot1 <- plot1 + ggtitle("Number of consecutive windows per topology")
-    plot2 <- plot2 + ggtitle("Number of consecutive windows per topology based on 50kb-window")
-  } else if (type == "50kb") {
-    plot1 <- plot1 + ggtitle("Number of consecutive windows for the top-10 topologies")
-    plot2 <- plot2 + ggtitle("Number of consecutive windows for the top-10 topologies based on 50kb-window")
-  }
+  )
 
   return(list(plot1=plot1, plot2=plot2))
 }
@@ -158,11 +148,9 @@ allsims <- list.dirs(paste0(params$outdir,"/",params$prefix), full.names = F, re
 chrs <- allsims[grep("^chr", allsims)]
 
 # iterate through chromosomes
-df_topsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), cum.percentage=numeric())
-df_cnsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric())
-
-df_topsimsum_50kb <- data.table::data.table(chr=character(), topology=character(), count=numeric(), cum.percentage=numeric())
-df_cnsimsum_50kb <- data.table::data.table(chr=character(), topology=character(), count=numeric())
+df_topsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), cum.percentage=numeric(), colour=character())
+df_cnsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), colour=character())
+df_color <- NULL
 
 for (c in chrs) {
   window_outdir <- paste0(params$outdir,"/",params$prefix,"/",c,"/windows/")
@@ -186,72 +174,57 @@ for (c in chrs) {
 
   df_topsum <- data.table::fread(fn_topsum)
   df_topsum$chr <- rep(c, nrow(df_topsum))
-  df_topsimsum <- rbind(df_topsimsum, df_topsum)
+  df_topsimsum <- rbind(df_topsimsum, df_topsum, fill=TRUE)
 
   df_cnsum <- data.table::fread(fn_cnsum)
   df_cnsum$chr <- rep(c, nrow(df_cnsum))
-  df_cnsimsum <- rbind(df_cnsimsum, df_cnsum)
+  df_cnsimsum <- rbind(df_cnsimsum, df_cnsum, fill=TRUE)
+}
 
-  # 50kb-window
-  fn_topsum <- paste0(window_outdir, "/50000/summary/", c, ".topsum")
-  fn_cnsum <- paste0(window_outdir, "/50000/summary/", c, ".cnsum")
-  if (!all(file.exists(fn_topsum, fn_cnsum))) {
-    next
+if (params$colour_scheme != "" && !is.null(params$colour_scheme)) {
+  df_colour <- data.table::fread(params$colour_scheme)
+
+  top_topsum <- unique(df_topsum$topology)
+  top_cnsum <- unique(df_cnsum$topology)
+  top_colour <- unique(df_colour$topology)
+
+  # set colour
+  for (j in top_topsum) {
+    for (k in top_colour) {
+      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::read.tree(text = k))) {
+        df_topsum[topology == j, colour := df_colour$colour[df_coloour$topology == k]]
+        df_cnsum[topology == j, colour := df_colour$colour[df_coloour$topology == k]]
+        break
+      }
+    }
   }
 
-  df_topsum <- data.table::fread(fn_topsum)
-  df_topsum$chr <- rep(c, nrow(df_topsum))
-  df_topsimsum_50kb <- rbind(df_topsimsum_50kb, df_topsum)
-
-  df_cnsum <- data.table::fread(fn_cnsum)
-  df_cnsum$chr <- rep(c, nrow(df_cnsum))
-  df_cnsimsum_50kb <- rbind(df_cnsimsum_50kb, df_cnsum)
+  df_topsum[is.na(colour), colour := "#000000"]
+  df_cnsum[is.na(colour), colour := "#000000"]
 }
 
 data.table::fwrite(df_topsimsum, file=fn_topsimsum, quote=F, sep="\t")
 data.table::fwrite(df_cnsimsum, file=fn_cnsimsum, quote=F, sep="\t")
-data.table::fwrite(df_topsimsum_50kb, file=fn_topsimsum_50kb, quote=F, sep="\t")
-data.table::fwrite(df_cnsimsum_50kb, file=fn_cnsimsum_50kb, quote=F, sep="\t")
 ```
 
 ```{r visualization, include=FALSE}
 # topsimsum
-plots <- f_topsimsum(df_topsimsum, "best")
+plots <- f_topsimsum(df_topsimsum)
 tiff(filename=fn_topsimsum_fig, units="px", width=3200, height=1800)
 print(plots$plot1)
 dev.off()
 
-tiff(filename=fn_topsimsum_ten_fig, units="px", width=2880, height=1800)
+tiff(filename=fn_topsimsum_eight_fig, units="px", width=2880, height=1800)
 print(plots$plot2)
 dev.off()
 
-# 50kb-window
-plots_50kb <- f_topsimsum(df_topsimsum_50kb, "50kb")
-tiff(filename=fn_topsimsum_fig_50kb, units="px", width=3200, height=1800)
-print(plots_50kb$plot1)
-dev.off()
-
-tiff(filename=fn_topsimsum_ten_fig_50kb, units="px", width=2880, height=1800)
-print(plots_50kb$plot2)
-dev.off()
-
 # cnsimsum
-plots <- f_cnsimsum(df_cnsimsum, plots$df, "best")
+plots <- f_cnsimsum(df_cnsimsum, plots$df)
 tiff(filename=fn_cnsimsum_fig, units="px", width=2880, height=1800)
 print(plots$plot1)
 dev.off()
 
-tiff(filename=fn_cnsimsum_ten_fig, units="px", width=2880, height=1800)
+tiff(filename=fn_cnsimsum_eight_fig, units="px", width=2880, height=1800)
 print(plots$plot2)
-dev.off()
-
-# 50kb-window
-plots_50kb <- f_cnsimsum(df_cnsimsum_50kb, plots_50kb$df, "50kb")
-tiff(filename=fn_cnsimsum_fig_50kb, units="px", width=2880, height=1800)
-print(plots_50kb$plot1)
-dev.off()
-
-tiff(filename=fn_cnsimsum_ten_fig_50kb, units="px", width=2880, height=1800)
-print(plots_50kb$plot2)
 dev.off()
 ```

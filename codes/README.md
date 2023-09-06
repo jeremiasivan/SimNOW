@@ -10,7 +10,7 @@
     - <a href="#example">Example from publication</a>
 
 ## <a id="foldstr">Folder Structure</a>
-The following chart shows the general folder structure after running the first three analyses. Explanation of each output file is described below.
+The following chart shows the general folder structure after running the first two analyses. Explanation of each output file is described below.
 ```
 prefix/
 ├── simulation/
@@ -50,43 +50,6 @@ prefix/
 │   ├── prefix.bic.tiff
 │   ├── prefix.aicc.tiff
 │   └── prefix.sum
-├── winhmm/
-│   └── jc_t/
-│       ├── runs/
-│       │   ├── 1/
-│       │   │   ├── concat_1.fa
-│       │   │   ├── concat_1.fa.ckp.gz
-│       │   │   ├── concat_1.fa.hmm
-│       │   │   ├── concat_1.fa.iqtree
-│       │   │   ├── concat_1.fa.log
-│       │   │   ├── concat_1.fa.treefile
-│       │   │   └── topology_1.txt
-│       │   ├── ...
-│       │   └── 4/
-│       │       ├── concat_4.fa
-│       │       ├── concat_4.fa.ckp.gz
-│       │       ├── concat_4.fa.hmm
-│       │       ├── concat_4.fa.iqtree
-│       │       ├── concat_4.fa.log
-│       │       ├── concat_4.fa.treefile
-│       │       └── topology_4.txt
-│       ├── tmp/
-│       ├── tree/
-│       │   ├── prefix.best_model.nex
-│       │   ├── prefix.ckp.gz
-│       │   ├── prefix.iqtree
-│       │   ├── prefix.log
-│       │   ├── prefix.parstree
-│       │   └── prefix.treefile
-│       ├── windows/
-│       │   ├── window_01.fa
-│       │   ├── window_02.fa
-│       │   ├── window_03.fa
-│       │   ├── window_04.fa
-│       │   └── window_05.fa
-│       ├── prefix.wh.atsum
-│       ├── prefix.wh.cmp
-│       └── prefix.wh.log
 ├── prefix.html
 └── prefix.log 
 ```
@@ -163,61 +126,7 @@ Additionally, the `windows` folder will contain the following files:
 - `prefix.sum`: summary table of window sizes and their respective information criteria scores
 
 ### <a id="hmm">HMM</a>
-In this step, we use MAST-HMM to refine the breakpoints between windows. We simplify the process by: (i) selecting window size with the best IC score, and (ii) running MAST-HMM on two consecutive windows if the windows have different topology. The parameters for this step is set in `3_hmm/1_main.Rmd`.
-
-| Parameters   | Definition                                                                             |
-| ------------ | -------------------------------------------------------------------------------------- |
-| `codedir`    | Directory for folder `SimNOW/codes`                                                    |
-| `prefix`     | Prefix for output files and folder                                                     | 
-| `outdir`     | Output directory                                                                       |
-| `thread`     | Number of threads for parallelization                                                  |
-| `redo`       | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results |
-| `seqkitdir`  | Directory for `Seqkit` executable                                                      |
-| `iqtree2dir` | Directory for `IQ-TREE 2` executable                                                    |
-| `masthmmdir` | Directory for `IQ-TREE 2` executable with `MAST-HMM`                                    |
-| `ic_type`    | Information criterion (i.e., `AIC`, `BIC`, or `AICc`)                                  |
-| `mast_model` | DNA substitution model for `MAST` analysis                                             |
-
-#### Output
-Running the code will create a nested folder called `winhmm/{mast_model}` (e.g., if `mast_model` is set to be `JC+T`, then the full path will be `winhmm/jc_t`). Inside this subfolder, there will be four more folders:
-- `runs/`: folder that contains per-step, two-window HMM outputs generated using `MAST-HMM`
-- `tmp/`: folder with temporary window alignments
-- `tree/`: folder with window trees generated using `IQ-TREE 2`
-- `windows/`: folder with all window alignments
-
-Additionally, the `{mast_model}` folder will contain the following files:
-- `prefix.wh.atsum`: table of window boundaries and trees
-- `prefix.wh.cmp`: matrix of sites that recover specific topology according to `ms` (row) and non-overlapping windows (column)
-- `prefix.wh.log`: log file of the HMM analysis
-
-## <a id="multiple">Running multiple analyses</a>
-If you want to run more than one analysis at the same time, you can run `run_all.R`. There are several parameters that are new or changed:
-| Parameters | Definition                                                                       |
-| ---------- | -------------------------------------------------------------------------------- |
-| `ms_r`     | Vector of `ms` recombination rate                                                |
-| `nreps`    | Number of replicate per `ms` recombination rate                                  |
-| `nthread`  | Total number of threads; it is divided by `thread` to parallelize the replicates |
-
-#### Output
-Running the code will create a new folder called `summary` in `outdir` that stores the summary of all simulations. It contains the following folders/files:
-- `prefix.simsum`: summary table for all simulations
-- `prefix.aic_ws.tiff`: plot between AIC vs. window size
-- `prefix.bic_ws.tiff`: plot between BIC vs. window size
-- `prefix.aicc_ws.tiff`: plot between AICc vs. window size
-- `prefix.site_rmse.tiff`: plot between site accuracy vs. RMSE
-- `site/`
-    - `prefix.site_ws.tiff`: plot of site accuracy vs. window size
-    - `aic/`
-        - `prefix.aic_site_loss.tiff`: plot of site accuracy loss when choosing window size with the best AIC score
-        - `prefix.aic_site_rank.tiff`: plot of ranked site accuracy vs. ranked AIC
-        - `prefix.aic_site.tiff`: plot of site accuracy vs. AIC
-        - `prefix.aic_site_delta.tiff`: plot of delta site accuracy vs. delta AIC
-    - `bic/`
-        - ... (exactly the same with `aic/` but with BIC)
-    - `aicc/`
-        - ... (exactly the same with `aic/` but with AICc) 
-- `rmse/`
-    - ... (exactly the same with `site/` but with RMSE)
+*(to be implemented later)*
 
 ### <a id="example">Example from publication</a>
 In the paper, we ran three different simulation scenarios with different degree of incomplete lineage sorting (ILS) but the same percentage of informative sites. Please do refer to the publication for more detailed explanation.
@@ -245,12 +154,6 @@ dna_model <- alisim_model
 outgroup <- "7"
 
 window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
-
-seqkitdir <- "~/seqkit"
-masthmmdir <- "~/iqtree-2.2.5.hmmster-Linux/bin/iqtree2"
-mast_model <- "JC+T"
-
-ic_type <- "AIC"
 ```
 
 Specific parameters (in `codes/run_all.R`) for each scenario: <br>
@@ -285,4 +188,4 @@ alisim_scale <- 0.041
 ```
 
 ---
-*Last update: 26 August 2023 by Jeremias Ivan*
+*Last update: 06 September 2023 by Jeremias Ivan*

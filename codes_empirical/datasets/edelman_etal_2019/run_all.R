@@ -2,7 +2,7 @@
 nthread <- 50
 
 # general
-codedir <- "~/SimNOW/codes"
+codedir <- "~/SimNOW/codes_empirical"
 thread <- 10
 outdir <- ""
 redo <- FALSE
@@ -40,7 +40,7 @@ if (nthread / thread < 1) {
 }
 
 # data conversion from HAL -> FASTA
-rmarkdown::render(input=paste0(codedir,"/5_empirical_data/edelman_etal_2019/data_preparation.Rmd"),
+rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/data_preparation.Rmd"),
                   output_file=paste0(outdir,"/edelman.html"),
                   params=list(fn_hal=fn_hal, fn_refseq=fn_refseq, thread=thread, outdir=outdir, redo=redo,
                               dir_hal2maf=dir_hal2maf, dir_singleCopy=dir_singleCopy, dir_mafsort=dir_mafsort, dir_msaview=dir_msaview),
@@ -89,7 +89,7 @@ make_runs <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste0(codedir,"/5_empirical_data/1_main.Rmd"),
+  rmarkdown::render(input=paste0(codedir,"/1_non_overlapping_window/1_main.Rmd"),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
@@ -109,7 +109,7 @@ foreach(r=runs, .errorhandling = 'pass') %dopar% {
 stopCluster(cl)
 
 # summary for all chromosomes
-rmarkdown::render(input=paste0(codedir,"/5_empirical_data/edelman_etal_2019/summary_all.Rmd"),
+rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/summary_all.Rmd"),
                   output_file=paste0(outdir,"/",prefix,"/edelman_summary.html"),
                   params=list(prefix=prefix, outdir=outdir, ic_type=ic_type),
                   quiet=TRUE)

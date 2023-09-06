@@ -1,6 +1,6 @@
 # SimNOW
 
-**SimNOW (Simulation Non-Overlapping Windows)** is an R pipeline to assess the accuracy of non-overlapping windows analysis in simulated phylogenetic studies. It consists of three main steps: sequence simulation, non-overlapping window analysis, and HMM.
+**SimNOW (Simulation Non-Overlapping Windows)** is an R pipeline to assess the accuracy of non-overlapping windows analysis in simulated phylogenetic studies. It consists of two main steps: sequence simulation and non-overlapping window analysis.
 
 ## Table of Content
 - <a href="#prereqs">Prerequisites</a>
@@ -16,8 +16,6 @@ This pipeline requires several software and R packages to run. All software have
 - <a href="http://home.uchicago.edu/~rhudson1/source/mksamples.html">ms</a>
 - <a href="http://www.iqtree.org/doc/AliSim">AliSim</a>
 - <a href="http://www.iqtree.org">IQ-TREE 2</a>
-- <a href="http://www.iqtree.org/doc/Complex-Models#multitree-models">MAST</a>-HMM
-- <a href="https://bioinf.shenwei.me/seqkit/">Seqkit</a> (can also be installed via <a href="https://anaconda.org/bioconda/seqkit">Anaconda</a>)
 
 ### R packages
 |    Name    |                               CRAN                               |                             Anaconda                             |
@@ -41,10 +39,7 @@ This pipeline requires several software and R packages to run. All software have
     ```
 
 2. **Install the prerequisites** <br>
-    > **Important Notes** <br>
-    `AliSim` and `MAST-HMM` are integrated into `IQ-TREE 2`, but they are available in different releases. As a result, you need to individually download the latest version of `IQ-TREE 2` for both.
-
-    Please download `ms` and `IQ-TREE 2` from the links above. For `Seqkit` and `R` packages, I prefer to download them from `Anaconda` as below.
+    Please download `ms` and `IQ-TREE 2` from the links above. For the `R` packages, I prefer to download them from `Anaconda` as below.
 
     - Setting up conda environment with R
         ```
@@ -53,7 +48,6 @@ This pipeline requires several software and R packages to run. All software have
         ```
     -  Installing R packages
         ```
-        conda install seqkit
         conda install -c conda-forge r-ape r-data.table r-dplyr r-dosnow r-forcats r-ggplot2 r-log4r r-rmarkdown r-seqinr r-stringr r-viridis
         ```
         Notes: Here, I list all packages that are used in the pipeline, which is not ideal if you have a lot of packages. In that case, you can start by installing <a href="https://anaconda.org/conda-forge/r-essentials">`r-essentials`</a> which includes commonly-used packages in R.
@@ -66,7 +60,6 @@ This pipeline requires several software and R packages to run. All software have
     ```
     Rscript -e "rmarkdown::render('~/SimNOW/codes/1_sequence_simulation/simulation.Rmd')"
     Rscript -e "rmarkdown::render('~/SimNOW/codes/2_non_overlapping_window/1_main.Rmd')"
-    Rscript -e "rmarkdown::render('~/SimNOW/codes/3_hmm/1_main.Rmd')"
     Rscript -e "rmarkdown::render('~/SimNOW/codes/4_all_runs_summary/summary_all.Rmd')"
     ```
 
@@ -81,10 +74,9 @@ This pipeline requires several software and R packages to run. All software have
 Running the whole pipeline with the second scenario (see <a href="/codes/README.md#example">here</a>) using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step per replicate is as follows:
 - Sequence simulation: up to 1 hour for `ms_r = 2000`
 - Non-overlapping windows: ~2.25 hours
-- HMM: up to 5 minutes for `ms_r = 2000`
 
 ## <a id="emps">Empirical Analyses</a>
-In order to run non-overlapping windows on empirical datasets, please refer to <a href="codes/5_empirical_data/README.md">`codes/5_empirical_data/README.md`</a>. There are additional software and R packages required to run the pipeline, specific for each dataset:
+In order to run non-overlapping windows on empirical datasets, please refer to <a href="codes_empirical/README.md">`codes_empirical/README.md`</a>. There are additional software and R packages required to run the pipeline, specific for each dataset:
 
 ### Edelman et al. (2019)
 #### Software
@@ -106,16 +98,12 @@ In order to run non-overlapping windows on empirical datasets, please refer to <
 2. Ly-Trong, N., et al. (<a href="https://doi.org/10.1093/molbev/msac092">2022</a>). **AliSim: A Fast and Versatile Phylogenetic Sequence Simulator for the Genomic Era**. *Molecular Biology and Evolution*, *39*(5), msac092.
 
 3. Minh, B.Q., et al. (<a href="https://doi.org/10.1093/molbev/msaa015">2020</a>). **IQ-TREE 2: New Models and Efficient Methods for Phylogenetic Inference in the Genomic Era**. *Molecular Biology and Evolution*, *37*(5), 1530–1534.
- 
-4. Wong, T., et al. (<a href="https://doi.org/10.1101/2022.10.06.511210">2022</a>). **MAST: Phylogenetic Inference with Mixtures Across Sites and Trees**. *bioRxiv*.
 
-5. Shen, W., et al. (<a href="https://doi.org/10.1371/journal.pone.0163962">2016</a>). **SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation**. *PLoS ONE*, *11*(10), e0163962.
+4. Edelman, et al. (<a href="https://doi.org/10.1126/science.aaw2090">2019</a>). **Genomic architecture and introgression shape a butterfly radiation**. *Science*, *366*(6465), 594–599.
 
-6. Edelman, et al. (<a href="https://doi.org/10.1126/science.aaw2090">2019</a>). **Genomic architecture and introgression shape a butterfly radiation**. *Science*, *366*(6465), 594–599.
+5. Hickey, et al. (<a href="https://doi.org/10.1093/bioinformatics/btt128">2013</a>). **HAL: a hierarchical format for storing and analyzing multiple genome alignments**. *Bioinformatics*, *29*(10), 1341–1342.
 
-7. Hickey, et al. (<a href="https://doi.org/10.1093/bioinformatics/btt128">2013</a>). **HAL: a hierarchical format for storing and analyzing multiple genome alignments**. *Bioinformatics*, *29*(10), 1341–1342.
-
-8. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). **PHAST and RPHAST: phylogenetic analysis with space/time models**. *Briefings in Bioinformatics*, *12*(1), 41–51.
+6. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). **PHAST and RPHAST: phylogenetic analysis with space/time models**. *Briefings in Bioinformatics*, *12*(1), 41–51.
 
 ---
-*Last update: 29 August 2023 by Jeremias Ivan*
+*Last update: 06 September 2023 by Jeremias Ivan*
