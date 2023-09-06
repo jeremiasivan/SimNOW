@@ -158,7 +158,6 @@ outdir/
 Running `run_all.R` using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step is as follows:
 - Data preparation and filtering: ~1.6 hours with 50 threads
 - Non-overlapping window analysis: up to 4.4 hours for `chr10`
-- HMM: *(to be implemented later)*
 
 ---
-*Last update: 05 September 2023 by Jeremias Ivan*
+*Last update: 06 September 2023 by Jeremias Ivan*

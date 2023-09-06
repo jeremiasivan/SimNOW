@@ -31,8 +31,7 @@ fn_cnsimsum_eight_fig <- paste0(simsumdir, params$prefix, ".cnsimsum_eight.tiff"
 ```{r functions, include=FALSE}
 f_topsimsum <- function(df) {
   df <- df %>%
-    select(topology, count, colour) %>%
-    group_by(topology) %>%
+    group_by(topology, colour) %>%
     summarise(count=sum(count)) %>%
     mutate(cum.percentage = round(count/sum(count)*100, 3)) %>%
     arrange(desc(count))
@@ -43,9 +42,9 @@ f_topsimsum <- function(df) {
   plot2 <- NULL
   
   # check if colour column is empty
-  if (!is.na(df$colour)) {
+  if (!all(is.na(df$colour))) {
     plot1 <- ggplot(df, aes(x=topology, y=count, fill=colour))
-    plot2 <- ggplot(df[colour!="#000000"], aes(x=topology, y=count, fill=colour))
+    plot2 <- ggplot(subset(df, colour!="#000000"), aes(x=topology, y=count, fill=colour))
   } else {
     plot1 <- ggplot(df, aes(x=topology, y=count, fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
     plot2 <- ggplot(df[1:8,], aes(x=topology, y=count, fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
@@ -88,16 +87,16 @@ f_topsimsum <- function(df) {
 
 f_cnsimsum <- function(df1, df2) {
   df1 <- df1 %>%
-    group_by(topology, count) %>%
+    group_by(topology, count, colour) %>%
     summarise(n=n())
 
   plot1 <- NULL
   plot2 <- NULL
   
   # check if colour column is empty
-  if (!is.na(df$colour)) {
+  if (!all(is.na(df1$colour))) {
     plot1 <- ggplot(df1, aes(x=count, y=n, fill=colour))
-    plot2 <- ggplot(df[colour!="#000000"], aes(x=count, y=n, fill=colour))
+    plot2 <- ggplot(subset(df1, colour!="#000000"), aes(x=count, y=n, fill=colour))
   } else {
     top_eight_tops <- df2$topology[1:8]
     df2 <- subset(df1, topology %in% top_eight_tops)
@@ -150,7 +149,6 @@ chrs <- allsims[grep("^chr", allsims)]
 # iterate through chromosomes
 df_topsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), cum.percentage=numeric(), colour=character())
 df_cnsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), colour=character())
-df_color <- NULL
 
 for (c in chrs) {
   window_outdir <- paste0(params$outdir,"/",params$prefix,"/",c,"/windows/")
@@ -181,26 +179,25 @@ for (c in chrs) {
   df_cnsimsum <- rbind(df_cnsimsum, df_cnsum, fill=TRUE)
 }
 
-if (params$colour_scheme != "" && !is.null(params$colour_scheme)) {
+if (params$colour_scheme != "") {
   df_colour <- data.table::fread(params$colour_scheme)
 
-  top_topsum <- unique(df_topsum$topology)
-  top_cnsum <- unique(df_cnsum$topology)
+  top_topsum <- unique(df_topsimsum$topology)
   top_colour <- unique(df_colour$topology)
 
   # set colour
   for (j in top_topsum) {
     for (k in top_colour) {
-      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::read.tree(text = k))) {
-        df_topsum[topology == j, colour := df_colour$colour[df_coloour$topology == k]]
-        df_cnsum[topology == j, colour := df_colour$colour[df_coloour$topology == k]]
+      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::unroot(ape::read.tree(text = k)))) {
+        df_topsimsum[topology == j, colour := df_colour$code[df_colour$topology == k]]
+        df_cnsimsum[topology == j, colour := df_colour$code[df_colour$topology == k]]
         break
       }
     }
   }
 
-  df_topsum[is.na(colour), colour := "#000000"]
-  df_cnsum[is.na(colour), colour := "#000000"]
+  df_topsimsum[is.na(colour), colour := "#000000"]
+  df_cnsimsum[is.na(colour), colour := "#000000"]
 }
 
 data.table::fwrite(df_topsimsum, file=fn_topsimsum, quote=F, sep="\t")
