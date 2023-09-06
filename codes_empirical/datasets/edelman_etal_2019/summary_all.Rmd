@@ -45,11 +45,11 @@ f_topsimsum <- function(df) {
   
   # check if colour column is empty
   if (!all(is.na(df$colour))) {
-    plot1 <- plot1 + geom_bar(position="dodge", stat="identity", aes(fill=colour))
-    plot2 <- ggplot(subset(df, colour!="#000000"), aes(x=topology, y=count)) + geom_bar(position="dodge", stat="identity", aes(fill=colour))
+    plot1 <- plot1 + geom_bar(position="dodge", stat="identity", aes(fill=colour)) + scale_fill_identity()
+    plot2 <- ggplot(subset(df, colour!="#000000"), aes(x=topology, y=count)) + geom_bar(position="dodge", stat="identity", aes(fill=colour)) + scale_fill_identity()
   } else {
-    plot1 <- plot1 + geom_bar(position="dodge", stat="identity") + viridis::scale_fill_viridis(discrete = TRUE)
-    plot2 <- ggplot(df[1:8,], aes(x=topology, y=count)) + geom_bar(position="dodge", stat="identity") + viridis::scale_fill_viridis(discrete = TRUE)
+    plot1 <- plot1 + geom_bar(position="dodge", stat="identity", aes(fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
+    plot2 <- ggplot(df[1:8,], aes(x=topology, y=count)) + geom_bar(position="dodge", stat="identity", aes(fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
   }
 
   plot1 <- plot1 + 
@@ -92,22 +92,22 @@ f_cnsimsum <- function(df1, df2) {
     group_by(topology, count, colour) %>%
     summarise(n=n())
 
-  plot1 <- NULL
+  plot1 <- ggplot(df1, aes(x=count, y=n))
   plot2 <- NULL
   
   # check if colour column is empty
   if (!all(is.na(df1$colour))) {
-    plot1 <- ggplot(df1, aes(x=count, y=n, fill=colour))
-    plot2 <- ggplot(subset(df1, colour!="#000000"), aes(x=count, y=n, fill=colour))
+    plot1 <- plot1 + geom_bar(position="dodge", stat="identity", aes(fill=colour)) + scale_fill_identity()
+    plot2 <- ggplot(subset(df1, colour!="#000000"), aes(x=count, y=n)) + geom_bar(position="dodge", stat="identity", aes(fill=colour)) + scale_fill_identity()
   } else {
     top_eight_tops <- df2$topology[1:8]
     df2 <- subset(df1, topology %in% top_eight_tops)
 
-    plot1 <- ggplot(df1, aes(x=count, y=n, fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
-    plot2 <- ggplot(df2, aes(x=count, y=n, fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
+    plot1 <- plot1 + geom_bar(position="dodge", stat="identity", aes(fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
+    plot2 <- ggplot(df2, aes(x=count, y=n)) + geom_bar(position="dodge", stat="identity", aes(fill=topology)) + viridis::scale_fill_viridis(discrete = TRUE)
   }
 
-  plot1 <- plot1 + geom_bar(position="dodge", stat="identity") +
+  plot1 <- plot1 +
     facet_wrap(.~topology, scales = "free") +
     ggtitle("Number of consecutive windows per topology") + ylab("Frequency") + xlab("Number of consecutive windows") +
     guides(fill="none") +
@@ -123,7 +123,7 @@ f_cnsimsum <- function(df1, df2) {
       legend.key.size=unit(2,"cm")
     )
 
-  plot2 <- plot2 + geom_bar(position="dodge", stat="identity") +
+  plot2 <- plot2 + 
     facet_wrap(.~topology, scales = "free") +
     ggtitle("Number of consecutive windows for 8 top topologies") + ylab("Frequency") + xlab("Number of consecutive windows") +
     guides(fill="none") +
