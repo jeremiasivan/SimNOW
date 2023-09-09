@@ -61,7 +61,7 @@ for (c in ls_chr) {
   }
 
   # filtered sequence
-  out <- paste0(run_outdir,"/",c,"/",c,".html")
+  out <- paste0(currentdir,c,".html")
   input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa")
   temprun <- list(out=out, params=list(codedir=codedir,
                                        prefix=c, outdir=run_outdir, thread=thread, redo=redo,
@@ -73,7 +73,12 @@ for (c in ls_chr) {
 
   # no_gaps sequence
   no_gaps_c <- paste0("nogaps_",c)
-  out <- paste0(run_outdir,"/",no_gaps_c,"/",no_gaps_c,".html")
+  currentdir <- paste0(run_outdir,"/",no_gaps_c,"/")
+  if (!dir.exists(currentdir)) {
+    dir.create(currentdir, recursive = T)
+  }
+
+  out <- paste0(currentdir,no_gaps_c,".html")
   input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_nogaps.fa")
   temprun <- list(out=out, params=list(codedir=codedir,
                                        prefix=no_gaps_c, outdir=run_outdir, thread=thread, redo=redo,
