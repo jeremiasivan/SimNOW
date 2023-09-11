@@ -304,7 +304,7 @@ data.table::fwrite(df_topsimsum, file=fn_topsimsum, quote=F, sep="\t")
 data.table::fwrite(df_cnsimsum, file=fn_cnsimsum, quote=F, sep="\t")
 ```
 
-```{r visualization, include=FALSE}
+```{r visualization_nogaps, include=FALSE}
 # topsimsum
 plots <- f_topsimsum(df_topsimsum)
 tiff(filename=fn_topsimsum_fig, units="px", width=3200, height=1800)
