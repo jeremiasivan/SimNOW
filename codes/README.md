@@ -183,9 +183,9 @@ ms_r <- c(0,30,300,3000)
 prefix <- "high"
 outdir <- "~/Documents/high"
 
-ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 0.16 2 1 -ej 0.42 3 1 -ej 0.53 4 1 -ej 0.50 5 6 -ej 0.61 6 1 -ej 1.16 7 1 -es 0.016 2 0.966 -ej 0.016 8 1 -es 0.016 1 0.796 -ej 0.016 9 2 -es 0.414 3 0.115 -ej 0.414 10 4 -es 0.513 6 0.778 -ej 0.513 11 4 -es 0.513 4 0.853 -ej 0.513 12 6"
-alisim_scale <- 0.041
+ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 1.6 2 1 -ej 4.2 3 1 -ej 5.3 4 1 -ej 5.0 5 6 -ej 6.1 6 1 -ej 11.6 7 1 -es 0.16 2 0.966 -ej 0.16 8 1 -es 0.16 1 0.796 -ej 0.16 9 2 -es 4.14 3 0.115 -ej 4.14 10 4 -es 5.13 6 0.778 -ej 5.13 11 4 -es 5.13 4 0.853 -ej 5.13 12 6"
+alisim_scale <- 0.007
 ```
 
 ---
-*Last update: 06 September 2023 by Jeremias Ivan*
+*Last update: 11 September 2023 by Jeremias Ivan*

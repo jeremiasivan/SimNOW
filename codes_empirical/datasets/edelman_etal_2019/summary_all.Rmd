@@ -227,3 +227,101 @@ tiff(filename=fn_cnsimsum_eight_fig, units="px", width=2880, height=1800)
 print(plots$plot2)
 dev.off()
 ```
+
+```{r setup_nogaps, include=FALSE}
+simsumdir <- paste0(params$outdir, "/", params$prefix, "/summary/nogaps/")
+if (!dir.exists(simsumdir)) {
+  dir.create(simsumdir, recursive=T)
+}
+
+fn_topsimsum <- paste0(simsumdir, params$prefix, ".topsimsum")
+fn_topsimsum_fig <- paste0(simsumdir, params$prefix, ".topsimsum.tiff")
+fn_topsimsum_eight_fig <- paste0(simsumdir, params$prefix, ".topsimsum_eight.tiff")
+fn_cnsimsum <- paste0(simsumdir, params$prefix, ".cnsimsum")
+fn_cnsimsum_fig <- paste0(simsumdir, params$prefix, ".cnsimsum.tiff")
+fn_cnsimsum_eight_fig <- paste0(simsumdir, params$prefix, ".cnsimsum_eight.tiff")
+```
+
+```{r summary_nogaps, include=FALSE}
+allsims <- list.dirs(paste0(params$outdir,"/",params$prefix), full.names = F, recursive = F)
+chrs <- allsims[grep("^nogaps_chr", allsims)]
+
+# iterate through chromosomes
+df_topsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), cum.percentage=numeric(), colour=character())
+df_cnsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), colour=character())
+
+for (c in chrs) {
+  window_outdir <- paste0(params$outdir,"/",params$prefix,"/",c,"/windows/")
+
+  fn_summary <- paste0(window_outdir, c, ".sum")
+  if (!file.exists(fn_summary)){
+    next
+  }
+
+  # extract the best window size
+  sumfile <- data.table::fread(fn_summary)
+  min_ic <- sumfile %>%
+    slice_min(!!sym(tolower(params$ic_type)))
+  best_wsize <- as.numeric(min_ic$window_size)*1000
+
+  fn_topsum <- paste0(window_outdir, best_wsize, "/full/summary/", c, ".topsum")
+  fn_cnsum <- paste0(window_outdir, best_wsize, "/full/summary/", c, ".cnsum")
+  if (!all(file.exists(fn_topsum, fn_cnsum))) {
+    next
+  }
+
+  df_topsum <- data.table::fread(fn_topsum)
+  df_topsum$chr <- rep(c, nrow(df_topsum))
+  df_topsimsum <- rbind(df_topsimsum, df_topsum, fill=TRUE)
+
+  df_cnsum <- data.table::fread(fn_cnsum)
+  df_cnsum$chr <- rep(c, nrow(df_cnsum))
+  df_cnsimsum <- rbind(df_cnsimsum, df_cnsum, fill=TRUE)
+}
+
+if (params$colour_scheme != "") {
+  df_colour <- data.table::fread(params$colour_scheme)
+
+  top_topsum <- unique(df_topsimsum$topology)
+  top_colour <- unique(df_colour$topology)
+
+  # set colour
+  for (j in top_topsum) {
+    for (k in top_colour) {
+      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::unroot(ape::read.tree(text = k)))) {
+        df_topsimsum[topology == j, colour := df_colour$code[df_colour$topology == k]]
+        df_cnsimsum[topology == j, colour := df_colour$code[df_colour$topology == k]]
+        break
+      }
+    }
+  }
+
+  df_topsimsum[is.na(colour), colour := "#000000"]
+  df_cnsimsum[is.na(colour), colour := "#000000"]
+}
+
+data.table::fwrite(df_topsimsum, file=fn_topsimsum, quote=F, sep="\t")
+data.table::fwrite(df_cnsimsum, file=fn_cnsimsum, quote=F, sep="\t")
+```
+
+```{r visualization, include=FALSE}
+# topsimsum
+plots <- f_topsimsum(df_topsimsum)
+tiff(filename=fn_topsimsum_fig, units="px", width=3200, height=1800)
+print(plots$plot1)
+dev.off()
+
+tiff(filename=fn_topsimsum_eight_fig, units="px", width=2880, height=1800)
+print(plots$plot2)
+dev.off()
+
+# cnsimsum
+plots <- f_cnsimsum(df_cnsimsum, plots$df)
+tiff(filename=fn_cnsimsum_fig, units="px", width=2880, height=1800)
+print(plots$plot1)
+dev.off()
+
+tiff(filename=fn_cnsimsum_eight_fig, units="px", width=2880, height=1800)
+print(plots$plot2)
+dev.off()
+```
