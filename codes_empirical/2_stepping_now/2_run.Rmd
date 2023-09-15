@@ -102,55 +102,66 @@ write.table(paste0("Updated number of sites: ", s_ln_new, "bp"),
 ```{r window-aln, include=FALSE}
 options(scipen=999)
 
-# iterate through window sizes
-for (i in 2:length(wsizes)-1) {
+# iterate through steps
+stepthread <- params$thread
+if (stepthread > length(wsizes)-1) {
+  stepthread <- length(wsizes)-1
+}
+
+# create doSNOW cluster
+nwcl <- makeCluster(stepthread)
+doSNOW::registerDoSNOW(nwcl)
+
+foreach (i = 2:length(wsizes)-1) %dopar% {
   df_long <- data.table::data.table(name=character(),start=numeric(),end=numeric(),is_informative=logical())
   df_short <- data.table::data.table()
 
   ########################################### LONG ############################################
-  # create outdir
-  temp_outdir <- paste0(getwd(), "/", i, "/", wsizes[i], "/")
-  if (!dir.exists(temp_outdir)) {
-    dir.create(temp_outdir, recursive = T)
-  }
+  if (i == 1) {
+    # create outdir
+    temp_outdir <- paste0(getwd(), "/", i, "/", wsizes[i], "/")
+    if (!dir.exists(temp_outdir)) {
+      dir.create(temp_outdir, recursive = T)
+    }
 
-  dir_perwindow <- paste0(temp_outdir, "perwindow/")
-  if (!dir.exists(dir_perwindow)) {
-    dir.create(dir_perwindow, recursive = T)
-  }
+    dir_perwindow <- paste0(temp_outdir, "perwindow/")
+    if (!dir.exists(dir_perwindow)) {
+      dir.create(dir_perwindow, recursive = T)
+    }
 
-  fn_long <- paste0(dir_perwindow, wsizes[i], ".perwindowsum")
-  
-  # remove all alignments in the folder
-  unlink(paste0(dir_perwindow,"*.fa"))
-  
-  # generate window alignments
-  start <- 1
-  numw <- s_ln_new/wsizes[i]
-  wi <- ceiling(log(numw) / log(10)) + 1
-  
-  for (j in 1:numw) {
-    subfasta <- lapply(s, function(x) x[seq(from = start, to = j*wsizes[i])])
-    subfasta <- do.call(rbind,subfasta)
-    subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
+    fn_long <- paste0(dir_perwindow, wsizes[i], ".perwindowsum")
     
-    window_name <- paste0("window_",formatC(j,width=wi,format="d",flag="0"))
-    dir_window <- paste0(dir_perwindow,window_name,"/")
-    if (!dir.exists(dir_window)) {
-      dir.create(dir_window, recursive = T)
+    # remove all alignments in the folder
+    unlink(paste0(dir_perwindow,"*.fa"))
+    
+    # generate window alignments
+    start <- 1
+    numw <- s_ln_new/wsizes[i]
+    wi <- ceiling(log(numw) / log(10)) + 1
+    
+    for (j in 1:numw) {
+      subfasta <- lapply(s, function(x) x[seq(from = start, to = j*wsizes[i])])
+      subfasta <- do.call(rbind,subfasta)
+      subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
+      
+      window_name <- paste0("window_",formatC(j,width=wi,format="d",flag="0"))
+      dir_window <- paste0(dir_perwindow,window_name,"/")
+      if (!dir.exists(dir_window)) {
+        dir.create(dir_window, recursive = T)
+      }
+
+      fn_out <- paste0(dir_window,window_name,".fa")
+      seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
+
+      iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$iqtree2dir)
+      if (!file.exists(paste0(fn_out,".treefile"))) {
+        df_long <- rbind(df_long, list(name=window_name,start=start,end=j*wsizes[i],is_informative=FALSE))
+      } else {
+        df_long <- rbind(df_long, list(name=window_name,start=start,end=j*wsizes[i],is_informative=TRUE))
+      }
+
+      start <- start + wsizes[i]
     }
-
-    fn_out <- paste0(dir_window,window_name,".fa")
-    seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
-
-    iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$iqtree2dir)
-    if (!file.exists(paste0(fn_out,".treefile"))) {
-      df_long <- rbind(df_long, list(name=window_name,start=start,end=j*wsizes[i],is_informative=FALSE))
-    } else {
-      df_long <- rbind(df_long, list(name=window_name,start=start,end=j*wsizes[i],is_informative=TRUE))
-    }
-
-    start <- start + wsizes[i]
   }
 
   ########################################### SHORT ###########################################
@@ -205,11 +216,22 @@ for (i in 2:length(wsizes)-1) {
 }
 
 rm(s)
+stopCluster(nwcl)
 ```
 
 ```{r window-filter, include=FALSE}
-for (i in 2:length(wsizes)-1) {
-  fn_long <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", wsizes[i], ".perwindowsum")
+# create doSNOW cluster
+nwcl <- makeCluster(stepthread)
+doSNOW::registerDoSNOW(nwcl)
+
+foreach (i = 2:length(wsizes)-1) %dopar% {
+  fn_long <- ""
+  if (i == 1) {
+    fn_long <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", wsizes[i], ".perwindowsum")
+  } else {
+    fn_long <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", wsizes[i], ".perwindowsum")
+  }
+  
   fn_short <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", wsizes[i+1], ".perwindowsum")
 
   df_long <- data.table::fread(fn_long)
@@ -242,7 +264,13 @@ for (i in 2:length(wsizes)-1) {
 
   # iteration to copy the alignment
   for (j in df_long$name[-long_noninformative_idx]) {
-    fn_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa")
+    fn_path <- NULL
+    if (i == 1) {
+      fn_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa")
+    } else {
+      fn_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa")
+    }
+    
     system(paste0("cp", fn_path, long_path))
   }
 
@@ -253,6 +281,8 @@ for (i in 2:length(wsizes)-1) {
 
   log4r::info(fn_logger, paste("File created: Step", i, "window filtering."))
 }
+
+stopCluster(nwcl)
 ```
 
 ```{r window-tree, include=FALSE}
@@ -304,7 +334,7 @@ for (i in 2:length(wsizes)-1) {
     next
   }
   
-  prefix <- paste0(long_path, wsizes[i+1])
+  prefix <- paste0(short_path, wsizes[i+1])
   
   # set the number of threads according to the number of windows
   tthread <- params$thread
