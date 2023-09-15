@@ -143,7 +143,7 @@ redo <- FALSE
 msdir <- "~/msdir/ms"
 ms_l <- 10000000
 
-iqtree2dir <- "~/iqtree-2.2.2.4-Linux/bin/iqtree2"
+iqtree2dir <- "~/iqtree-2.2.2.2-Linux/bin/iqtree2"
 alisim_model <- "JC"
 copy_gaps <- FALSE
 src_aln <- ""

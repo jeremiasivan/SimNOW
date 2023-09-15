@@ -1,0 +1,62 @@
+---
+title: "Stepping NOW for Empirical Datasets"
+params:
+  # general
+  codedir: "~/SimNOW/codes_empirical"
+  prefix: "sim"
+  outdir: "~/simulation"
+  thread: 1
+  
+  # IQ-Tree2
+  iqtree2dir: "~/iqtree2"
+  set_blmin: FALSE
+  set_model: FALSE
+  dna_model: ""
+  outgroup: ""
+  
+  # NOW analysis
+  input_aln: "~/input.fa"
+  initial_wsize: 64000
+
+  # ic_type: "aic"
+---
+
+```{r, include=FALSE}
+# install.packages("log4r")
+
+# store initial system time
+sys_tic <- Sys.time()
+
+# load libraries
+library(data.table)
+library(dplyr)
+library(doSNOW)
+
+# create outdir
+currentdir <- paste0(params$outdir, "/", params$prefix)
+if (!dir.exists(currentdir)) {
+  dir.create(currentdir, recursive = T)
+}
+
+# create log file
+fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".log")
+log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
+fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
+
+unlink(fn_log)
+write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
+
+knitr::opts_knit$set(root.dir = currentdir)
+```
+
+```{r child = paste0(params$codedir,"/2_stepping_now/2_run.Rmd"), include=FALSE}
+```
+
+```{r, include=FALSE}
+# store final system time
+sys_toc <- Sys.time()
+
+# write the system time in log file
+write.table(c("", paste0("Total elapsed time: ", round(as.numeric(difftime(sys_toc, sys_tic, units = "mins")), 3), " mins")),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+```
