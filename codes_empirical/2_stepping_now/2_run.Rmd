@@ -264,7 +264,12 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
   }
 
   # iteration to copy the alignment
-  for (j in df_long$name[-long_noninformative_idx]) {
+  long_names <- df_long$name
+  if (length(long_noninformative_idx) != 0){
+    long_names <- df_long$name[-long_noninformative_idx]
+  }
+
+  for (j in long_names) {
     fn_path <- NULL
     if (i == 1) {
       fn_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa")
@@ -275,7 +280,12 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
     system(paste("cp", fn_path, long_path))
   }
 
-  for (j in df_short$name[-short_noninformative_idx]) {
+  short_names <- df_short$name
+  if (length(short_noninformative_idx) != 0){
+    short_names <- df_short$name[-short_noninformative_idx]
+  }
+
+  for (j in short_names) {
     fn_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa")
     system(paste("cp", fn_path, short_path))
   }
