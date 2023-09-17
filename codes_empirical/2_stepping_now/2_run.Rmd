@@ -74,6 +74,12 @@ while (max_wsize %% 2 == 0) {
 }
 wsizes <- sort(wsizes, decreasing=T)
 
+# set thread
+stepthread <- params$thread
+if (stepthread > length(wsizes)-1) {
+  stepthread <- length(wsizes)-1
+}
+
 # read fasta file
 s <- seqinr::read.fasta(params$input_aln, whole.header = T)
 
@@ -99,14 +105,8 @@ write.table(paste0("Updated number of sites: ", s_ln_new, "bp"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
-```{r window-aln, include=FALSE}
+```{r window-aln, include=FALSE, eval=FALSE}
 options(scipen=999)
-
-# iterate through steps
-stepthread <- params$thread
-if (stepthread > length(wsizes)-1) {
-  stepthread <- length(wsizes)-1
-}
 
 # create doSNOW cluster
 nwcl <- makeCluster(stepthread)
@@ -162,6 +162,8 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
 
       start <- start + wsizes[i]
     }
+
+    data.table::fwrite(df_long, fn_long, quote=FALSE, sep="\t")
   }
 
   ########################################### SHORT ###########################################
@@ -210,7 +212,6 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
     start <- start + wsizes[i+1]
   }
   
-  data.table::fwrite(df_long, fn_long, quote=FALSE, sep="\t")
   data.table::fwrite(df_short, fn_short, quote=FALSE, sep="\t")
   log4r::info(fn_logger, paste("File created: Step", i, "per-window analysis."))
 }
@@ -271,12 +272,12 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
       fn_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa")
     }
     
-    system(paste0("cp", fn_path, long_path))
+    system(paste("cp", fn_path, long_path))
   }
 
   for (j in df_short$name[-short_noninformative_idx]) {
     fn_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa")
-    system(paste0("cp", fn_path, short_path))
+    system(paste("cp", fn_path, short_path))
   }
 
   log4r::info(fn_logger, paste("File created: Step", i, "window filtering."))
