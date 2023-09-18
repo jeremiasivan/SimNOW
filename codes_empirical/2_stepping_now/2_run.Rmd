@@ -296,7 +296,7 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
 stopCluster(nwcl)
 ```
 
-```{r window-tree, include=FALSE, eval=FALSE}
+```{r window-tree, include=FALSE}
 write.table(c("",
               "------------ Window Tree -----------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
@@ -356,7 +356,7 @@ df_output <- data.table(step=numeric(),
                         l_wsize=numeric(), s_wsize=numeric(),
                         l_aic=numeric(), s_aic=numeric(), diff_aic=numeric(),
                         fasta_ln=numeric(), fasta_ln_percent=numeric(),
-                        n_bootstrap_tree=numeric(), n_topology=numeric()
+                        l_bs_tree=numeric(), l_bs_topology=numeric(), s_bs_tree=numeric(), s_bs_topology=numeric(),
                         )
 
 # iterate through window sizes
@@ -368,22 +368,53 @@ for (i in 2:length(wsizes)-1) {
   ########################################### LONG ############################################
   long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/trees/")
   iqtree_path <- paste0(long_path, wsizes[i], ".iqtree")
-  # treefile_path <- paste0(long_path, wsizes[i], ".treefile")
+  treefile_path <- paste0(long_path, wsizes[i], ".treefile")
   
+  long_tree <- NULL
+  while (length(trl <- readLines(treefile_path, n=1))) {
+    tl <- ape::read.tree(text=trl)
+    tl$edge.length <- NULL
+
+    bl <- subset(tl$node.label, tl$node.label != "")
+    bl_mean <- mean(as.numeric(bl))
+
+    if (all(as.numeric(bl_mean) >= 95)) {
+      tl$node.label <- NULL
+      long_tree <- c(long_tree, ape::write.tree(tl))
+    }
+  }
+  close(treefile_path)
+
   long_aic <- as.numeric(gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",iqtree_path), intern = T)))
   
   ########################################### SHORT ###########################################
   short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/trees/")
   iqtree_path <- paste0(short_path, wsizes[i+1], ".iqtree")
-  # treefile_path <- paste0(short_path, wsizes[i+1], ".treefile")
+  treefile_path <- paste0(short_path, wsizes[i+1], ".treefile")
   
+  short_tree <- NULL
+  while (length(trl <- readLines(treefile_path, n=1))) {
+    tl <- ape::read.tree(text=trl)
+    tl$edge.length <- NULL
+
+    bl <- subset(tl$node.label, tl$node.label != "")
+
+    if (all(as.numeric(bl_mean) >= 95)) {
+      tl$node.label <- NULL
+      short_tree <- c(short_tree, ape::write.tree(tl))
+    }
+  }
+  close(treefile_path)
+
   short_aic <- as.numeric(gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",iqtree_path), intern = T)))
 
   ########################################## SUMMARY ##########################################
   df_output <- rbind(df_output,
                     list(step=i,l_wsize=wsizes[i],s_wsize=wsizes[i+1]
                         l_aic=long_aic, s_aic=short_aic, diff_aic=long_aic-short_aic,
-                        fasta_ln=s_ln_step, fasta_ln_percent=(s_ln_step/s_ln)*100),
+                        fasta_ln=s_ln_step, fasta_ln_percent=(s_ln_step/s_ln)*100,
+                        l_bs_tree=length(long_tree), l_bs_topology=length(unique(long_tree)),
+                        s_bs_tree=length(short_tree), s_bs_topology=length(unique(short_tree))),
                     fill=TRUE)
 }
 

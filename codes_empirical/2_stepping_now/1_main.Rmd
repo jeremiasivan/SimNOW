@@ -17,8 +17,6 @@ params:
   # NOW analysis
   input_aln: "~/input.fa"
   initial_wsize: 64000
-
-  # ic_type: "aic"
 ---
 
 ```{r, include=FALSE}
