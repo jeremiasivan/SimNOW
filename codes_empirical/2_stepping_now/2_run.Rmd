@@ -220,7 +220,7 @@ rm(s)
 stopCluster(nwcl)
 ```
 
-```{r window-filter, include=FALSE}
+```{r window-filter, include=FALSE, eval=FALSE}
 # create doSNOW cluster
 nwcl <- makeCluster(stepthread)
 doSNOW::registerDoSNOW(nwcl)
@@ -314,18 +314,13 @@ for (i in 2:length(wsizes)-1) {
   # check input alignments
   fastadir <- paste0(getwd(), "/", i, "/", wsizes[i], "/alignment/")
   numf <- length(list.files(fastadir, pattern='fa'))
-  numw <- s_ln_new/wsizes[i]
-  if (numw != numf) {
-    log4r::warn(fn_logger, paste0("Warning: Step ", i, " long window has ", numf, "/", numw, " alignments. Skipped."))
-    next
-  }
   
   prefix <- paste0(long_path, wsizes[i])
   
   # set the number of threads according to the number of windows
   tthread <- params$thread
-  if (numw < tthread) {
-    tthread <- numw
+  if (numf < tthread) {
+    tthread <- numf
   }
   
   iqtree2_folder(fastadir, prefix, tthread, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$iqtree2dir)
@@ -339,18 +334,13 @@ for (i in 2:length(wsizes)-1) {
   # check input alignments
   fastadir <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/alignment/")
   numf <- length(list.files(fastadir, pattern='fa'))
-  numw <- s_ln_new/wsizes[i+1]
-  if (numw != numf) {
-    log4r::warn(fn_logger, paste0("Warning: Step ", i, " long window has ", numf, "/", numw, " alignments. Skipped."))
-    next
-  }
   
   prefix <- paste0(short_path, wsizes[i+1])
   
   # set the number of threads according to the number of windows
   tthread <- params$thread
-  if (numw < tthread) {
-    tthread <- numw
+  if (numf < tthread) {
+    tthread <- numf
   }
   
   iqtree2_folder(fastadir, prefix, tthread, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$iqtree2dir)
