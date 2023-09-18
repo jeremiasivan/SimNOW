@@ -376,9 +376,8 @@ for (i in 2:length(wsizes)-1) {
     tl$edge.length <- NULL
 
     bl <- subset(tl$node.label, tl$node.label != "")
-    bl_mean <- mean(as.numeric(bl))
 
-    if (all(as.numeric(bl_mean) >= 95)) {
+    if (all(as.numeric(bl) >= 95)) {
       tl$node.label <- NULL
       long_tree <- c(long_tree, ape::write.tree(tl))
     }
@@ -399,7 +398,7 @@ for (i in 2:length(wsizes)-1) {
 
     bl <- subset(tl$node.label, tl$node.label != "")
 
-    if (all(as.numeric(bl_mean) >= 95)) {
+    if (all(as.numeric(bl) >= 95)) {
       tl$node.label <- NULL
       short_tree <- c(short_tree, ape::write.tree(tl))
     }
