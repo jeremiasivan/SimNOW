@@ -14,7 +14,7 @@ fn_summary <- paste0(getwd(), "/", params$prefix, ".sumtable")
 ```
 
 ```{r functions, include=FALSE}
-iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, dir_iqtree2) {
+iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bootstrap, dir_iqtree2) {
   iqtree_cmd <- paste(dir_iqtree2,
                       "-s", input,
                       "-T 1 --quiet -redo")
@@ -30,28 +30,9 @@ iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, dir_i
   if (setmodel) {
     iqtree_cmd <- paste(iqtree_cmd, "-m", dna_model)
   }
-  
-  system(iqtree_cmd)
-}
 
-iqtree2_folder <- function(input, prefix, thread, outgroup, setblmin, setmodel, dna_model, dir_iqtree2) {
-  iqtree_cmd <- paste(dir_iqtree2,
-                      "-S", input,
-                      "-pre", prefix,
-                      "-T", thread,
-                      "-b 1000",
-                      "-cptime 1000000 --quiet -redo")
-  
-  if (!is.null(outgroup) && !outgroup == ""){
-    iqtree_cmd <- paste(iqtree_cmd, "-o", outgroup)
-  }
-  
-  if (setblmin) {
-    iqtree_cmd <- paste(iqtree_cmd, "-blmin", 1/i)
-  }
-  
-  if (setmodel) {
-    iqtree_cmd <- paste(iqtree_cmd, "-m", dna_model)
+  if (!is.null(bootstrap) && bootstrap >= 100) {
+    iqtree_cmd <- paste(iqtree_cmd, "-b", bootstrap)
   }
   
   system(iqtree_cmd)
@@ -153,7 +134,7 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
       fn_out <- paste0(dir_window,window_name,".fa")
       seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
 
-      iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$iqtree2dir)
+      iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, 0, params$iqtree2dir)
       if (!file.exists(paste0(fn_out,".treefile"))) {
         df_long <- rbind(df_long, list(name=window_name,start=start,end=j*wsizes[i],is_informative=FALSE))
       } else {
@@ -202,7 +183,7 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
     fn_out <- paste0(dir_window,window_name,".fa")
     seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
 
-    iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$iqtree2dir)
+    iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, 0, params$iqtree2dir)
     if (!file.exists(paste0(fn_out,".treefile"))) {
       df_short <- rbind(df_short, list(name=window_name,start=start,end=j*wsizes[i+1],is_informative=FALSE))
     } else {
@@ -253,12 +234,12 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
   short_noninformative_idx <- unique(short_noninformative_idx)
 
   # create outdir
-  long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/alignment/")
+  long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
   if (!dir.exists(long_path)) {
     dir.create(long_path, recursive=TRUE)
   }
 
-  short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/alignment/")
+  short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
   if (!dir.exists(short_path)) {
     dir.create(short_path, recursive=TRUE)
   }
@@ -277,7 +258,12 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
       fn_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa")
     }
     
-    system(paste("cp", fn_path, long_path))
+    temp_path <- paste0(long_path, j, "/")
+    if (!dir.exists(temp_path)) {
+      dir.create(temp_path)
+    }
+
+    system(paste("cp", fn_path, temp_path))
   }
 
   short_names <- df_short$name
@@ -287,7 +273,13 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
 
   for (j in short_names) {
     fn_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa")
-    system(paste("cp", fn_path, short_path))
+
+    temp_path <- paste0(short_path, j, "/")
+    if (!dir.exists(temp_path)) {
+      dir.create(temp_path)
+    }
+
+    system(paste("cp", fn_path, temp_path))
   }
 
   log4r::info(fn_logger, paste("File created: Step", i, "window filtering."))
@@ -303,53 +295,50 @@ write.table(c("",
 
 options(scipen=999)
 
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
+
 # iterate through window sizes
 for (i in 2:length(wsizes)-1) {
   ########################################### LONG ############################################
-  long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/trees/")
-  if (!dir.exists(long_path)) {
-    dir.create(long_path, recursive=TRUE)
-  }
+  long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
 
   # check input alignments
-  fastadir <- paste0(getwd(), "/", i, "/", wsizes[i], "/alignment/")
-  numf <- length(list.files(fastadir, pattern='fa'))
+  dirs <- list.dirs(long_path, full.names = F, recursive = F)
+  dirs <- dirs[grepl("^window", dirs)]
   
-  prefix <- paste0(long_path, wsizes[i])
-  
-  # set the number of threads according to the number of windows
-  tthread <- params$thread
-  if (numf < tthread) {
-    tthread <- numf
+  foreach (j = dirs) %dopar% {
+    windowdir <- paste0(long_path, j, "/")
+    fastadir <- paste0(windowdir, j, ".fa")
+    
+    iqtreefile <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/filtered/", j, "/", j, ".fa.iqtree")
+    treefile <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/filtered/", j, "/", j, ".fa.treefile")
+    if (all(file.exists(iqtreefile, treefile))) {
+      system(paste("cp", iqtreefile, windowdir))
+      system(paste("cp", treefile, windowdir))
+    } else {
+      iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, 1000, params$iqtree2dir)
+    }
   }
-  
-  iqtree2_folder(fastadir, prefix, tthread, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$iqtree2dir)
 
   ########################################### SHORT ###########################################
-  short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/trees/")
-  if (!dir.exists(short_path)) {
-    dir.create(short_path, recursive=TRUE)
-  }
+  short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
 
   # check input alignments
-  fastadir <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/alignment/")
-  numf <- length(list.files(fastadir, pattern='fa'))
+  dirs <- list.dirs(short_path, full.names = F, recursive = F)
+  dirs <- dirs[grepl("^window", dirs)]
   
-  prefix <- paste0(short_path, wsizes[i+1])
-  
-  # set the number of threads according to the number of windows
-  tthread <- params$thread
-  if (numf < tthread) {
-    tthread <- numf
+  foreach (j = dirs) %dopar% {
+    fastadir <- paste0(short_path, j, "/", j, ".fa")
+    iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, 1000, params$iqtree2dir)
   }
-  
-  iqtree2_folder(fastadir, prefix, tthread, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$iqtree2dir)
 
   log4r::info(fn_logger, paste("File created: Step", i, "window treefile."))
 }
 ```
 
-```{r nowsummary, include=FALSE}
+```{r nowsummary, include=FALSE, eval=FALSE}
 options(scipen=999)
 
 df_output <- data.table::data.table(step=numeric(),
@@ -365,55 +354,62 @@ doSNOW::registerDoSNOW(nwcl)
 
 # iterate through window sizes
 for (i in 2:length(wsizes)-1) {
-  fastadir <- paste0(getwd(), "/", i, "/", wsizes[i], "/alignment/")
-  numf <- length(list.files(fastadir, pattern='fa'))
-  s_ln_step <- numf * wsizes[i]
-
   ########################################### LONG ############################################
-  long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/trees/")
-  iqtree_path <- paste0(long_path, wsizes[i], ".iqtree")
-  treefile_path <- paste0(long_path, wsizes[i], ".treefile")
-  
-  window_trees <- readLines(treefile_path)
+  long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
+  dirs <- list.dirs(long_path, full.names = F, recursive = F)
+  dirs <- dirs[grepl("^window", dirs)]
 
-  long_tree <- foreach(j = window_trees, .combine=c) %dopar% {
-    tl <- ape::read.tree(text=j)
+  long_ouput <- foreach(j = dirs, .combine=c) %dopar% {
+    iqtree_path <- paste0(long_path, j, "/", j, ".fa.iqtree")
+    treefile_path <- paste0(long_path, j, "/", j, ".fa.treefile")
+
+    aic <- as.numeric(gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",iqtree_path), intern = T)))
+    tre <- readLines(treefile_path)
+
+    tl <- ape::read.tree(text=tre)
     tl$edge.length <- NULL
 
     bl <- subset(tl$node.label, tl$node.label != "")
 
     if (mean(as.numeric(bl)) >= 80) {
       tl$node.label <- NULL
-      return(ape::write.tree(tl))
+      return(list(list(aic, ape::write.tree(tl))))
     }
 
-    return(NULL)
+    return(list(list(aic, NULL)))
   }
 
-  long_aic <- as.numeric(gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",iqtree_path), intern = T)))
-  
+  long_aic <- sum(long_output[[1]])
+  long_tree <- length(subset(long_output[[2]], !is.na(long_output[[2]])))
+  s_ln_step <- length(dirs) * wsizes[i]
+
   ########################################### SHORT ###########################################
-  short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/trees/")
-  iqtree_path <- paste0(short_path, wsizes[i+1], ".iqtree")
-  treefile_path <- paste0(short_path, wsizes[i+1], ".treefile")
-  
-  window_trees <- readLines(treefile_path)
+  short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
+  dirs <- list.dirs(short_path, full.names = F, recursive = F)
+  dirs <- dirs[grepl("^window", dirs)]
 
-  short_tree <- foreach(j = window_trees, .combine=c) %dopar% {
-    tl <- ape::read.tree(text=j)
+  short_ouput <- foreach(j = dirs, .combine=c) %dopar% {
+    iqtree_path <- paste0(short_path, j, "/", j, ".fa.iqtree")
+    treefile_path <- paste0(short_path, j, "/", j, ".fa.treefile")
+
+    aic <- as.numeric(gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",iqtree_path), intern = T)))
+    tre <- readLines(treefile_path)
+
+    tl <- ape::read.tree(text=tre)
     tl$edge.length <- NULL
 
     bl <- subset(tl$node.label, tl$node.label != "")
 
     if (mean(as.numeric(bl)) >= 80) {
       tl$node.label <- NULL
-      return(ape::write.tree(tl))
+      return(list(list(aic, ape::write.tree(tl))))
     }
 
-    return(NULL)
+    return(list(list(aic, NULL)))
   }
 
-  short_aic <- as.numeric(gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",iqtree_path), intern = T)))
+  short_aic <- sum(short_output[[1]])
+  short_tree <- length(subset(short_output[[2]], !is.na(short_output[[2]])))
 
   ########################################## SUMMARY ##########################################
   df_output <- rbind(df_output,
