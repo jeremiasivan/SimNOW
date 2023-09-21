@@ -39,7 +39,7 @@ iqtree2_folder <- function(input, prefix, thread, outgroup, setblmin, setmodel, 
                       "-S", input,
                       "-pre", prefix,
                       "-T", thread,
-                      "-B 1000",
+                      "-b 1000",
                       "-cptime 1000000 --quiet -redo")
   
   if (!is.null(outgroup) && !outgroup == ""){
@@ -105,7 +105,7 @@ write.table(paste0("Updated number of sites: ", s_ln_new, "bp"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
-```{r window-aln, include=FALSE, eval=FALSE}
+```{r window-aln, include=FALSE}
 options(scipen=999)
 
 # create doSNOW cluster
@@ -220,7 +220,7 @@ rm(s)
 stopCluster(nwcl)
 ```
 
-```{r window-filter, include=FALSE, eval=FALSE}
+```{r window-filter, include=FALSE}
 # create doSNOW cluster
 nwcl <- makeCluster(stepthread)
 doSNOW::registerDoSNOW(nwcl)
@@ -352,12 +352,16 @@ for (i in 2:length(wsizes)-1) {
 ```{r nowsummary, include=FALSE}
 options(scipen=999)
 
-df_output <- data.table(step=numeric(),
+df_output <- data.table::data.table(step=numeric(),
                         l_wsize=numeric(), s_wsize=numeric(),
                         l_aic=numeric(), s_aic=numeric(), diff_aic=numeric(),
                         fasta_ln=numeric(), fasta_ln_percent=numeric(),
-                        l_bs_tree=numeric(), l_bs_topology=numeric(), s_bs_tree=numeric(), s_bs_topology=numeric(),
+                        l_bs_tree=numeric(), l_bs_topology=numeric(), s_bs_tree=numeric(), s_bs_topology=numeric()
                         )
+
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
 
 # iterate through window sizes
 for (i in 2:length(wsizes)-1) {
@@ -370,19 +374,21 @@ for (i in 2:length(wsizes)-1) {
   iqtree_path <- paste0(long_path, wsizes[i], ".iqtree")
   treefile_path <- paste0(long_path, wsizes[i], ".treefile")
   
-  long_tree <- NULL
-  while (length(trl <- readLines(treefile_path, n=1))) {
-    tl <- ape::read.tree(text=trl)
+  window_trees <- readLines(treefile_path)
+
+  long_tree <- foreach(j = window_trees, .combine=c) %dopar% {
+    tl <- ape::read.tree(text=j)
     tl$edge.length <- NULL
 
     bl <- subset(tl$node.label, tl$node.label != "")
 
-    if (all(as.numeric(bl) >= 95)) {
+    if (mean(as.numeric(bl)) >= 80) {
       tl$node.label <- NULL
-      long_tree <- c(long_tree, ape::write.tree(tl))
+      return(ape::write.tree(tl))
     }
+
+    return(NULL)
   }
-  close(treefile_path)
 
   long_aic <- as.numeric(gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",iqtree_path), intern = T)))
   
@@ -391,31 +397,36 @@ for (i in 2:length(wsizes)-1) {
   iqtree_path <- paste0(short_path, wsizes[i+1], ".iqtree")
   treefile_path <- paste0(short_path, wsizes[i+1], ".treefile")
   
-  short_tree <- NULL
-  while (length(trl <- readLines(treefile_path, n=1))) {
-    tl <- ape::read.tree(text=trl)
+  window_trees <- readLines(treefile_path)
+
+  short_tree <- foreach(j = window_trees, .combine=c) %dopar% {
+    tl <- ape::read.tree(text=j)
     tl$edge.length <- NULL
 
     bl <- subset(tl$node.label, tl$node.label != "")
 
-    if (all(as.numeric(bl) >= 95)) {
+    if (mean(as.numeric(bl)) >= 80) {
       tl$node.label <- NULL
-      short_tree <- c(short_tree, ape::write.tree(tl))
+      return(ape::write.tree(tl))
     }
+
+    return(NULL)
   }
-  close(treefile_path)
 
   short_aic <- as.numeric(gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",iqtree_path), intern = T)))
 
   ########################################## SUMMARY ##########################################
   df_output <- rbind(df_output,
-                    list(step=i,l_wsize=wsizes[i],s_wsize=wsizes[i+1]
+                    list(step=i,l_wsize=wsizes[i],s_wsize=wsizes[i+1],
                         l_aic=long_aic, s_aic=short_aic, diff_aic=long_aic-short_aic,
-                        fasta_ln=s_ln_step, fasta_ln_percent=(s_ln_step/s_ln)*100,
+                        fasta_ln=s_ln_step, fasta_ln_percent=round((s_ln_step/s_ln)*100,3),
                         l_bs_tree=length(long_tree), l_bs_topology=length(unique(long_tree)),
                         s_bs_tree=length(short_tree), s_bs_topology=length(unique(short_tree))),
                     fill=TRUE)
+  log4r::info(fn_logger, paste0("Summary added: Step ", i, "."))
 }
+
+stopCluster(nwcl)
 
 data.table::fwrite(df_output, fn_summary, quote=FALSE, sep="\t")
 log4r::info(fn_logger, "File created: summary file.")
