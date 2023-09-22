@@ -338,7 +338,7 @@ for (i in 2:length(wsizes)-1) {
 }
 ```
 
-```{r nowsummary, include=FALSE, eval=FALSE}
+```{r nowsummary, include=FALSE}
 options(scipen=999)
 
 df_output <- data.table::data.table(step=numeric(),
@@ -373,14 +373,14 @@ for (i in 2:length(wsizes)-1) {
 
     if (mean(as.numeric(bl)) >= 80) {
       tl$node.label <- NULL
-      return(list(list(aic, ape::write.tree(tl))))
+      return(list(aic, ape::write.tree(tl)))
     }
 
-    return(list(list(aic, NULL)))
+    return(list(aic, NULL))
   }
 
-  long_aic <- sum(long_output[[1]])
-  long_tree <- length(subset(long_output[[2]], !is.na(long_output[[2]])))
+  long_aic <- sum(sapply(long_ouput, function(x) x[[1]]))
+  long_tree <- unlist(sapply(long_ouput, function(x) {x[[2]]}))
   s_ln_step <- length(dirs) * wsizes[i]
 
   ########################################### SHORT ###########################################
@@ -402,14 +402,14 @@ for (i in 2:length(wsizes)-1) {
 
     if (mean(as.numeric(bl)) >= 80) {
       tl$node.label <- NULL
-      return(list(list(aic, ape::write.tree(tl))))
+      return(list(aic, ape::write.tree(tl)))
     }
 
-    return(list(list(aic, NULL)))
+    return(list(aic, NULL))
   }
 
-  short_aic <- sum(short_output[[1]])
-  short_tree <- length(subset(short_output[[2]], !is.na(short_output[[2]])))
+  short_aic <- sum(sapply(short_ouput, function(x) x[[1]]))
+  short_tree <- unlist(sapply(short_ouput, function(x) {x[[2]]}))
 
   ########################################## SUMMARY ##########################################
   df_output <- rbind(df_output,
