@@ -311,6 +311,12 @@ for (i in 2:length(wsizes)-1) {
   foreach (j = dirs) %dopar% {
     windowdir <- paste0(long_path, j, "/")
     fastadir <- paste0(windowdir, j, ".fa")
+
+    iqtreefile <- paste0(windowdir, j, ".fa.iqtree")
+    treefile <- paste0(windowdir, j, ".fa.treefile")
+    if (all(file.exists(iqtreefile, treefile))) {
+      return(NULL)
+    }
     
     iqtreefile <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/filtered/", j, "/", j, ".fa.iqtree")
     treefile <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/filtered/", j, "/", j, ".fa.treefile")
@@ -331,6 +337,13 @@ for (i in 2:length(wsizes)-1) {
   
   foreach (j = dirs) %dopar% {
     fastadir <- paste0(short_path, j, "/", j, ".fa")
+
+    iqtreefile <- paste0(short_path, j, "/", j, ".fa.iqtree")
+    treefile <- paste0(short_path, j, "/", j, ".fa.treefile")
+    if (all(file.exists(iqtreefile, treefile))) {
+      return(NULL)
+    }
+
     iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, 1000, params$iqtree2dir)
   }
 
