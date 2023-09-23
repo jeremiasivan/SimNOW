@@ -14,7 +14,7 @@ fn_summary <- paste0(getwd(), "/", params$prefix, ".sumtable")
 ```
 
 ```{r functions, include=FALSE}
-iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bootstrap, dir_iqtree2) {
+iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bs_type, bs, dir_iqtree2) {
   iqtree_cmd <- paste(dir_iqtree2,
                       "-s", input,
                       "-T 1 --quiet -redo")
@@ -31,8 +31,12 @@ iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, boots
     iqtree_cmd <- paste(iqtree_cmd, "-m", dna_model)
   }
 
-  if (!is.null(bootstrap) && bootstrap >= 100) {
-    iqtree_cmd <- paste(iqtree_cmd, "-b", bootstrap)
+  if (!is.null(bs_type) && bs_type != "") {
+    if (lower(bs_type) == "ufboot") {
+      iqtree_cmd <- paste(iqtree_cmd, "-bb", bs)
+    } else if (lower(bs_type) == "nonparametric) {
+      iqtree_cmd <- paste(iqtree_cmd, "-b", bs)
+    }
   }
   
   system(iqtree_cmd)
@@ -134,7 +138,7 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
       fn_out <- paste0(dir_window,window_name,".fa")
       seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
 
-      iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, 0, params$iqtree2dir)
+      iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
       if (!file.exists(paste0(fn_out,".treefile"))) {
         df_long <- rbind(df_long, list(name=window_name,start=start,end=j*wsizes[i],is_informative=FALSE))
       } else {
@@ -183,7 +187,7 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
     fn_out <- paste0(dir_window,window_name,".fa")
     seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
 
-    iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, 0, params$iqtree2dir)
+    iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
     if (!file.exists(paste0(fn_out,".treefile"))) {
       df_short <- rbind(df_short, list(name=window_name,start=start,end=j*wsizes[i+1],is_informative=FALSE))
     } else {
@@ -324,7 +328,7 @@ for (i in 2:length(wsizes)-1) {
       system(paste("cp", iqtreefile, windowdir))
       system(paste("cp", treefile, windowdir))
     } else {
-      iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, 1000, params$iqtree2dir)
+      iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
     }
   }
 
@@ -344,7 +348,7 @@ for (i in 2:length(wsizes)-1) {
       return(NULL)
     }
 
-    iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, 1000, params$iqtree2dir)
+    iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
   }
 
   log4r::info(fn_logger, paste("File created: Step", i, "window treefile."))

@@ -12,6 +12,9 @@ params:
   set_blmin: FALSE
   set_model: FALSE
   dna_model: ""
+
+  bootstrap: 1000
+  bootstrap_type: ""
   outgroup: ""
   
   # NOW analysis
