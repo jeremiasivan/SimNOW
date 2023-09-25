@@ -50,7 +50,7 @@ f_window_aln <- function(fasta, start, end, dir_perwindow, j, wi) {
   fn_out <- paste0(dir_window, window_name, ".fa")
   seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
 
-  return(fn_out)
+  return(c(fn_out, window_name))
 }
 
 iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bs_type, bs, dir_iqtree2) {
@@ -159,13 +159,13 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
     wi <- ceiling(log(numw) / log(10)) + 1
     
     for (j in 1:numw) {
-      fn_out <- f_window_aln(s, start, j*wsizes[i], dir_perwindow, j, wi)
+      out <- f_window_aln(s, start, j*wsizes[i], dir_perwindow, j, wi)
 
-      iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
-      if (!file.exists(paste0(fn_out,".treefile"))) {
-        df_long <- rbind(df_long, list(name=window_name,start=start,end=j*wsizes[i],is_informative=FALSE))
+      iqtree2_single(out[1], params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
+      if (!file.exists(paste0(out[1],".treefile"))) {
+        df_long <- rbind(df_long, list(name=out[2],start=start,end=j*wsizes[i],is_informative=FALSE))
       } else {
-        df_long <- rbind(df_long, list(name=window_name,start=start,end=j*wsizes[i],is_informative=TRUE))
+        df_long <- rbind(df_long, list(name=out[2],start=start,end=j*wsizes[i],is_informative=TRUE))
       }
 
       start <- start + wsizes[i]
@@ -193,13 +193,13 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
   wi <- ceiling(log(numw) / log(10)) + 1
   
   for (j in 1:numw) {
-    fn_out <- f_window_aln(s, start, j*wsizes[i+1], dir_perwindow, j, wi)
+    out <- f_window_aln(s, start, j*wsizes[i+1], dir_perwindow, j, wi)
 
-    iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
-    if (!file.exists(paste0(fn_out,".treefile"))) {
-      df_short <- rbind(df_short, list(name=window_name,start=start,end=j*wsizes[i+1],is_informative=FALSE))
+    iqtree2_single(out[1], params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
+    if (!file.exists(paste0(out[1],".treefile"))) {
+      df_short <- rbind(df_short, list(name=out[2],start=start,end=j*wsizes[i+1],is_informative=FALSE))
     } else {
-      df_short <- rbind(df_short, list(name=window_name,start=start,end=j*wsizes[i+1],is_informative=TRUE))
+      df_short <- rbind(df_short, list(name=out[2],start=start,end=j*wsizes[i+1],is_informative=TRUE))
     }
 
     start <- start + wsizes[i+1]
