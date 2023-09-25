@@ -11,9 +11,48 @@ write.table(c("",
 
 # output files
 fn_summary <- paste0(getwd(), "/", params$prefix, ".sumtable")
+
+# check input parameters
+if (params$initial_wsize <= 0 || params$initial_wsize%%2 != 0) {
+  log4r::error(fn_logger, "Error: invalid starting window size. Exited.")
+}
+
+if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
+  bs_type <- tolower(params$bootstrap_type)
+
+  if (bs_type == "ufboot" && params$bootstrap < 1000) {
+    log4r::error(fn_logger, "Error: invalid number of bootstrap for UFBoot. Exited.")
+  } else if (bs_type == "nonparametric" && params$bootstrap < 100) {
+    log4r::error(fn_logger, "Error: invalid number of bootstrap for non-parametric bootstrap. Exited.")
+  } else {
+    log4r::error(fn_logger, "Error: invalid type of bootstrap. Please use either 'ufboot' or 'nonparametric'. Exited.")
+  }
+}
+
+min_branch_support <- 80
+if (tolower(params$bootstrap_type) == "ufboot") {
+  min_branch_support <- 95
+}
 ```
 
 ```{r functions, include=FALSE}
+f_window_aln <- function(fasta, start, end, dir_perwindow, j, wi) {
+  subfasta <- lapply(fasta, function(x) x[seq(from = start, to = end)])
+  subfasta <- do.call(rbind,subfasta)
+  subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
+  
+  window_name <- paste0("window_",formatC(j,width=wi,format="d",flag="0"))
+  dir_window <- paste0(dir_perwindow, window_name, "/")
+  if (!dir.exists(dir_window)) {
+    dir.create(dir_window, recursive = T)
+  }
+
+  fn_out <- paste0(dir_window, window_name, ".fa")
+  seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
+
+  return(fn_out)
+}
+
 iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bs_type, bs, dir_iqtree2) {
   iqtree_cmd <- paste(dir_iqtree2,
                       "-s", input,
@@ -32,9 +71,9 @@ iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bs_ty
   }
 
   if (!is.null(bs_type) && bs_type != "") {
-    if (lower(bs_type) == "ufboot") {
+    if (tolower(bs_type) == "ufboot") {
       iqtree_cmd <- paste(iqtree_cmd, "-bb", bs)
-    } else if (lower(bs_type) == "nonparametric) {
+    } else if (tolower(bs_type) == "nonparametric") {
       iqtree_cmd <- paste(iqtree_cmd, "-b", bs)
     }
   }
@@ -50,7 +89,7 @@ write.table(c("",
 
 options(scipen=999)
 
-# set up variables
+# extract window sizes based on the initial size
 max_wsize <- params$initial_wsize
 wsizes <- max_wsize
 while (max_wsize %% 2 == 0) {
@@ -59,7 +98,7 @@ while (max_wsize %% 2 == 0) {
 }
 wsizes <- sort(wsizes, decreasing=T)
 
-# set thread
+# set number of thread
 stepthread <- params$thread
 if (stepthread > length(wsizes)-1) {
   stepthread <- length(wsizes)-1
@@ -79,9 +118,8 @@ s_ln <- seqinr::getLength(s)[1]
 write.table(paste0("Number of sites: ", s_ln, "bp"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
-# update the alignment
-factor_s_ln <- floor(s_ln/params$initial_wsize)
-s_ln_new <- factor_s_ln*params$initial_wsize
+# update the alignment to be divisible by the initial window size
+s_ln_new <- floor(s_ln/params$initial_wsize) * params$initial_wsize
 
 s <- lapply(s, function(x) x[seq(from = 1, to = s_ln_new)])
 s <- do.call(rbind, s)
@@ -104,16 +142,12 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
   ########################################### LONG ############################################
   if (i == 1) {
     # create outdir
-    temp_outdir <- paste0(getwd(), "/", i, "/", wsizes[i], "/")
-    if (!dir.exists(temp_outdir)) {
-      dir.create(temp_outdir, recursive = T)
-    }
-
-    dir_perwindow <- paste0(temp_outdir, "perwindow/")
+    dir_perwindow <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/")
     if (!dir.exists(dir_perwindow)) {
       dir.create(dir_perwindow, recursive = T)
     }
 
+    # output file
     fn_long <- paste0(dir_perwindow, wsizes[i], ".perwindowsum")
     
     # remove all alignments in the folder
@@ -125,18 +159,7 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
     wi <- ceiling(log(numw) / log(10)) + 1
     
     for (j in 1:numw) {
-      subfasta <- lapply(s, function(x) x[seq(from = start, to = j*wsizes[i])])
-      subfasta <- do.call(rbind,subfasta)
-      subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
-      
-      window_name <- paste0("window_",formatC(j,width=wi,format="d",flag="0"))
-      dir_window <- paste0(dir_perwindow,window_name,"/")
-      if (!dir.exists(dir_window)) {
-        dir.create(dir_window, recursive = T)
-      }
-
-      fn_out <- paste0(dir_window,window_name,".fa")
-      seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
+      fn_out <- f_window_aln(s, start, j*wsizes[i], dir_perwindow, j, wi)
 
       iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
       if (!file.exists(paste0(fn_out,".treefile"))) {
@@ -153,16 +176,12 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
 
   ########################################### SHORT ###########################################
   # create outdir
-  temp_outdir <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/")
-  if (!dir.exists(temp_outdir)) {
-    dir.create(temp_outdir, recursive = T)
-  }
-
-  dir_perwindow <- paste0(temp_outdir, "perwindow/")
+  dir_perwindow <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/")
   if (!dir.exists(dir_perwindow)) {
     dir.create(dir_perwindow, recursive = T)
   }
 
+  # output file
   fn_short <- paste0(dir_perwindow, wsizes[i+1], ".perwindowsum")
   
   # remove all alignments in the folder
@@ -174,18 +193,7 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
   wi <- ceiling(log(numw) / log(10)) + 1
   
   for (j in 1:numw) {
-    subfasta <- lapply(s, function(x) x[seq(from = start, to = j*wsizes[i+1])])
-    subfasta <- do.call(rbind,subfasta)
-    subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
-    
-    window_name <- paste0("window_",formatC(j,width=wi,format="d",flag="0"))
-    dir_window <- paste0(dir_perwindow,window_name,"/")
-    if (!dir.exists(dir_window)) {
-      dir.create(dir_window, recursive = T)
-    }
-
-    fn_out <- paste0(dir_window,window_name,".fa")
-    seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
+    fn_out <- f_window_aln(s, start, j*wsizes[i+1], dir_perwindow, j, wi)
 
     iqtree2_single(fn_out, params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
     if (!file.exists(paste0(fn_out,".treefile"))) {
@@ -198,7 +206,7 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
   }
   
   data.table::fwrite(df_short, fn_short, quote=FALSE, sep="\t")
-  log4r::info(fn_logger, paste("File created: Step", i, "per-window analysis."))
+  log4r::info(fn_logger, paste("File created: Step", i, "per-window alignments."))
 }
 
 rm(s)
@@ -223,29 +231,21 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
   df_long <- data.table::fread(fn_long)
   df_short <- data.table::fread(fn_short)
 
+  ########################################### LONG ############################################
+  # check which window is non-informative
   long_noninformative_idx <- c()
   for (j in 1:nrow(df_short)) {
     if (!df_short$is_informative[j]) {
-      long_noninformative_idx <- c(long_noninformative_idx, which(df_long$start <= df_short$start[j] & df_long$end >= df_short$end[j]))
+      noninformative_idx <- which(df_long$start <= df_short$start[j] & df_long$end >= df_short$end[j])
+      long_noninformative_idx <- c(long_noninformative_idx, noninformative_idx)
     }
   }
   long_noninformative_idx <- unique(long_noninformative_idx)
-
-  short_noninformative_idx <- c()
-  for (j in long_noninformative_idx) {
-    short_noninformative_idx <- c(short_noninformative_idx, which(df_short$start >= df_long$start[j] & df_short$end <= df_long$end[j]))
-  }
-  short_noninformative_idx <- unique(short_noninformative_idx)
 
   # create outdir
   long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
   if (!dir.exists(long_path)) {
     dir.create(long_path, recursive=TRUE)
-  }
-
-  short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
-  if (!dir.exists(short_path)) {
-    dir.create(short_path, recursive=TRUE)
   }
 
   # iteration to copy the alignment
@@ -270,6 +270,22 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
     system(paste("cp", fn_path, temp_path))
   }
 
+  ########################################### SHORT ###########################################
+  # check which window is non-informative
+  short_noninformative_idx <- c()
+  for (j in long_noninformative_idx) {
+    noninformative_idx <- which(df_short$start >= df_long$start[j] & df_short$end <= df_long$end[j])
+    short_noninformative_idx <- c(short_noninformative_idx, noninformative_idx)
+  }
+  short_noninformative_idx <- unique(short_noninformative_idx)
+
+  # create outdir
+  short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
+  if (!dir.exists(short_path)) {
+    dir.create(short_path, recursive=TRUE)
+  }
+
+  # iteration to copy the alignment
   short_names <- df_short$name
   if (length(short_noninformative_idx) != 0){
     short_names <- df_short$name[-short_noninformative_idx]
@@ -316,6 +332,7 @@ for (i in 2:length(wsizes)-1) {
     windowdir <- paste0(long_path, j, "/")
     fastadir <- paste0(windowdir, j, ".fa")
 
+    # check if files exist
     iqtreefile <- paste0(windowdir, j, ".fa.iqtree")
     treefile <- paste0(windowdir, j, ".fa.treefile")
     if (all(file.exists(iqtreefile, treefile))) {
@@ -376,28 +393,38 @@ for (i in 2:length(wsizes)-1) {
   dirs <- list.dirs(long_path, full.names = F, recursive = F)
   dirs <- dirs[grepl("^window", dirs)]
 
-  long_ouput <- foreach(j = dirs, .combine=c) %dopar% {
+  long_output <- foreach(j = dirs, .combine=c) %dopar% {
     iqtree_path <- paste0(long_path, j, "/", j, ".fa.iqtree")
     treefile_path <- paste0(long_path, j, "/", j, ".fa.treefile")
 
-    aic <- as.numeric(gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",iqtree_path), intern = T)))
+    # extract log-likelihood and number of free parameters
+    logl <- gsub(" \\(.*\\)$", "", system(paste("grep '^Log-likelihood of the tree'",iqtree_path), intern = T))
+    logl <- as.numeric(gsub("^.* ", "", logl))
+    freeparams <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of free parameters'",iqtree_path), intern = T)))
+    
+    # read treefile
     tre <- readLines(treefile_path)
 
     tl <- ape::read.tree(text=tre)
     tl$edge.length <- NULL
 
-    bl <- subset(tl$node.label, tl$node.label != "")
+    if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
+      bl <- subset(tl$node.label, tl$node.label != "")
 
-    if (mean(as.numeric(bl)) >= 80) {
-      tl$node.label <- NULL
-      return(list(aic, ape::write.tree(tl)))
+      if (mean(as.numeric(bl)) >= min_branch_support) {
+        tl$node.label <- NULL
+        return(list(logl, freeparams, ape::write.tree(tl)))
+      }
     }
-
-    return(list(aic, NULL))
+    
+    return(list(logl, freeparams, NULL))
   }
 
-  long_aic <- sum(sapply(long_ouput, function(x) x[[1]]))
-  long_tree <- unlist(sapply(long_ouput, function(x) {x[[2]]}))
+  long_logl <- sum(sapply(long_output, function(x) x[[1]]))
+  long_freeparams <- sum(sapply(long_output, function(x) x[[2]]))
+  long_aic <- (2 * long_freeparams) - (2 * long_logl)
+
+  long_tree <- unlist(sapply(long_output, function(x) {x[[3]]}))
   s_ln_step <- length(dirs) * wsizes[i]
 
   ########################################### SHORT ###########################################
@@ -405,28 +432,38 @@ for (i in 2:length(wsizes)-1) {
   dirs <- list.dirs(short_path, full.names = F, recursive = F)
   dirs <- dirs[grepl("^window", dirs)]
 
-  short_ouput <- foreach(j = dirs, .combine=c) %dopar% {
+  short_output <- foreach(j = dirs, .combine=c) %dopar% {
     iqtree_path <- paste0(short_path, j, "/", j, ".fa.iqtree")
     treefile_path <- paste0(short_path, j, "/", j, ".fa.treefile")
 
-    aic <- as.numeric(gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",iqtree_path), intern = T)))
+    # extract log-likelihood and number of free parameters
+    logl <- gsub(" \\(.*\\)$", "", system(paste("grep '^Log-likelihood of the tree'",iqtree_path), intern = T))
+    logl <- as.numeric(gsub("^.* ", "", logl))
+    freeparams <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of free parameters'",iqtree_path), intern = T)))
+    
+    # read treefile
     tre <- readLines(treefile_path)
 
     tl <- ape::read.tree(text=tre)
     tl$edge.length <- NULL
 
-    bl <- subset(tl$node.label, tl$node.label != "")
+    if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
+      bl <- subset(tl$node.label, tl$node.label != "")
 
-    if (mean(as.numeric(bl)) >= 80) {
-      tl$node.label <- NULL
-      return(list(aic, ape::write.tree(tl)))
+      if (mean(as.numeric(bl)) >= min_branch_support) {
+        tl$node.label <- NULL
+        return(list(logl, freeparams, ape::write.tree(tl)))
+      }
     }
-
-    return(list(aic, NULL))
+    
+    return(list(logl, freeparams, NULL))
   }
 
-  short_aic <- sum(sapply(short_ouput, function(x) x[[1]]))
-  short_tree <- unlist(sapply(short_ouput, function(x) {x[[2]]}))
+  short_logl <- sum(sapply(short_output, function(x) x[[1]]))
+  short_freeparams <- sum(sapply(short_output, function(x) x[[2]]))
+  short_aic <- (2 * short_freeparams) - (2 * short_logl)
+
+  short_tree <- unlist(sapply(short_output, function(x) {x[[3]]}))
 
   ########################################## SUMMARY ##########################################
   df_output <- rbind(df_output,
