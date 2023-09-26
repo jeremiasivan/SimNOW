@@ -397,6 +397,18 @@ for (i in 2:length(wsizes)-1) {
     iqtree_path <- paste0(long_path, j, "/", j, ".fa.iqtree")
     treefile_path <- paste0(long_path, j, "/", j, ".fa.treefile")
 
+    if (!all(file.exists(iqtree_path, treefile_path))) {
+      log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Copying from perwindow result."))
+
+      if (i == 1) {
+        iqtree_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.iqtree")
+        treefile_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.treefile")
+      } else {
+        iqtree_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.iqtree")
+        treefile_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.treefile")
+      }
+    }
+
     # extract log-likelihood and number of free parameters
     logl <- gsub(" \\(.*\\)$", "", system(paste("grep '^Log-likelihood of the tree'",iqtree_path), intern = T))
     logl <- as.numeric(gsub("^.* ", "", logl))
@@ -413,11 +425,11 @@ for (i in 2:length(wsizes)-1) {
 
       if (mean(as.numeric(bl)) >= min_branch_support) {
         tl$node.label <- NULL
-        return(list(logl, freeparams, ape::write.tree(tl)))
+        return(list(list(logl, freeparams, ape::write.tree(tl))))
       }
     }
     
-    return(list(logl, freeparams, NULL))
+    return(list(list(logl, freeparams, NULL)))
   }
 
   long_logl <- sum(sapply(long_output, function(x) x[[1]]))
@@ -436,6 +448,13 @@ for (i in 2:length(wsizes)-1) {
     iqtree_path <- paste0(short_path, j, "/", j, ".fa.iqtree")
     treefile_path <- paste0(short_path, j, "/", j, ".fa.treefile")
 
+    if (!all(file.exists(iqtree_path, treefile_path))) {
+      log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Copying from perwindow result."))
+
+      iqtree_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa.iqtree")
+      treefile_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa.treefile")
+    }
+
     # extract log-likelihood and number of free parameters
     logl <- gsub(" \\(.*\\)$", "", system(paste("grep '^Log-likelihood of the tree'",iqtree_path), intern = T))
     logl <- as.numeric(gsub("^.* ", "", logl))
@@ -452,11 +471,11 @@ for (i in 2:length(wsizes)-1) {
 
       if (mean(as.numeric(bl)) >= min_branch_support) {
         tl$node.label <- NULL
-        return(list(logl, freeparams, ape::write.tree(tl)))
+        return(list(list(logl, freeparams, ape::write.tree(tl))))
       }
     }
     
-    return(list(logl, freeparams, NULL))
+    return(list(list(logl, freeparams, NULL)))
   }
 
   short_logl <- sum(sapply(short_output, function(x) x[[1]]))
