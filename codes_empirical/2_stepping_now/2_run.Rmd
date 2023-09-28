@@ -24,8 +24,6 @@ if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
     log4r::error(fn_logger, "Error: invalid number of bootstrap for UFBoot. Exited.")
   } else if (bs_type == "nonparametric" && params$bootstrap < 100) {
     log4r::error(fn_logger, "Error: invalid number of bootstrap for non-parametric bootstrap. Exited.")
-  } else {
-    log4r::error(fn_logger, "Error: invalid type of bootstrap. Please use either 'ufboot' or 'nonparametric'. Exited.")
   }
 }
 
@@ -423,7 +421,7 @@ for (i in 2:length(wsizes)-1) {
     if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
       bl <- subset(tl$node.label, tl$node.label != "")
 
-      if (mean(as.numeric(bl)) >= min_branch_support) {
+      if (!is.null(bl) && mean(as.numeric(bl)) >= min_branch_support) {
         tl$node.label <- NULL
         return(list(list(logl, freeparams, ape::write.tree(tl))))
       }
@@ -469,7 +467,7 @@ for (i in 2:length(wsizes)-1) {
     if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
       bl <- subset(tl$node.label, tl$node.label != "")
 
-      if (mean(as.numeric(bl)) >= min_branch_support) {
+      if (!is.null(bl) && mean(as.numeric(bl)) >= min_branch_support) {
         tl$node.label <- NULL
         return(list(list(logl, freeparams, ape::write.tree(tl))))
       }
@@ -487,7 +485,7 @@ for (i in 2:length(wsizes)-1) {
   ########################################## SUMMARY ##########################################
   df_output <- rbind(df_output,
                     list(step=i,l_wsize=wsizes[i],s_wsize=wsizes[i+1],
-                        l_aic=long_aic, s_aic=short_aic, diff_aic=long_aic-short_aic,
+                        l_aic=long_aic, s_aic=short_aic, diff_aic=short_aic-long_aic,
                         fasta_ln=s_ln_step, fasta_ln_percent=round((s_ln_step/s_ln)*100,3),
                         l_bs_tree=length(long_tree), l_bs_topology=length(unique(long_tree)),
                         s_bs_tree=length(short_tree), s_bs_topology=length(unique(short_tree))),

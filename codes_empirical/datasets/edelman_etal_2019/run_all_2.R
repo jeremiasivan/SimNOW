@@ -20,9 +20,12 @@ dir_msaview <- "~/msa_view"
 prefix <- ""
 dir_iqtree2 <- "~/iqtree2"
 
-set_blmin <- TRUE
-set_model <- TRUE
-dna_model <- "JC"
+set_blmin <- FALSE
+set_model <- FALSE
+dna_model <- ""
+
+bootstrap <- 1000
+bootstrap_type <- "ufboot"
 outgroup <- "HmelRef"
 
 initial_wsize <- 64000
@@ -58,7 +61,8 @@ for (c in ls_chr) {
   input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat.fa")
   temprun <- list(out=out, params=list(codedir=codedir,
                                        prefix=c, outdir=run_outdir, thread=thread,
-                                       iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, outgroup=outgroup,
+                                       iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, 
+                                       bootstrap=bootstrap, bootstrap_type=bootstrap_type, outgroup=outgroup,
                                        input_aln=input_aln, initial_wsize=initial_wsize
   ))
   runs <- append(runs, list(temprun))

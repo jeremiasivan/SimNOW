@@ -19,7 +19,7 @@ params:
   
   # NOW analysis
   input_aln: "~/input.fa"
-  initial_wsize: 64000
+  initial_wsize: 128000
 ---
 
 ```{r, include=FALSE}
