@@ -55,7 +55,7 @@ for (i in 1:nrow(temp_table)) {
   }
   
   tempsim <- list(out=out, params=list(prefix=prex,
-                                       outdir=outdir, redo=redo,
+                                       codedir=codedir, outdir=outdir, redo=redo,
                                        msdir=msdir, ms_params=ms_params, ms_r=temp_table$rrate[i], ms_l=ms_l,
                                        iqtree2dir=iqtree2dir, alisim_model=alisim_model, alisim_scale=alisim_scale,
                                        copy_gaps=copy_gaps, src_aln=src_aln

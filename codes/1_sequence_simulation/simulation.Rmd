@@ -1,7 +1,12 @@
 ---
-title: "Sequence Simulation"
+title: "Sequence Simulation using ms and AliSim"
+output:
+  html_document:
+    code_folding: show
+
 params:
   # general
+  codedir: "~/SimNOW/codes"
   prefix: "sim"
   outdir: "~/simulation"
   redo: TRUE
@@ -21,13 +26,17 @@ params:
   src_aln: "~/empirical_aln.fa"
 ---
 
+## Load required libraries and functions
+```{r}
+source(paste0(params$codedir, "/", "1_sequence_simulation/functions.R"))
+
+library(data.table)
+library(dplyr)
+```
+
 ```{r, include=FALSE}
 # store initial system time
 sys_tic <- Sys.time()
-
-# load libraries
-library(data.table)
-library(dplyr)
 
 # create outdir
 currentdir <- paste0(params$outdir, "/", params$prefix)
@@ -47,7 +56,7 @@ if (params$redo) {
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-```{r simsetup, include=FALSE}
+```{r simulation-setup, include=FALSE}
 write.table(c("",
               "####################################",
               "####     Sequence Simulation    ####",
@@ -76,13 +85,20 @@ if (params$copy_gaps) {
 }
 ```
 
-```{r ms, include=FALSE}
+## Simulation of locus trees using ms
+### Running ms
+```{r ms}
 write.table(c("",
               "---------------- ms ----------------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
+# prevent the use of scientific notation for big numbers
 options(scipen=999)
+
+# generate random seeds for ms
 randseed <- paste(sample(10000:99999,3), collapse=" ")
+
+# combine all ms parameters into one variable
 ms_command <- paste(params$ms_params, "-r", params$ms_r, params$ms_l, "-seeds", randseed)
 
 # generate msfile
@@ -94,6 +110,17 @@ if (file.exists(fn_msfile) && !params$redo) {
 }
 ```
 
+### Extracting locus trees and topologies from ms file
+```{r}
+# mstrees
+summary <- f_extract_locus_tree(fn_msfile, params$ms_l)
+head(summary)
+
+# mstops
+t_summary <- f_extract_locus_topology(summary)
+head(t_summary)
+```
+
 ```{r postms, include=FALSE}
 options(scipen=999)
 
@@ -101,135 +128,48 @@ if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$re
   log4r::info(fn_logger, "File found: ms summary files.")
   
 } else {
-  ms <- data.table::fread(fn_msfile, col.names="cmd", sep="")
-  
-  # extract ms trees
-  mstrees <- ms[grepl("^\\[", cmd)]
-  if (nrow(mstrees) == 0) {
-    mstrees <- ms[grepl("^\\(.+\\);$", cmd)]
-    mstrees[1, cmd := paste0("[", params$ms_l, "]", mstrees[1, cmd])]
-  }
-  
-  # convert ms trees into data.table
-  mstrees[, c("empty","length","tree") := data.table::tstrsplit(cmd, '\\[|\\]', fixed = FALSE)]
-  mstrees[, c("cmd", "empty") := NULL]
-  mstrees$length <- as.numeric(mstrees$length)
-  
-  summary <- data.table::as.data.table(mstrees)
-    
-  # store first tree without branch lengths  
-  n <- nrow(summary)
-  start <- 1
-  stop <- summary$length[1]
-  
-  first_tree <- ape::read.tree(text=summary$tree[1])
-  first_tree$edge.length <- NULL
-  topology <- ape::write.tree(first_tree)
-    
-  # store subsequent trees without branch lengths
-  if (n > 1) {
-    for (i in 2:n){
-      start <- c(start,stop[length(stop)]+1)
-      stop <- c(stop,stop[length(stop)]+summary$length[i])
-
-      temp_tree <- ape::read.tree(text=summary$tree[i])
-      temp_tree$edge.length <- NULL
-      topology <- c(topology, ape::write.tree(temp_tree))
-    }
-  }
-  summary[, c("start", "stop", "topology") := list(start, stop, topology)]
-  
-  # output files
+  # save the ms summary files
   data.table::fwrite(summary, file=fn_mstrees, sep="\t", quote=F)
   write.table(summary$tree, file=fn_mttrees, sep="\t", quote=F, row.names=F, col.names=F)
-  log4r::info(fn_logger, paste0(n, " tree partition(s) found. File created: ",
+  log4r::info(fn_logger, paste0(nrow(summary), " tree partition(s) found. File created: ",
                                params$prefix, ".mstrees and ", params$prefix, ".multitree"))
-    
-  # match the naming convention of topologies
-  uq_tops <- unique(summary$topology)
-  ls_unroot <- NULL
-  ls_uqtops <- NULL
   
-  for (i in uq_tops) {
-    is_equal <- FALSE
-    
-    for (j in ls_unroot) {
-      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = i)), ape::unroot(ape::read.tree(text = j)))) {
-        is_equal <- TRUE
-        ls_uqtops[[i]] <- j
-        break
-      }
-    }
-    
-    if (!is_equal) {
-      ls_unroot <- c(ls_unroot, i)
-      ls_uqtops[[i]] <- i
-    }
-  }
-  
-  lookup <- match(summary$topology, names(ls_uqtops))
-  summary[, "utopology" := as.character(ls_uqtops[lookup])]
-  
-  # combine contiguous topologies together 
-  t_summary <- summary %>%
-    group_by(utopology, group_run = data.table::rleid(utopology)) %>%
-    summarise(length=sum(length)) %>%
-    arrange(group_run)
-  t_summary$group_run <- NULL
-  t_summary <- as.data.table(t_summary)
-  data.table::setnames(t_summary, c("topology", "length"))
-   
-  # store the boundary of each topology 
-  nt <- nrow(t_summary)
-  start <- 1
-  stop <- t_summary$length[1]
-
-  if (nt > 1) {
-    for (i in 2:nt){
-      start <- c(start,stop[length(stop)]+1)
-      stop <- c(stop,stop[length(stop)]+t_summary$length[i])
-    }
-  }    
-  t_summary[, c("start", "stop") := list(start, stop)]
-  
-  # output files
   data.table::fwrite(t_summary, file=fn_mstops, sep="\t", quote=F)
   write.table(unique(t_summary$topology), file=fn_uqtops, sep="\t", quote=F, row.names=F, col.names=F)
-  log4r::info(fn_logger, paste0(nt, " topology partition(s) found. File created: ", 
+  log4r::info(fn_logger, paste0(nrow(t_summary), " topology partition(s) found. File created: ", 
                                params$prefix, ".mstops and ", params$prefix, ".uqtops"))
-  
-  rm(ms, mstrees, summary, t_summary, start, stop, topology)
 }
 ```
 
+## Simulation of FASTA alignment using AliSim
 ```{r prealisim, include=FALSE}
-write.table(c("",
-              "-------------- AliSim --------------"),
-              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-
 if (file.exists(fn_nexus) && !params$redo) {
   log4r::info(fn_logger, paste0("File found: ", params$prefix, ".nex."))
   
 } else {
-  mstrees <- data.table::fread(fn_mstrees)
-  
-  # generate nexus file
-  res <- lapply(1:nrow(mstrees), function(i) {
-    paste0("    charset gene_",i," = DNA, ",mstrees$start[i],"-",mstrees$stop[i],";")
+  # extract the boundary of each tree
+  res <- lapply(1:nrow(summary), function(i) {
+    paste0("    charset gene_",i," = DNA, ",summary$start[i],"-",summary$stop[i],";")
   })
   
+  # store the header and footer of nexus file
   nexus_lines <- c("#nexus", "begin sets;", unlist(res), "end;")
   
+  # write the nexus file
   fileConn <- file(fn_nexus)
   writeLines(nexus_lines, fileConn)
   close(fileConn)
   
   log4r::info(fn_logger, paste0("File created: ", params$prefix, ".nex."))
-  rm(mstrees, res)
 }
 ```
 
-```{r alisim, include=FALSE}
+### Running AliSim
+```{r alisim}
+write.table(c("",
+              "-------------- AliSim --------------"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+              
 if (file.exists(fn_alisim_fa) && !params$redo) {
   log4r::info(fn_logger, paste0("File found: ", params$prefix, ".fa."))
   
@@ -246,31 +186,14 @@ if (file.exists(fn_alisim_fa) && !params$redo) {
   
   # add gaps
   if (params$copy_gaps) {
-    # read source and simulated alignments
-    srcseq <- seqinr::read.fasta(params$src_aln, whole.header=T)
-    simseq <- seqinr::read.fasta(paste0(fn_alisim, ".fa"), whole.header=T)
-    
-    names(srcseq) <- sapply(names(srcseq), function(x){trimws(x, which="both")})
-    names(simseq) <- sapply(names(simseq), function(x){trimws(x, which="both")})
-    
-    srctaxa <- sort(names(srcseq))
-    simtaxa <- sort(names(simseq))
-    
-    # stop execution if the lists of taxon do not match
-    if (!all(srctaxa == simtaxa)) {
-      err_msg <- "Error: source alignment has different taxa than the simulated one. Exited."
-        
-      log4r::error(fn_logger, err_msg)
-      stop(err_msg)
+    output <- f_copy_gaps(paste0(fn_alisim, ".fa"), params$src_aln)
+
+    if (!is.null(output$err)) {
+      log4r::error(fn_logger, output$err)
+      stop(output$err)
     }
     
-    # loop over alignment
-    for (t in srctaxa) {
-      gaps <- grep("-", srcseq[[t]])
-      simseq[[t]][gaps] <- "-"
-    }
-    
-    seqinr::write.fasta(sequences=simseq, names=names(simseq), file.out=fn_alisim_fa)
+    seqinr::write.fasta(sequences=output$seq, names=names(output$seq), file.out=fn_alisim_fa)
   }
   
   log4r::info(fn_logger, paste0("File created: ", params$prefix, ".fa."))
