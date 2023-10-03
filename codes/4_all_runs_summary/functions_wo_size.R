@@ -182,3 +182,25 @@ f_rank_ic_acc_2 <- function(df, i, ifc, type) {
   
   return(plot)
 }
+
+# function: plot all plots
+f_plot_all <- function(simsum, acc_loss, rank_simsum, i, ifc) {
+  # information criteria vs accuracy / rmse
+  plot(f_ic_acc_2(simsum, i, ifc, "site"))
+  plot(f_ic_acc_2(simsum, i, ifc, "rmse"))
+
+  # delta information criteria vs delta accuracy / rmse
+  plot(f_delta_ic_acc_2(simsum, i, ifc, "site"))
+  plot(f_delta_ic_acc_2(simsum, i, ifc, "rmse"))
+  
+  # accuracy loss
+  plot(f_acc_loss_2(acc_loss, ifc, "site"))
+  plot(f_acc_loss_2(acc_loss, ifc, "rmse"))
+  
+  # information criterion vs window size
+  plot(f_ic_wsize_2(simsum, i, ifc))
+  
+  # ranked IC vs ranked accuracy
+  plot(f_rank_ic_acc_2(rank_simsum, i, ifc, "site"))
+  plot(f_rank_ic_acc_2(rank_simsum, i, ifc, "rmse"))
+}

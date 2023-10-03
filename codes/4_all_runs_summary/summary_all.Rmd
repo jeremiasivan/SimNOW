@@ -193,65 +193,59 @@ for (i in 6:ncol(simsum)-2) {
 ```
 
 ### Plotting window size vs. site accuracy
-```{r}
+```{r, out.width="100%"}
 print(f_acc_wsize_2(simsum, "site"))
 ```
 
 ### Plotting window size vs. RMSE
-```{r}
+```{r, out.width="100%"}
 print(f_acc_wsize_2(simsum, "rmse"))
 ```
 
 ### Plotting site accuracy vs. RMSE
-```{r}
+```{r, out.width="100%"}
 print(f_acc_rmse_2(simsum))
 ```
 
 ### Plotting accuracy vs information criteria {.tabset}
-```{r, echo=FALSE, results='asis'}
-for (i in 6:ncol(simsum)-2) {
-  # initiate variable
-  ifc <- colnames(simsum)[i]
+#### AIC
+```{r, out.width="100%"}
+ifc <- "aic"
 
-  # create tab for each information criterion
-  cat("####", toupper(ifc), "\n")
-  cat("\n")
+# calculate accuracy loss
+acc_loss <- simsum %>% 
+  group_by(simulation, r) %>% 
+  mutate(max_acc = max(accuracy), min_rmse = min(rmse)) %>%
+  slice(which.min(!!as.name(ifc))) %>% 
+  summarise(site_loss = max_acc - accuracy, rmse_gain = rmse - min_rmse)
 
-  # calculate accuracy loss
-  acc_loss <- simsum %>% 
-    group_by(simulation, r) %>% 
-    mutate(max_acc = max(accuracy), min_rmse = min(rmse)) %>%
-    slice(which.min(!!as.name(ifc))) %>% 
-    summarise(site_loss = max_acc - accuracy, rmse_gain = rmse - min_rmse)
+f_plot_all(simsum, acc_loss, rank_simsum, 4, ifc)
+```
 
-  # information criteria vs accuracy / rmse
-  print(f_ic_acc_2(simsum, i, ifc, "site"))
-  cat("\n")
-  print(f_ic_acc_2(simsum, i, ifc, "rmse"))
-  cat("\n")
+#### AICc
+```{r, out.width="100%"}
+ifc <- "aicc"
 
-  # delta information criteria vs delta accuracy / rmse
-  print(f_delta_ic_acc_2(simsum, i, ifc, "site"))
-  cat("\n")
-  print(f_delta_ic_acc_2(simsum, i, ifc, "rmse"))
-  cat("\n")
-  
-  # accuracy loss
-  print(f_acc_loss_2(acc_loss, ifc, "site"))
-  cat("\n")
-  print(f_acc_loss_2(acc_loss, ifc, "rmse"))
-  cat("\n")
-  
-  # information criterion vs window size
-  print(f_ic_wsize_2(simsum, i, ifc))
-  cat("\n")
+# calculate accuracy loss
+acc_loss <- simsum %>% 
+  group_by(simulation, r) %>% 
+  mutate(max_acc = max(accuracy), min_rmse = min(rmse)) %>%
+  slice(which.min(!!as.name(ifc))) %>% 
+  summarise(site_loss = max_acc - accuracy, rmse_gain = rmse - min_rmse)
 
-  # ranked IC vs ranked accuracy
-  print(f_rank_ic_acc_2(rank_simsum, i, ifc, "site"))
-  cat("\n")
-  print(f_rank_ic_acc_2(rank_simsum, i, ifc, "rmse"))
-  cat("\n")
+f_plot_all(simsum, acc_loss, rank_simsum, 5, ifc)
+```
 
-  cat("\n")
-}
+#### BIC
+```{r, out.width="100%"}
+ifc <- "bic"
+
+# calculate accuracy loss
+acc_loss <- simsum %>% 
+  group_by(simulation, r) %>% 
+  mutate(max_acc = max(accuracy), min_rmse = min(rmse)) %>%
+  slice(which.min(!!as.name(ifc))) %>% 
+  summarise(site_loss = max_acc - accuracy, rmse_gain = rmse - min_rmse)
+
+f_plot_all(simsum, acc_loss, rank_simsum, 6, ifc)
 ```

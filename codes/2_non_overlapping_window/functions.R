@@ -99,16 +99,16 @@ f_annotate_window_tree <- function(fn_treefile, list_window, window_size, prefix
 
 # function: compare topology weight between ms and NOW results
 # required library: data.table, dplyr
-f_compare_topology_weight <- function(msfile, smfile, fn_output){
+f_compare_topology_weight <- function(msfile, smfile, mstree_uq, len_fasta, fn_output){
     # count the topology weight of locus trees
     ms_tw <- msfile %>%
         group_by(topology) %>%
-        summarise(sumlen = sum(length), percentage = sumlen/params$ms_l * 100)
+        summarise(sumlen = sum(length), percentage = sumlen/len_fasta * 100)
     
     # count the topology weight from non-overlapping windows
     sm_tw <- smfile %>%
         group_by(topology) %>%
-        summarise(sumlen = sum(length), percentage = sumlen/params$ms_l * 100)
+        summarise(sumlen = sum(length), percentage = sumlen/len_fasta * 100)
     
     # add topology weight for each unique ms topology
     cmptw <- c()

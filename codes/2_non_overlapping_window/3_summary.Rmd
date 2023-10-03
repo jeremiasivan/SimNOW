@@ -64,7 +64,7 @@ for (i in window_sizes) {
   f_create_site_acc_matrix(msfile, smfile, mstree_uq, fn_cmp)
 
   # compare weights between ms and NOW topologies
-  f_compare_topology_weight(msfile, smfile, fn_cmptw)
+  f_compare_topology_weight(msfile, smfile, mstree_uq, params$ms_l, fn_cmptw)
 
   log4r::info(fn_logger, paste0("File created: ", i, "bp window comparison files (", params$prefix, ".cmp)."))
 }
