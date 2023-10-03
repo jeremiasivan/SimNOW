@@ -96,3 +96,121 @@ f_annotate_window_tree <- function(fn_treefile, list_window, window_size, prefix
     count_contiguous$group_run <- NULL
     data.table::fwrite(count_contiguous, file=fn_cnsum, quote=F, sep="\t")
 }
+
+# function: compare topology weight between ms and NOW results
+# required library: data.table, dplyr
+f_compare_topology_weight <- function(msfile, smfile, fn_output){
+    # count the topology weight of locus trees
+    ms_tw <- msfile %>%
+        group_by(topology) %>%
+        summarise(sumlen = sum(length), percentage = sumlen/params$ms_l * 100)
+    
+    # count the topology weight from non-overlapping windows
+    sm_tw <- smfile %>%
+        group_by(topology) %>%
+        summarise(sumlen = sum(length), percentage = sumlen/params$ms_l * 100)
+    
+    # add topology weight for each unique ms topology
+    cmptw <- c()
+    for (j in 1:nrow(ms_tw)) {
+        top_idx <- match(ms_tw$topology[j], sm_tw$topology)
+        if (is.na(top_idx)) {
+            cmptw <- rbind(cmptw, c(ms_tw$topology[j], round(ms_tw$percentage[j], 4), "NA"))
+        } else {
+            cmptw <- rbind(cmptw, c(ms_tw$topology[j], round(ms_tw$percentage[j], 4), round(sm_tw$percentage[top_idx], 4)))
+        }
+    }
+    
+    # add topology weight for each unique NOW topology
+    for (j in subset(sm_tw$topology, !sm_tw$topology %in% mstree_uq)) {
+        top_idx <- match(j, sm_tw$topology)
+        cmptw <- rbind(cmptw, c(j, "NA", round(sm_tw$percentage[top_idx], 4)))
+    }
+    
+    # convert vector to data.table
+    cmptw <- data.table::as.data.table(cmptw)
+    data.table::setnames(cmptw, c("topology", "ms", "now"))
+    data.table::fwrite(cmptw, file=fn_output, quote=FALSE, sep="\t")
+}
+
+# function: create site assignment matrix between ms and NOW results
+# required library: data.table
+f_create_site_acc_matrix <- function(msfile, smfile, mstree_uq, fn_output) {
+    # count the number of unique topology
+    mstree_uq_ln <- length(mstree_uq)
+
+    # create empty dataframe
+    output <- data.table::data.table(c(mstree_uq,"NT"), matrix(0, nrow=mstree_uq_ln+1, ncol=mstree_uq_ln))
+    data.table::setnames(output, c("topology", mstree_uq))
+    
+    # iterate through ms topology file
+    for (k in 1:nrow(msfile)){
+        # extract the topology based on ms topology switching
+        start_idx <- tail(which(smfile$start <= msfile$start[k]), 1)
+        stop_idx <- head(which(smfile$stop >= msfile$stop[k]), 1)
+        
+        # update lengths
+        sites <- smfile[start_idx:stop_idx,]
+        sites$start[1] <- msfile$start[k]
+        sites$length[1] <- sites$stop[1] - sites$start[1] + 1
+        
+        last_idx <- nrow(sites)
+        sites$stop[last_idx] <- msfile$stop[k]
+        sites$length[last_idx] <- sites$stop[last_idx] - sites$start[last_idx] + 1
+        
+        # extract index of the topology
+        topology_idx <- match(msfile$topology[k], colnames(output))
+        
+        # add number of window sites for the respective ms topology
+        for (j in 1:nrow(sites)) {
+            window_idx <- match(sites$topology[j], output$topology)
+            
+            if (is.na(window_idx)) {
+                tempval <- as.numeric(output[mstree_uq_ln+1, ..topology_idx] + sites$length[j])
+                output[mstree_uq_ln+1, eval(msfile$topology[k]) := tempval]
+            } else {
+                tempval <- as.numeric(output[window_idx, ..topology_idx] + sites$length[j])
+                output[window_idx, eval(msfile$topology[k]) := tempval]
+            }
+        }
+    }
+    
+    data.table::fwrite(output, file=fn_output, sep = "\t", quote = F)
+}
+
+# function: extract accuracy and information criterion score from window trees
+# required library: data.table
+f_extract_acc_and_ic <- function(fn_cmp, fn_cmptw, fn_iqtree){
+    # open the site assignment matrix file
+    cmp <- data.table::fread(fn_cmp)
+    cmp <- as.matrix(cmp[,-1])
+    
+    # calculate the site accuracy
+    acc <- sum(as.numeric(diag(cmp))) / sum(as.numeric(cmp)) * 100
+    acc <- round(acc, 3)
+    
+    # open the topology weight file
+    cmptw <- data.table::fread(fn_cmptw)
+
+    # set NULL value as zero
+    na_ms <- which(is.na(cmptw$ms))
+    na_now <- which(is.na(cmptw$now))
+    
+    if (length(na_ms) > 0) {
+        cmptw$ms[na_ms] <- 0
+    }
+    
+    if (length(na_now) > 0) {
+        cmptw$now[na_now] <- 0
+    }
+    
+    # extract the RMSE of the topology distribution
+    rmse <- mean((cmptw$ms - cmptw$now) ^ 2) %>% sqrt()
+    
+    # extract information criterion scores
+    aic <- gsub("^.* ", "", system(paste("grep '^Akaike information criterion'",fn_iqtree), intern = T))
+    aicc <- gsub("^.* ", "", system(paste("grep '^Corrected Akaike information criterion'",fn_iqtree), intern = T))
+    bic <- gsub("^.* ", "", system(paste("grep '^Bayesian information criterion'",fn_iqtree), intern = T))
+
+    return(c(acc,aic,aicc,bic,rmse))
+}
