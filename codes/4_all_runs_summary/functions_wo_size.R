@@ -1,5 +1,7 @@
 # functions for codes/4_all_runs_summary
 
+# function: plot accuracy vs window size
+# required library: ggplot2
 f_acc_wsize_2 <- function(df, type) {
   plot <- NULL
   if (type == "site") {
@@ -25,6 +27,8 @@ f_acc_wsize_2 <- function(df, type) {
   return(plot)
 }
 
+# function: plot site accuracy vs RMSE
+# required library: ggplot2
 f_acc_rmse_2 <- function(df) {
   plot <- ggplot(df, aes(y=log10(accuracy), x=log10(rmse), ymin=0, xmin=0)) +
     ggtitle("Correlation between Site Classification Accuracy and RMSE") +
@@ -41,6 +45,8 @@ f_acc_rmse_2 <- function(df) {
   return(plot)
 }
 
+# function: plot accuracy vs ic
+# required library: ggplot2, viridis
 f_ic_acc_2 <- function(df, i, ifc, type) {
   plot <- NULL
   if (type == "site") {
@@ -68,6 +74,8 @@ f_ic_acc_2 <- function(df, i, ifc, type) {
   return(plot)
 }
 
+# function: plot accuracy vs delta ic
+# required library: dplyr, ggplot2, viridis
 f_delta_ic_acc_2 <- function(df, i, ifc, type) {
   col_ifc <- sym(ifc)
   
@@ -102,6 +110,8 @@ f_delta_ic_acc_2 <- function(df, i, ifc, type) {
   return(plot)
 }
 
+# function: plot accuracy loss
+# required library: ggplot2
 f_acc_loss_2 <- function(df, ifc, type) {
   plot <- NULL
   if (type == "site") {
@@ -126,6 +136,8 @@ f_acc_loss_2 <- function(df, ifc, type) {
   return(plot)
 }
 
+# function: plot window size vs ic
+# required library: ggplot2, viridis
 f_ic_wsize_2 <- function(df, i, ifc) {
   plot <- ggplot(df, aes(x=window_size, y=as.numeric(unlist(df[,..i])), group=simulation)) +
     geom_line(aes(alpha=0.2)) +
@@ -142,6 +154,8 @@ f_ic_wsize_2 <- function(df, i, ifc) {
   return(plot)
 }
 
+# function: plot ranked accuracy vs ranked ic
+# required library: ggplot2, viridis
 f_rank_ic_acc_2 <- function(df, i, ifc, type) {
   plot <- NULL
   if (type == "site") {
