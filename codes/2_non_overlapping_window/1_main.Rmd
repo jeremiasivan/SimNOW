@@ -1,5 +1,9 @@
 ---
 title: "Non-overlapping Windows Analysis"
+output:
+  html_document:
+    code_folding: show
+
 params:
   # general
   codedir: "~/SimNOW/codes"
@@ -23,6 +27,15 @@ params:
   window_size: !r c(50000,100000,500000,1000000)
 ---
 
+## Load required libraries and functions
+```{r}
+source(paste0(params$codedir, "/2_non_overlapping_window/functions.R"))
+
+library(data.table)
+library(dplyr)
+library(doSNOW)
+```
+
 ```{r, include=FALSE}
 # install.packages("ape")
 # install.packages("forcats")
@@ -33,11 +46,6 @@ params:
 
 # store initial system time
 sys_tic <- Sys.time()
-
-# load libraries
-library(data.table)
-library(dplyr)
-library(doSNOW)
 
 # create outdir
 currentdir <- paste0(params$outdir, "/", params$prefix)
@@ -53,10 +61,10 @@ fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-```{r child = paste0(params$codedir,"/2_non_overlapping_window/2_run.Rmd"), include=FALSE}
+```{r child = paste0(params$codedir,"/2_non_overlapping_window/2_run.Rmd")}
 ```
 
-```{r child = paste0(params$codedir,"/2_non_overlapping_window/3_summary.Rmd"), include=FALSE}
+```{r child = paste0(params$codedir,"/2_non_overlapping_window/3_summary.Rmd")}
 ```
 
 ```{r, include=FALSE}

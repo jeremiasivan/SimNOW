@@ -28,13 +28,17 @@ params:
 
 ## Load required libraries and functions
 ```{r}
-source(paste0(params$codedir, "/", "1_sequence_simulation/functions.R"))
+source(paste0(params$codedir, "/1_sequence_simulation/functions.R"))
 
 library(data.table)
 library(dplyr)
 ```
 
 ```{r, include=FALSE}
+# install.packages("ape")
+# install.packages("log4r")
+# install.packages("seqinr")
+
 # store initial system time
 sys_tic <- Sys.time()
 
@@ -169,7 +173,7 @@ if (file.exists(fn_nexus) && !params$redo) {
 write.table(c("",
               "-------------- AliSim --------------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-              
+
 if (file.exists(fn_alisim_fa) && !params$redo) {
   log4r::info(fn_logger, paste0("File found: ", params$prefix, ".fa."))
   

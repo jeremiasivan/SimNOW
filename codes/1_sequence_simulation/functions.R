@@ -1,4 +1,4 @@
-# functions for 1_sequence_simulation/simulation.Rmd
+# functions for codes/1_sequence_simulation
 
 # function: open msfile and convert locus trees into data.table
 # required library: ape, data.table
@@ -42,6 +42,7 @@ f_extract_locus_tree <- function(fn_msfile, len_aln) {
 
     # add new columns to the data.table
     mstrees[, c("start", "stop", "topology") := list(start, stop, topology)]
+    setcolorder(mstrees, c("tree","length","start","stop","topology"))
 
     # match the naming convention of topologies
     uq_tops <- unique(mstrees$topology)
