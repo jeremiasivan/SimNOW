@@ -46,9 +46,6 @@ prefix/
 │   ├── ...
 │   ├── 50000/
 │   │   └── ...
-│   ├── prefix.aic.tiff
-│   ├── prefix.bic.tiff
-│   ├── prefix.aicc.tiff
 │   └── prefix.sum
 ├── prefix.html
 └── prefix.log 
@@ -119,11 +116,7 @@ Running the code will create a new folder called `windows` with individual folde
     - `prefix.topsum`: table of unique topologies sorted from the most common one
 - `trees/`: folder with window trees generated using `IQ-TREE 2`
 
-Additionally, the `windows` folder will contain the following files:
-- `prefix.aic.tiff`: correlation plot between AIC and window size
-- `prefix.bic.tiff`: correlation plot between BIC and window size
-- `prefix.aicc.tiff`: correlation plot between AICc and window size
-- `prefix.sum`: summary table of window sizes and their respective information criteria scores
+Additionally, the `windows` folder will contain `prefix.sum` which contains summary table of window sizes and their respective information criteria scores
 
 ### <a id="hmm">HMM</a>
 *(to be implemented later)*

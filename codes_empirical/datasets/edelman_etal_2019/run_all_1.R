@@ -114,7 +114,7 @@ foreach(r=runs, .errorhandling = 'pass') %dopar% {
 stopCluster(cl)
 
 # summary for all chromosomes
-rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/summary_all.Rmd"),
+rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/summary_all_1.Rmd"),
                   output_file=paste0(outdir,"/",prefix,"/edelman_summary.html"),
                   params=list(prefix=prefix, outdir=outdir, ic_type=ic_type),
                   quiet=TRUE)

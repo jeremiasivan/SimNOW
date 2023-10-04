@@ -437,10 +437,25 @@ for (i in 2:length(wsizes)-1) {
   long_tree <- unlist(sapply(long_output, function(x) {x[[3]]}))
   s_ln_step <- length(dirs) * wsizes[i]
 
+  # calculate the topology distribution
+  fn_uqtops <- paste0(getwd(), "/", i, "/", wsizes[i], "/", wsizes[i], ".uqtops")
+
+  df_topology <- data.table::as.data.table(long_tree)
+  sorted_topology <- df_topology %>%
+    group_by(topology) %>%
+    summarise(n = n()) %>%
+    arrange(desc(n)) %>%
+    mutate(cum.percentage=cumsum(n)/sum(n)*100)
+  data.table::fwrite(sorted_topology, file=fn_uqtops, quote=F, sep="\t")
+
   ########################################### SHORT ###########################################
   short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
   dirs <- list.dirs(short_path, full.names = F, recursive = F)
   dirs <- dirs[grepl("^window", dirs)]
+
+  if (s_ln_step != length(dirs) * wsizes[i+1]) {
+    log4r::error(fn_logger, paste0("Error: different alignment lengths on Step", i, "."))
+  }
 
   short_output <- foreach(j = dirs, .combine=c) %dopar% {
     iqtree_path <- paste0(short_path, j, "/", j, ".fa.iqtree")
@@ -481,6 +496,17 @@ for (i in 2:length(wsizes)-1) {
   short_aic <- (2 * short_freeparams) - (2 * short_logl)
 
   short_tree <- unlist(sapply(short_output, function(x) {x[[3]]}))
+
+  # calculate the topology distribution
+  fn_uqtops <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/", wsizes[i+1], ".uqtops")
+
+  df_topology <- data.table::as.data.table(short_tree)
+  sorted_topology <- df_topology %>%
+    group_by(topology) %>%
+    summarise(n = n()) %>%
+    arrange(desc(n)) %>%
+    mutate(cum.percentage=cumsum(n)/sum(n)*100)
+  data.table::fwrite(sorted_topology, file=fn_uqtops, quote=F, sep="\t")
 
   ########################################## SUMMARY ##########################################
   df_output <- rbind(df_output,

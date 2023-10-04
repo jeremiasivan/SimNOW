@@ -1,0 +1,61 @@
+---
+title: "Summary of Multiple Non-overlapping Windows Analyses"
+params:
+  prefix: "sim"
+  outdir: "~/simulation"
+
+  initial_wsize: 64000
+---
+```{r setup, include=FALSE}
+library(data.table)
+library(dplyr)
+
+dir_summary <- paste0(params$outdir,"/",params$prefix, "/summary/")
+if (!dir.exists(dir_summary)) {
+  dir.create(dir_summary, recursive=T)
+}
+```
+
+```{r functions, include=FALSE}
+f_count_topology_freq <- function(window_size, list_chr, step, outdir, fn_output) {
+  df_output <- data.table::data.table(topology=character(), n=numeric(), cum.percentage=numeric())
+
+  for (c in list_chr) {
+    df_uqtops <- data.table::fread(paste0(outdir, "/", c, "/", step, "/", window_size, "/", window_size, ".uqtops"))
+    df_output <- rbind(df_output, df_uqtops)
+  }
+
+  df_output <- df_output %>%
+    select(topology, n) %>%
+    group_by(topology) %>%
+    summarise_all(sum) %>%
+    arrange(desc(n)) %>%
+    mutate(cum.percentage=cumsum(n)/sum(n)*100)
+
+  data.table::fwrite(df_output, file=fn_output, quote=F, sep="\t")
+}
+```
+
+```{r summary, include=FALSE}
+allsims <- list.dirs(paste0(params$outdir,"/",params$prefix), full.names = F, recursive = F)
+chrs <- allsims[grep("^chr", allsims)]
+
+# extract window sizes
+max_wsize <- params$initial_wsize
+wsizes <- max_wsize
+while (max_wsize %% 2 == 0) {
+  wsizes <- c(wsizes, max_wsize / 2)
+  max_wsize <- max_wsize / 2
+}
+wsizes <- sort(wsizes, decreasing=T)
+
+for (i in 1:length(wsizes)) {
+  fn_output <- paste0(dir_summary, wsizes[i], ".uqtops")
+
+  if (i == 1) {
+      f_count_topology_freq(wsizes[i], chrs, i, paste0(params$outdir,"/",params$prefix), fn_output)
+  } else {
+      f_count_topology_freq(wsizes[i], chrs, i-1, paste0(params$outdir,"/",params$prefix), fn_output)
+  }
+}
+```

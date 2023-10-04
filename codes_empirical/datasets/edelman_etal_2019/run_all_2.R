@@ -91,4 +91,11 @@ foreach(r=runs, .errorhandling = 'pass') %dopar% {
 }
 
 stopCluster(cl)
+
+# summary for all chromosomes
+rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/summary_all_2.Rmd"),
+                  output_file=paste0(outdir,"/",prefix,"/edelman_summary.html"),
+                  params=list(prefix=prefix, outdir=outdir, initial_wsize=initial_wsize),
+                  quiet=TRUE)
+                  
 #################################
