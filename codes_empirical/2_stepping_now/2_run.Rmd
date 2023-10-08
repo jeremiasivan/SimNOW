@@ -1,5 +1,5 @@
 ---
-title: "Stepping NOW for Empirical Dataset"
+title: "Stepwise NOW for Empirical Dataset"
 ---
 
 ```{r nowsetup, include=FALSE}
@@ -147,29 +147,35 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
 
     # output file
     fn_long <- paste0(dir_perwindow, wsizes[i], ".perwindowsum")
-    
-    # remove all alignments in the folder
-    unlink(paste0(dir_perwindow,"*.fa"))
-    
-    # generate window alignments
-    start <- 1
-    numw <- s_ln_new/wsizes[i]
-    wi <- ceiling(log(numw) / log(10)) + 1
-    
-    for (j in 1:numw) {
-      out <- f_window_aln(s, start, j*wsizes[i], dir_perwindow, j, wi)
 
-      iqtree2_single(out[1], params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
-      if (!file.exists(paste0(out[1],".treefile"))) {
-        df_long <- rbind(df_long, list(name=out[2],start=start,end=j*wsizes[i],is_informative=FALSE))
-      } else {
-        df_long <- rbind(df_long, list(name=out[2],start=start,end=j*wsizes[i],is_informative=TRUE))
+    # check if files already exist
+    numw <- s_ln_new/wsizes[i]
+    if (length(list.files(dir_perwindow, pattern='fa')) == numw && !params$redo) {
+      log4r::info(fn_logger, paste0("File found: ", wsizes[i], "bp window alignment."))
+
+    } else {
+      # remove all alignments in the folder
+      unlink(paste0(dir_perwindow,"*.fa"))
+      
+      # generate window alignments
+      start <- 1
+      wi <- ceiling(log(numw) / log(10)) + 1
+      
+      for (j in 1:numw) {
+        out <- f_window_aln(s, start, j*wsizes[i], dir_perwindow, j, wi)
+
+        iqtree2_single(out[1], params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
+        if (!file.exists(paste0(out[1],".treefile"))) {
+          df_long <- rbind(df_long, list(name=out[2],start=start,end=j*wsizes[i],is_informative=FALSE))
+        } else {
+          df_long <- rbind(df_long, list(name=out[2],start=start,end=j*wsizes[i],is_informative=TRUE))
+        }
+
+        start <- start + wsizes[i]
       }
 
-      start <- start + wsizes[i]
+      data.table::fwrite(df_long, fn_long, quote=FALSE, sep="\t")
     }
-
-    data.table::fwrite(df_long, fn_long, quote=FALSE, sep="\t")
   }
 
   ########################################### SHORT ###########################################
@@ -182,12 +188,18 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
   # output file
   fn_short <- paste0(dir_perwindow, wsizes[i+1], ".perwindowsum")
   
+  # check if files already exist
+  numw <- s_ln_new/wsizes[i+1]
+  if (length(list.files(dir_perwindow, pattern='fa')) == numw && !params$redo) {
+    log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp window alignment."))
+    return(NULL)
+  }
+
   # remove all alignments in the folder
   unlink(paste0(dir_perwindow,"*.fa"))
   
   # generate window alignments
   start <- 1
-  numw <- s_ln_new/wsizes[i+1]
   wi <- ceiling(log(numw) / log(10)) + 1
   
   for (j in 1:numw) {
@@ -230,15 +242,15 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
   df_short <- data.table::fread(fn_short)
 
   ########################################### LONG ############################################
-  # check which window is non-informative
-  long_noninformative_idx <- c()
+  # check which window is uninformative
+  long_uninformative_idx <- c()
   for (j in 1:nrow(df_short)) {
     if (!df_short$is_informative[j]) {
-      noninformative_idx <- which(df_long$start <= df_short$start[j] & df_long$end >= df_short$end[j])
-      long_noninformative_idx <- c(long_noninformative_idx, noninformative_idx)
+      uninformative_idx <- which(df_long$start <= df_short$start[j] & df_long$end >= df_short$end[j])
+      long_uninformative_idx <- c(long_uninformative_idx, uninformative_idx)
     }
   }
-  long_noninformative_idx <- unique(long_noninformative_idx)
+  long_uninformative_idx <- unique(long_uninformative_idx)
 
   # create outdir
   long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
@@ -246,36 +258,43 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
     dir.create(long_path, recursive=TRUE)
   }
 
-  # iteration to copy the alignment
+  # remove uninformative windows
   long_names <- df_long$name
-  if (length(long_noninformative_idx) != 0){
-    long_names <- df_long$name[-long_noninformative_idx]
+  if (length(long_uninformative_idx) != 0){
+    long_names <- df_long$name[-long_uninformative_idx]
   }
 
-  for (j in long_names) {
-    fn_path <- NULL
-    if (i == 1) {
-      fn_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa")
-    } else {
-      fn_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa")
-    }
-    
-    temp_path <- paste0(long_path, j, "/")
-    if (!dir.exists(temp_path)) {
-      dir.create(temp_path)
-    }
+  # check if files already exist
+  if (length(list.files(long_path, pattern='*.fa$', recursive=TRUE)) == length(long_names) && !params$redo) {
+    log4r::info(fn_logger, paste0("File found: ", wsizes[i], "bp filtered windows for Step", i, "."))
 
-    system(paste("cp", fn_path, temp_path))
+  } else {
+    # iteration to copy the alignment
+    for (j in long_names) {
+      fn_path <- NULL
+      if (i == 1) {
+        fn_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa")
+      } else {
+        fn_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa")
+      }
+      
+      temp_path <- paste0(long_path, j, "/")
+      if (!dir.exists(temp_path)) {
+        dir.create(temp_path)
+      }
+
+      system(paste("cp", fn_path, temp_path))
+    }
   }
 
   ########################################### SHORT ###########################################
-  # check which window is non-informative
-  short_noninformative_idx <- c()
-  for (j in long_noninformative_idx) {
-    noninformative_idx <- which(df_short$start >= df_long$start[j] & df_short$end <= df_long$end[j])
-    short_noninformative_idx <- c(short_noninformative_idx, noninformative_idx)
+  # check which window is uninformative
+  short_uninformative_idx <- c()
+  for (j in long_uninformative_idx) {
+    uninformative_idx <- which(df_short$start >= df_long$start[j] & df_short$end <= df_long$end[j])
+    short_uninformative_idx <- c(short_uninformative_idx, uninformative_idx)
   }
-  short_noninformative_idx <- unique(short_noninformative_idx)
+  short_uninformative_idx <- unique(short_uninformative_idx)
 
   # create outdir
   short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
@@ -283,12 +302,19 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
     dir.create(short_path, recursive=TRUE)
   }
 
-  # iteration to copy the alignment
+  # remove uninformative windows
   short_names <- df_short$name
-  if (length(short_noninformative_idx) != 0){
-    short_names <- df_short$name[-short_noninformative_idx]
+  if (length(short_uninformative_idx) != 0){
+    short_names <- df_short$name[-short_uninformative_idx]
   }
 
+  # check if files already exist
+  if (length(list.files(short_path, pattern='*.fa$', recursive=TRUE)) == length(short_names) && !params$redo) {
+    log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp filtered windows for Step", i, "."))
+    return(NULL)
+  }
+
+  # iteration to copy the alignment
   for (j in short_names) {
     fn_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa")
 
@@ -333,7 +359,7 @@ for (i in 2:length(wsizes)-1) {
     # check if files exist
     iqtreefile <- paste0(windowdir, j, ".fa.iqtree")
     treefile <- paste0(windowdir, j, ".fa.treefile")
-    if (all(file.exists(iqtreefile, treefile))) {
+    if (all(file.exists(iqtreefile, treefile)) && !params$redo) {
       return(NULL)
     }
     
@@ -359,7 +385,7 @@ for (i in 2:length(wsizes)-1) {
 
     iqtreefile <- paste0(short_path, j, "/", j, ".fa.iqtree")
     treefile <- paste0(short_path, j, "/", j, ".fa.treefile")
-    if (all(file.exists(iqtreefile, treefile))) {
+    if (all(file.exists(iqtreefile, treefile)) && !params$redo) {
       return(NULL)
     }
 
@@ -441,11 +467,12 @@ for (i in 2:length(wsizes)-1) {
   fn_uqtops <- paste0(getwd(), "/", i, "/", wsizes[i], "/", wsizes[i], ".uqtops")
 
   df_topology <- data.table::as.data.table(long_tree)
+  data.table::setnames(df_topology, "topology")
   sorted_topology <- df_topology %>%
     group_by(topology) %>%
     summarise(n = n()) %>%
     arrange(desc(n)) %>%
-    mutate(cum.percentage=cumsum(n)/sum(n)*100)
+    mutate(cum.percentage=round(cumsum(n)/sum(n)*100,3))
   data.table::fwrite(sorted_topology, file=fn_uqtops, quote=F, sep="\t")
 
   ########################################### SHORT ###########################################
@@ -501,11 +528,12 @@ for (i in 2:length(wsizes)-1) {
   fn_uqtops <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/", wsizes[i+1], ".uqtops")
 
   df_topology <- data.table::as.data.table(short_tree)
+  data.table::setnames(df_topology, "topology")
   sorted_topology <- df_topology %>%
     group_by(topology) %>%
     summarise(n = n()) %>%
     arrange(desc(n)) %>%
-    mutate(cum.percentage=cumsum(n)/sum(n)*100)
+    mutate(cum.percentage=round(cumsum(n)/sum(n)*100,3))
   data.table::fwrite(sorted_topology, file=fn_uqtops, quote=F, sep="\t")
 
   ########################################## SUMMARY ##########################################

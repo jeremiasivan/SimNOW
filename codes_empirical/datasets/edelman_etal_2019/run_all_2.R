@@ -60,7 +60,7 @@ for (c in ls_chr) {
   out <- paste0(currentdir,c,".html")
   input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat.fa")
   temprun <- list(out=out, params=list(codedir=codedir,
-                                       prefix=c, outdir=run_outdir, thread=thread,
+                                       prefix=c, outdir=run_outdir, thread=thread, redo=redo,
                                        iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, 
                                        bootstrap=bootstrap, bootstrap_type=bootstrap_type, outgroup=outgroup,
                                        input_aln=input_aln, initial_wsize=initial_wsize

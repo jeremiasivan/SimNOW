@@ -3,6 +3,7 @@
 ## Table of Content
 - <a href="#analyses">Analyses</a>
     - <a href="#now">Non-overlapping window analysis</a>
+    - <a href="#stepnow">Stepwise non-overlapping windows</a>
     - <a href="#hmm">HMM</a>
     - <a href="#foldstr">Folder structure</a>
 - <a href="#datasets">Datasets</a>
@@ -48,6 +49,9 @@ Additionally, the `windows` folder will contain the following files:
 - `prefix.aicc.tiff`: correlation plot between AICc and window size
 - `prefix.topdist`: summary table of topology distribution per window size
 - `prefix.topdist.tiff`: plot of topology distribution per window size
+
+### <a id="stepnow">Stepwise non-overlapping window analysis</a>
+*(to be updated later)*
 
 ### <a id="hmm">HMM</a>
 *(to be implemented later)*
@@ -160,4 +164,4 @@ Running `run_all.R` using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GH
 - Non-overlapping window analysis: up to 4.4 hours for the longest chromosome (`chr10`)
 
 ---
-*Last update: 06 September 2023 by Jeremias Ivan*
+*Last update: 08 October 2023 by Jeremias Ivan*
