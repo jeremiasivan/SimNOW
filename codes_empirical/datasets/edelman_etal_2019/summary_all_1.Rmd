@@ -92,7 +92,7 @@ f_cnsimsum <- function(df1, df2) {
     group_by(topology, count, colour, tree) %>%
     summarise(n=n())
 
-  df1$tree <- factor(df1$tree, levels=stringr::str_sort(df1$tree, numeric=TRUE))
+  df1$tree <- factor(df1$tree, levels=stringr::str_sort(unique(df1$tree), numeric=TRUE))
 
   plot1 <- ggplot(df1, aes(x=count, y=n))
   plot2 <- NULL

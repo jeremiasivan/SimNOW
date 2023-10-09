@@ -33,6 +33,10 @@ window_size_nogaps <- c(25000)
 min_window_size_nogaps <- 100
 
 ic_type <- "aic"
+
+# summary
+colour_scheme <- ""
+
 #################################
 
 if (nthread / thread < 1) {
@@ -116,7 +120,7 @@ stopCluster(cl)
 # summary for all chromosomes
 rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/summary_all_1.Rmd"),
                   output_file=paste0(outdir,"/",prefix,"/edelman_summary.html"),
-                  params=list(prefix=prefix, outdir=outdir, ic_type=ic_type),
+                  params=list(prefix=prefix, outdir=outdir, ic_type=ic_type, colour_scheme=colour_scheme),
                   quiet=TRUE)
 
 #################################
