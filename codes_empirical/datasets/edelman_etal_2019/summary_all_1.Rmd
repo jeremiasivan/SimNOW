@@ -196,7 +196,8 @@ if (params$colour_scheme != "") {
         topology_idx <- match(k, df_colour$topology)
 
         df_topsimsum[topology == j, colour := df_colour$code[topology_idx]]
-        df_cnsimsum[topology == j, colour := df_colour$code[topology_idx], tree := df_colour$tree[topology_idx]]
+        df_cnsimsum[topology == j, colour := df_colour$code[topology_idx]]
+        df_cnsimsum[topology == j, tree := df_colour$tree[topology_idx]]
         break
       }
     }
@@ -296,7 +297,8 @@ if (params$colour_scheme != "") {
         topology_idx <- match(k, df_colour$topology)
 
         df_topsimsum[topology == j, colour := df_colour$code[topology_idx]]
-        df_cnsimsum[topology == j, colour := df_colour$code[topology_idx], tree := df_colour$tree[topology_idx]]
+        df_cnsimsum[topology == j, colour := df_colour$code[topology_idx]]
+        df_cnsimsum[topology == j, tree := df_colour$tree[topology_idx]]
         break
       }
     }
