@@ -152,7 +152,7 @@ chrs <- allsims[grep("^chr", allsims)]
 
 # iterate through chromosomes
 df_topsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), cum.percentage=numeric(), colour=character())
-df_cnsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), colour=character())
+df_cnsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), colour=character(), tree=character())
 
 for (c in chrs) {
   window_outdir <- paste0(params$outdir,"/",params$prefix,"/",c,"/windows/")
@@ -204,7 +204,8 @@ if (params$colour_scheme != "") {
   }
 
   df_topsimsum[is.na(colour), colour := "#000000"]
-  df_cnsimsum[is.na(colour), colour := "#000000", tree := "NT"]
+  df_cnsimsum[is.na(colour), colour := "#000000"]
+  df_cnsimsum[is.na(tree), tree := "NT"]
 }
 
 data.table::fwrite(df_topsimsum, file=fn_topsimsum, quote=F, sep="\t")
@@ -253,7 +254,7 @@ chrs <- allsims[grep("^nogaps_chr", allsims)]
 
 # iterate through chromosomes
 df_topsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), cum.percentage=numeric(), colour=character())
-df_cnsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), colour=character())
+df_cnsimsum <- data.table::data.table(chr=character(), topology=character(), count=numeric(), colour=character(), tree=character())
 
 for (c in chrs) {
   window_outdir <- paste0(params$outdir,"/",params$prefix,"/",c,"/windows/")
@@ -305,7 +306,8 @@ if (params$colour_scheme != "") {
   }
 
   df_topsimsum[is.na(colour), colour := "#000000"]
-  df_cnsimsum[is.na(colour), colour := "#000000", tree := "NT"]
+  df_cnsimsum[is.na(colour), colour := "#000000"]
+  df_cnsimsum[is.na(tree), tree := "NT"]
 }
 
 data.table::fwrite(df_topsimsum, file=fn_topsimsum, quote=F, sep="\t")
