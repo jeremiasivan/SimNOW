@@ -1,9 +1,9 @@
-topology    code
-(HmelRef,((HeraRef,Hhim),(Hhsa,Htel)),(Hdem,Hsar)); #d72e2c
-(HmelRef,(((HeraRef,Hhim),Hhsa),Htel),(Hdem,Hsar)); #2574a7
-(HmelRef,((HeraRef,Hhim),Hhsa),(Htel,(Hdem,Hsar))); #b7d596
-(HmelRef,(HeraRef,Hhim),((Hhsa,Htel),(Hdem,Hsar))); #2ba053
-(HmelRef,((HeraRef,Hhim),Htel),(Hhsa,(Hdem,Hsar))); #db812d
-(HmelRef,(HeraRef,Hhim),((Hhsa,(Hdem,Hsar)),Htel)); #b0d1e5
-(HmelRef,(((HeraRef,Hhim),Hhsa),(Hdem,Hsar)),Htel); #f4c379
-(HmelRef,(((HeraRef,Hhim),Htel),Hhsa),(Hdem,Hsar)); #f796a4
+topology    code    tree
+(HmelRef,((HeraRef,Hhim),(Hhsa,Htel)),(Hdem,Hsar)); #d72e2c T1
+(HmelRef,(((HeraRef,Hhim),Hhsa),Htel),(Hdem,Hsar)); #2574a7 T2
+(HmelRef,((HeraRef,Hhim),Hhsa),(Htel,(Hdem,Hsar))); #b7d596 T3
+(HmelRef,(HeraRef,Hhim),((Hhsa,Htel),(Hdem,Hsar))); #2ba053 T4
+(HmelRef,((HeraRef,Hhim),Htel),(Hhsa,(Hdem,Hsar))); #db812d T5
+(HmelRef,(HeraRef,Hhim),((Hhsa,(Hdem,Hsar)),Htel)); #b0d1e5 T6
+(HmelRef,(((HeraRef,Hhim),Hhsa),(Hdem,Hsar)),Htel); #f4c379 T7
+(HmelRef,(((HeraRef,Hhim),Htel),Hhsa),(Hdem,Hsar)); #f796a4 T8

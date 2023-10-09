@@ -89,8 +89,10 @@ f_topsimsum <- function(df) {
 
 f_cnsimsum <- function(df1, df2) {
   df1 <- df1 %>%
-    group_by(topology, count, colour) %>%
+    group_by(topology, count, colour, tree) %>%
     summarise(n=n())
+
+  df1$tree <- factor(df1$tree, levels=stringr::str_sort(df1$tree, numeric=TRUE))
 
   plot1 <- ggplot(df1, aes(x=count, y=n))
   plot2 <- NULL
@@ -124,7 +126,7 @@ f_cnsimsum <- function(df1, df2) {
     )
 
   plot2 <- plot2 + 
-    facet_wrap(.~topology, scales = "free") +
+    facet_wrap(.~tree, scales = "free") +
     ggtitle("Number of consecutive windows for 8 top topologies") + ylab("Frequency") + xlab("Number of consecutive windows") +
     guides(fill="none") +
     theme(
@@ -191,15 +193,17 @@ if (params$colour_scheme != "") {
   for (j in top_topsum) {
     for (k in top_colour) {
       if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::unroot(ape::read.tree(text = k)))) {
-        df_topsimsum[topology == j, colour := df_colour$code[df_colour$topology == k]]
-        df_cnsimsum[topology == j, colour := df_colour$code[df_colour$topology == k]]
+        topology_idx <- match(k, df_colour$topology)
+
+        df_topsimsum[topology == j, colour := df_colour$code[topology_idx]]
+        df_cnsimsum[topology == j, colour := df_colour$code[topology_idx], tree := df_colour$tree[topology_idx]]
         break
       }
     }
   }
 
   df_topsimsum[is.na(colour), colour := "#000000"]
-  df_cnsimsum[is.na(colour), colour := "#000000"]
+  df_cnsimsum[is.na(colour), colour := "#000000", tree := "NT"]
 }
 
 data.table::fwrite(df_topsimsum, file=fn_topsimsum, quote=F, sep="\t")
@@ -289,15 +293,17 @@ if (params$colour_scheme != "") {
   for (j in top_topsum) {
     for (k in top_colour) {
       if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::unroot(ape::read.tree(text = k)))) {
-        df_topsimsum[topology == j, colour := df_colour$code[df_colour$topology == k]]
-        df_cnsimsum[topology == j, colour := df_colour$code[df_colour$topology == k]]
+        topology_idx <- match(k, df_colour$topology)
+
+        df_topsimsum[topology == j, colour := df_colour$code[topology_idx]]
+        df_cnsimsum[topology == j, colour := df_colour$code[topology_idx], tree := df_colour$tree[topology_idx]]
         break
       }
     }
   }
 
   df_topsimsum[is.na(colour), colour := "#000000"]
-  df_cnsimsum[is.na(colour), colour := "#000000"]
+  df_cnsimsum[is.na(colour), colour := "#000000", tree := "NT"]
 }
 
 data.table::fwrite(df_topsimsum, file=fn_topsimsum, quote=F, sep="\t")
