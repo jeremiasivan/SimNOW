@@ -162,15 +162,20 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
       wi <- ceiling(log(numw) / log(10)) + 1
       
       for (j in 1:numw) {
+        is_informative <- FALSE
         out <- f_window_aln(s, start, j*wsizes[i], dir_perwindow, j, wi)
 
         iqtree2_single(out[1], params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
-        if (!file.exists(paste0(out[1],".treefile"))) {
-          df_long <- rbind(df_long, list(name=out[2],start=start,end=j*wsizes[i],is_informative=FALSE))
-        } else {
-          df_long <- rbind(df_long, list(name=out[2],start=start,end=j*wsizes[i],is_informative=TRUE))
+        if (file.exists(paste0(out[1],".treefile"))) {
+          fn_iqtree <- paste0(out[1],".iqtree")
+          len_informative_sites <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of parsimony informative sites'",fn_iqtree), intern = T)))
+
+          if (len_informative_sites >= params$min_informative_sites) {
+            is_informative <- TRUE
+          }
         }
 
+        df_long <- rbind(df_long, list(name=out[2],start=start,end=j*wsizes[i],is_informative=is_informative))
         start <- start + wsizes[i]
       }
 
@@ -203,15 +208,20 @@ foreach (i = 2:length(wsizes)-1) %dopar% {
   wi <- ceiling(log(numw) / log(10)) + 1
   
   for (j in 1:numw) {
+    is_informative <- FALSE
     out <- f_window_aln(s, start, j*wsizes[i+1], dir_perwindow, j, wi)
 
     iqtree2_single(out[1], params$outgroup, params$set_blmin, params$set_model, params$dna_model, NULL, 0, params$iqtree2dir)
-    if (!file.exists(paste0(out[1],".treefile"))) {
-      df_short <- rbind(df_short, list(name=out[2],start=start,end=j*wsizes[i+1],is_informative=FALSE))
-    } else {
-      df_short <- rbind(df_short, list(name=out[2],start=start,end=j*wsizes[i+1],is_informative=TRUE))
+    if (file.exists(paste0(out[1],".treefile"))) {
+      fn_iqtree <- paste0(out[1],".iqtree")
+      len_informative_sites <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of parsimony informative sites'",fn_iqtree), intern = T)))
+
+      if (len_informative_sites >= params$min_informative_sites) {
+        is_informative <- TRUE
+      }
     }
 
+    df_short <- rbind(df_short, list(name=out[2],start=start,end=j*wsizes[i+1],is_informative=is_informative))
     start <- start + wsizes[i+1]
   }
   

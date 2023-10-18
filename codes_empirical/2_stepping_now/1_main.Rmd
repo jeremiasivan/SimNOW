@@ -21,6 +21,8 @@ params:
   # NOW analysis
   input_aln: "~/input.fa"
   initial_wsize: 128000
+
+  min_informative_sites: 1
 ---
 
 ```{r, include=FALSE}
