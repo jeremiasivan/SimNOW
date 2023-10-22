@@ -183,7 +183,7 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
         dir.create(temp_path)
       }
 
-      system(paste("cp", fn_path, long_path))
+      system(paste("cp", fn_path, temp_path))
     }
   }
 
