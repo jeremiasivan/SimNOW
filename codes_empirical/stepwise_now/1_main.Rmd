@@ -32,6 +32,8 @@ params:
 sys_tic <- Sys.time()
 
 # load libraries
+source(paste0(codedir, "/stepwise_now/functions.R"))
+
 library(data.table)
 library(dplyr)
 library(doSNOW)
