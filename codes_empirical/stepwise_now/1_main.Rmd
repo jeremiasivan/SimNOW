@@ -59,7 +59,7 @@ if (!file.exists(fn_log)) {
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-```{r child = paste0(params$codedir,"/2_stepping_now/2_run.Rmd"), include=FALSE}
+```{r child = paste0(params$codedir,"/stepwise_now/2_run.Rmd"), include=FALSE}
 ```
 
 ```{r, include=FALSE}
