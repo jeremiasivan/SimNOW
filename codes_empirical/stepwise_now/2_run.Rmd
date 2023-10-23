@@ -95,7 +95,7 @@ if (length(list.files(dir_perwindow, pattern='fa')) == numw && !params$redo) {
 } else {
   # generate window alingments and trees
   f_perwindow_sum(dir_perwindow, wsizes[1], numw, s, params$iqtree2dir, len_taxa, params$min_informative_sites)
-  log4r::info(fn_logger, paste("File created: ", wsizes[1], "bp per-window alignments for step 1."))
+  log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window alignments for step 1."))
 }
 
 # window alignments for shorter window size
@@ -115,7 +115,7 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
   
   # generate window alingments and trees
   f_perwindow_sum(dir_perwindow, wsizes[i+1], numw, s, params$iqtree2dir, len_taxa, params$min_informative_sites)
-  log4r::info(fn_logger, paste("File created: ", wsizes[i+1], "bp per-window alignments for step ", i, "."))
+  log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for step ", i, "."))
 }
 
 rm(s)
