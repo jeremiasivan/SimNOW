@@ -90,7 +90,7 @@ if (!dir.exists(dir_perwindow)) {
 
 # check if files already exist
 numw <- s_ln_new/wsizes[1]
-if (length(list.files(dir_perwindow, pattern='fa')) == numw && !params$redo) {
+if (length(list.files(dir_perwindow, pattern='*.fa$', recursive=TRUE)) == numw && !params$redo) {
   log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp window alignment for step 1."))
 } else {
   # generate window alingments and trees
@@ -108,7 +108,7 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
 
   # check if files already exist
   numw <- s_ln_new/wsizes[i+1]
-  if (length(list.files(dir_perwindow, pattern='fa')) == numw && !params$redo) {
+  if (length(list.files(dir_perwindow, pattern='*.fa$', recursive=TRUE)) == numw && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp window alignment for step ", i, "."))
     return(NULL)
   }
