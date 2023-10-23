@@ -16,7 +16,7 @@ f_window_aln <- function(fasta, start, end, dir_perwindow, i, width) {
   fn_out <- paste0(dir_window, window_name, ".fa")
   seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
 
-  return(c(fn_out, window_name))
+  return(fn_out)
 }
 
 # function: create window tree
@@ -49,13 +49,7 @@ f_iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bs_
 }
 
 # function: create per-window aligment and tree
-# required packages: ape, data.table
-f_perwindow_sum <- function(dir_perwindow, wsize, len_window, fasta, dir_iqtree2, len_taxa, min_informative_sites) {
-    df_output <- data.table::data.table(name=character(),start=numeric(),end=numeric(),is_informative=logical())
-
-    # output file
-    fn_output <- paste0(dir_perwindow, wsize, ".perwindowsum")
-
+f_perwindow_run <- function(dir_perwindow, wsize, len_window, fasta, dir_iqtree2) {
     # remove all alignments in the folder
     unlink(paste0(dir_perwindow,"*.fa"))
     
@@ -64,17 +58,36 @@ f_perwindow_sum <- function(dir_perwindow, wsize, len_window, fasta, dir_iqtree2
     wi <- ceiling(log(len_window) / log(10)) + 1
     
     for (j in 1:len_window) {
-        is_informative <- FALSE
-
         # create window alignment
         out <- f_window_aln(fasta, start, j*wsize, dir_perwindow, j, wi)
 
         # create window tree
-        f_iqtree2_single(out[1], "", FALSE, FALSE, "", "", 0, dir_iqtree2)
+        f_iqtree2_single(out, "", FALSE, FALSE, "", "", 0, dir_iqtree2)
+
+        # update the start position
+        start <- start + wsize
+    }
+}
+
+# function: create per-window aligment and tree
+# required packages: ape, data.table, stringr
+f_perwindow_sum <- function(dir_perwindow, wsize, len_taxa, min_informative_sites, fn_output) {
+    df_output <- data.table::data.table(name=character(),start=numeric(),end=numeric(),is_informative=logical())
+
+    # list all windows
+    start <- 1
+    dirs <- stringr::str_sort(list.dirs(dir_perwindow, recursive=FALSE, full.names=FALSE), numeric=TRUE)
+    
+    # iterate over windows
+    for (j in 1:length(dirs)) {
+        is_informative <- FALSE
+
+        # alignment file
+        fn_fasta <- paste0(dir_perwindow, "/", dirs[i], "/", dirs[i], ".fa")
 
         # output files from IQ-Tree2
-        fn_iqtree <- paste0(out[1],".iqtree")
-        fn_treefile <- paste0(out[1],".treefile")
+        fn_iqtree <- paste0(fn_fasta,".iqtree")
+        fn_treefile <- paste0(fn_fasta,".treefile")
 
         if (file.exists(fn_treefile)) {
             # check the number of indormative sites
@@ -89,7 +102,7 @@ f_perwindow_sum <- function(dir_perwindow, wsize, len_window, fasta, dir_iqtree2
             }
         }
 
-        df_output <- rbind(df_output, list(name=out[2],start=start,end=j*wsize,is_informative=is_informative))
+        df_output <- rbind(df_output, list(name=dirs[j],start=start,end=j*wsize,is_informative=is_informative))
         start <- start + wsize
     }
 

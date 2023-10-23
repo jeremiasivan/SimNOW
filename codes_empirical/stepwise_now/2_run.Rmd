@@ -94,8 +94,14 @@ if (length(list.files(dir_perwindow, pattern='*.fa$', recursive=TRUE)) == numw &
   log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp window alignment for step 1."))
 } else {
   # generate window alingments and trees
-  f_perwindow_sum(dir_perwindow, wsizes[1], numw, s, params$iqtree2dir, len_taxa, params$min_informative_sites)
+  f_perwindow_sum(dir_perwindow, wsizes[1], numw, s, params$iqtree2dir)
   log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window alignments for step 1."))
+}
+
+# perwindowsum
+fn_output <- paste0(dir_perwindow, wsizes[1], ".perwindowsum")
+if (!file.exists(fn_output) || params$redo) {
+  f_perwindow_sum(dir_perwindow, wsizes[1], len_taxa, params$min_informative_sites, fn_output)
 }
 
 # window alignments for shorter window size
@@ -116,8 +122,14 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
   }
   
   # generate window alingments and trees
-  f_perwindow_sum(dir_perwindow, wsizes[i+1], numw, s, params$iqtree2dir, len_taxa, params$min_informative_sites)
+  f_perwindow_run(dir_perwindow, wsizes[i+1], numw, s, params$iqtree2dir)
   log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for step ", i, "."))
+
+  # perwindowsum
+  fn_output <- paste0(dir_perwindow, wsizes[i+1], ".perwindowsum")
+  if (!file.exists(fn_output) || params$redo) {
+    f_perwindow_sum(dir_perwindow, wsizes[i+1], len_taxa, params$min_informative_sites, fn_output)
+  }
 }
 
 rm(s)
