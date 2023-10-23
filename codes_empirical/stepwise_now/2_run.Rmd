@@ -311,18 +311,22 @@ nwcl <- makeCluster(params$thread)
 doSNOW::registerDoSNOW(nwcl)
 
 # iterate through window sizes
-for (i in 2:length(wsizes)-1) {
+for (i in 1:(length(wsizes)-1)) {
   ########################################### LONG ############################################
   long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
   dirs <- list.dirs(long_path, full.names = F, recursive = F)
   dirs <- dirs[grepl("^window", dirs)]
 
-  long_output <- foreach(j = dirs, .combine=c) %dopar% {
+  # extract alignment length
+  s_ln_step <- length(dirs) * wsizes[i]
+
+  # extract statistics for each window
+  long_windows <- foreach(j = dirs, .combine=c) %dopar% {
     iqtree_path <- paste0(long_path, j, "/", j, ".fa.iqtree")
     treefile_path <- paste0(long_path, j, "/", j, ".fa.treefile")
 
     if (!all(file.exists(iqtree_path, treefile_path))) {
-      log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Copying from perwindow result."))
+      log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Extracting from perwindow result."))
 
       if (i == 1) {
         iqtree_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.iqtree")
@@ -333,116 +337,51 @@ for (i in 2:length(wsizes)-1) {
       }
     }
 
-    # extract log-likelihood and number of free parameters
-    logl <- gsub(" \\(.*\\)$", "", system(paste("grep '^Log-likelihood of the tree'",iqtree_path), intern = T))
-    logl <- as.numeric(gsub("^.* ", "", logl))
-    freeparams <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of free parameters'",iqtree_path), intern = T)))
-    
-    # read treefile
-    tre <- readLines(treefile_path)
-
-    tl <- ape::read.tree(text=tre)
-    tl$edge.length <- NULL
-
-    if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
-      bl <- subset(tl$node.label, tl$node.label != "")
-
-      if (!is.null(bl) && mean(as.numeric(bl)) >= min_branch_support) {
-        tl$node.label <- NULL
-        return(list(list(logl, freeparams, ape::write.tree(tl))))
-      }
-    }
-    
-    return(list(list(logl, freeparams, NULL)))
+    out <- f_window_tree_statistics(iqtree_path, treefile_path, params$bootstrap_type, min_branch_support)
+    return(list(list(out$logl, out$freeparams, out$tree)))
   }
-
-  long_logl <- sum(sapply(long_output, function(x) x[[1]]))
-  long_freeparams <- sum(sapply(long_output, function(x) x[[2]]))
-  long_aic <- (2 * long_freeparams) - (2 * long_logl)
-
-  long_tree <- unlist(sapply(long_output, function(x) {x[[3]]}))
-  s_ln_step <- length(dirs) * wsizes[i]
-
-  # calculate the topology distribution
+  
+  # extract the summary of all windows
   fn_uqtops <- paste0(getwd(), "/", i, "/", wsizes[i], "/", wsizes[i], ".uqtops")
-
-  df_topology <- data.table::as.data.table(long_tree)
-  data.table::setnames(df_topology, "topology")
-  sorted_topology <- df_topology %>%
-    group_by(topology) %>%
-    summarise(n = n()) %>%
-    arrange(desc(n)) %>%
-    mutate(cum.percentage=round(cumsum(n)/sum(n)*100,3))
-  data.table::fwrite(sorted_topology, file=fn_uqtops, quote=F, sep="\t")
+  long_output <- f_window_trees_summary(long_windows, fn_uqtops)
 
   ########################################### SHORT ###########################################
   short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
   dirs <- list.dirs(short_path, full.names = F, recursive = F)
   dirs <- dirs[grepl("^window", dirs)]
 
+  # double check the alignment length
   if (s_ln_step != length(dirs) * wsizes[i+1]) {
     log4r::error(fn_logger, paste0("Error: different alignment lengths on Step", i, "."))
   }
 
-  short_output <- foreach(j = dirs, .combine=c) %dopar% {
+  # extract statistics for each window
+  short_windows <- foreach(j = dirs, .combine=c) %dopar% {
     iqtree_path <- paste0(short_path, j, "/", j, ".fa.iqtree")
     treefile_path <- paste0(short_path, j, "/", j, ".fa.treefile")
 
     if (!all(file.exists(iqtree_path, treefile_path))) {
-      log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Copying from perwindow result."))
+      log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Extracting from perwindow result."))
 
       iqtree_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa.iqtree")
       treefile_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa.treefile")
     }
 
-    # extract log-likelihood and number of free parameters
-    logl <- gsub(" \\(.*\\)$", "", system(paste("grep '^Log-likelihood of the tree'",iqtree_path), intern = T))
-    logl <- as.numeric(gsub("^.* ", "", logl))
-    freeparams <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of free parameters'",iqtree_path), intern = T)))
-    
-    # read treefile
-    tre <- readLines(treefile_path)
-
-    tl <- ape::read.tree(text=tre)
-    tl$edge.length <- NULL
-
-    if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
-      bl <- subset(tl$node.label, tl$node.label != "")
-
-      if (!is.null(bl) && mean(as.numeric(bl)) >= min_branch_support) {
-        tl$node.label <- NULL
-        return(list(list(logl, freeparams, ape::write.tree(tl))))
-      }
-    }
-    
-    return(list(list(logl, freeparams, NULL)))
+    out <- f_window_tree_statistics(iqtree_path, treefile_path, params$bootstrap_type, min_branch_support)
+    return(list(list(out$logl, out$freeparams, out$tree)))
   }
 
-  short_logl <- sum(sapply(short_output, function(x) x[[1]]))
-  short_freeparams <- sum(sapply(short_output, function(x) x[[2]]))
-  short_aic <- (2 * short_freeparams) - (2 * short_logl)
-
-  short_tree <- unlist(sapply(short_output, function(x) {x[[3]]}))
-
-  # calculate the topology distribution
+  # extract the summary of all windows
   fn_uqtops <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/", wsizes[i+1], ".uqtops")
-
-  df_topology <- data.table::as.data.table(short_tree)
-  data.table::setnames(df_topology, "topology")
-  sorted_topology <- df_topology %>%
-    group_by(topology) %>%
-    summarise(n = n()) %>%
-    arrange(desc(n)) %>%
-    mutate(cum.percentage=round(cumsum(n)/sum(n)*100,3))
-  data.table::fwrite(sorted_topology, file=fn_uqtops, quote=F, sep="\t")
+  short_output <- f_window_trees_summary(short_windows, fn_uqtops)
 
   ########################################## SUMMARY ##########################################
   df_output <- rbind(df_output,
                     list(step=i,l_wsize=wsizes[i],s_wsize=wsizes[i+1],
-                        l_aic=long_aic, s_aic=short_aic, diff_aic=short_aic-long_aic,
+                        l_aic=long_output$aic, s_aic=short_output$aic, diff_aic=short_output$aic-long_output$aic,
                         fasta_ln=s_ln_step, fasta_ln_percent=round((s_ln_step/s_ln)*100,3),
-                        l_bs_tree=length(long_tree), l_bs_topology=length(unique(long_tree)),
-                        s_bs_tree=length(short_tree), s_bs_topology=length(unique(short_tree))),
+                        l_bs_tree=length(long_output$tree), l_bs_topology=length(unique(long_output$tree)),
+                        s_bs_tree=length(short_output$tree), s_bs_topology=length(unique(short_output$tree))),
                     fill=TRUE)
   log4r::info(fn_logger, paste0("Summary added: Step ", i, "."))
 }

@@ -95,3 +95,52 @@ f_perwindow_sum <- function(dir_perwindow, wsize, len_window, fasta, dir_iqtree2
 
     data.table::fwrite(df_output, fn_output, quote=FALSE, sep="\t")
 }
+
+# function: extract window tree statistics
+# required package: ape
+f_window_tree_statistics <- function(fn_iqtree, fn_treefile, bootstrap_type, min_branch_support) {
+  # extract log-likelihood and number of free parameters
+  logl <- gsub(" \\(.*\\)$", "", system(paste("grep '^Log-likelihood of the tree'",fn_iqtree), intern = T))
+  logl <- as.numeric(gsub("^.* ", "", logl))
+  freeparams <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of free parameters'",fn_iqtree), intern = T)))
+  
+  # read treefile
+  tre <- readLines(fn_treefile)
+
+  tl <- ape::read.tree(text=tre)
+  tl$edge.length <- NULL
+
+  if (!is.null(bootstrap_type) && bootstrap_type != "") {
+    bl <- subset(tl$node.label, tl$node.label != "")
+
+    if (!is.null(bl) && mean(as.numeric(bl)) >= min_branch_support) {
+      tl$node.label <- NULL
+      return(list(logl=logl, freeparams=freeparams, tree=ape::write.tree(tl)))
+    }
+  }
+
+  return(list(logl=logl, freeparams=freeparams, tree=NULL))
+}
+
+# function: summary across window trees
+# required package: data.table, dplyr
+f_window_trees_summary <- function(ls_statistics, fn_uqtops) {
+  # extract AIC
+  logl <- sum(sapply(ls_statistics, function(x) x[[1]]))
+  freeparams <- sum(sapply(ls_statistics, function(x) x[[2]]))
+  aic <- (2 * freeparams) - (2 * logl)
+
+  tree <- unlist(sapply(ls_statistics, function(x) {x[[3]]}))
+
+  # calculate the topology distribution
+  df_topology <- data.table::as.data.table(tree)
+  data.table::setnames(df_topology, "topology")
+  sorted_topology <- df_topology %>%
+    group_by(topology) %>%
+    summarise(n = n()) %>%
+    arrange(desc(n)) %>%
+    mutate(cum.percentage=round(cumsum(n)/sum(n)*100,3))
+  data.table::fwrite(sorted_topology, file=fn_uqtops, quote=F, sep="\t")
+
+  return(list(aic=aic, tree=tree))
+}
