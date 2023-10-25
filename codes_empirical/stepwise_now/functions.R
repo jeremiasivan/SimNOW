@@ -83,7 +83,7 @@ f_perwindow_sum <- function(dir_perwindow, wsize, len_taxa, min_informative_site
         is_informative <- FALSE
 
         # alignment file
-        fn_fasta <- paste0(dir_perwindow, "/", dirs[i], "/", dirs[i], ".fa")
+        fn_fasta <- paste0(dir_perwindow, "/", dirs[j], "/", dirs[j], ".fa")
 
         # output files from IQ-Tree2
         fn_iqtree <- paste0(fn_fasta,".iqtree")
