@@ -283,7 +283,7 @@ for (i in 2:length(wsizes)-1) {
       system(paste("cp", iqtreefile, windowdir))
       system(paste("cp", treefile, windowdir))
     } else {
-      iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+      f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
     }
   }
 
@@ -303,7 +303,7 @@ for (i in 2:length(wsizes)-1) {
       return(NULL)
     }
 
-    iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+    f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
   }
 
   log4r::info(fn_logger, paste("File created: Step", i, "window treefile."))
