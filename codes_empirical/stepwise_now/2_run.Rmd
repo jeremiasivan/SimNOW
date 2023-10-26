@@ -99,22 +99,17 @@ if (length(list.files(dir_perwindow, pattern='*.fa.log$', recursive=TRUE)) == nu
   log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp window trees for step 1."))
 } else {
   # list directory
-  ls_windows <- list.dirs(dir_perwindow, full.names=F, recursive=F)
+  ls_windows <- list.files(dir_perwindow, pattern='*.fa$', full.names=T, recursive=T)
 
-  for (i in ls_windows) {
-    fn_input <- paste0(dir_perwindow, "/", i, "/", i, ".fa")
-
-    # generate window trees
-    f_iqtree2_single(fn_input, "", FALSE, FALSE, "", "", 0, params$iqtree2dir)
-    log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window alignments for step 1."))
+  # generate window trees
+  for (w in ls_windows) {
+    f_iqtree2_single(w, "", FALSE, FALSE, "", "", 0, params$iqtree2dir)
   }
+  log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window trees for step 1."))
 }
 
 # perwindowsum
 fn_output <- paste0(dir_perwindow, wsizes[1], ".perwindowsum")
-if (!file.exists(fn_output) || params$redo) {
-  f_perwindow_sum(dir_perwindow, wsizes[1], len_taxa, params$min_informative_sites, fn_output)
-}
 
 ########################################## SHORT ############################################
 # create doSNOW cluster
@@ -148,21 +143,16 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
   log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for step ", i, "."))
 
   # list directory
-  ls_windows <- list.dirs(dir_perwindow, full.names=F, recursive=F)
+  ls_windows <- list.files(dir_perwindow, pattern='*.fa$', full.names=T, recursive=T)
 
-  for (j in ls_windows) {
-    fn_input <- paste0(dir_perwindow, "/", j, "/", j, ".fa")
-
-    # generate window trees
-    f_iqtree2_single(fn_input, "", FALSE, FALSE, "", "", 0, params$iqtree2dir)
-    log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for step ", i, "."))
+  # generate window trees
+  for (w in ls_windows) {
+    f_iqtree2_single(w, "", FALSE, FALSE, "", "", 0, params$iqtree2dir)
   }
+  log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window trees for step ", i, "."))
 
   # perwindowsum
   fn_output <- paste0(dir_perwindow, wsizes[i+1], ".perwindowsum")
-  if (!file.exists(fn_output) || params$redo) {
-    f_perwindow_sum(dir_perwindow, wsizes[i+1], len_taxa, params$min_informative_sites, fn_output)
-  }
 }
 
 rm(s)
