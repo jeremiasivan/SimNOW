@@ -77,21 +77,37 @@ write.table(paste0("Updated number of sites: ", s_ln_new, "bp"),
 ```{r window-aln, include=FALSE}
 options(scipen=999)
 
-# window alignments for longest window size
+########################################### LONG ############################################
 # create outdir
 dir_perwindow <- paste0(getwd(), "/1/", wsizes[1], "/perwindow/")
 if (!dir.exists(dir_perwindow)) {
   dir.create(dir_perwindow, recursive = T)
 }
 
-# check if files already exist
+# check if alignments already exist
 numw <- s_ln_new/wsizes[1]
 if (length(list.files(dir_perwindow, pattern='*.fa$', recursive=TRUE)) == numw && !params$redo) {
-  log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp window alignment for step 1."))
+  log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp window alignments for step 1."))
 } else {
-  # generate window alingments and trees
+  # generate window alingments
   f_perwindow_run(dir_perwindow, wsizes[1], numw, s, params$iqtree2dir)
   log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window alignments for step 1."))
+}
+
+# check if trees already exist
+if (length(list.files(dir_perwindow, pattern='*.fa.log$', recursive=TRUE)) == numw && !params$redo) {
+  log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp window trees for step 1."))
+} else {
+  # list directory
+  ls_windows <- list.dirs(dir_perwindow, full.names=F, recursive=F)
+
+  for (i in ls_windows) {
+    fn_input <- paste0(dir_perwindow, "/", i, "/", i, ".fa")
+
+    # generate window trees
+    f_iqtree2_single(fn_input, "", FALSE, FALSE, "", "", 0, params$iqtree2dir)
+    log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window alignments for step 1."))
+  }
 }
 
 # perwindowsum
@@ -100,6 +116,7 @@ if (!file.exists(fn_output) || params$redo) {
   f_perwindow_sum(dir_perwindow, wsizes[1], len_taxa, params$min_informative_sites, fn_output)
 }
 
+########################################## SHORT ############################################
 # create doSNOW cluster
 nwcl <- makeCluster(stepthread)
 doSNOW::registerDoSNOW(nwcl)
@@ -120,10 +137,26 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
     log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp window alignment for step ", i, "."))
     return(NULL)
   }
+
+  if (length(list.files(dir_perwindow, pattern='*.fa.log$', recursive=TRUE)) == numw && !params$redo) {
+    log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp window trees for step ", i, "."))
+    return(NULL)
+  }
   
-  # generate window alingments and trees
+  # generate window alingments
   f_perwindow_run(dir_perwindow, wsizes[i+1], numw, s, params$iqtree2dir)
   log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for step ", i, "."))
+
+  # list directory
+  ls_windows <- list.dirs(dir_perwindow, full.names=F, recursive=F)
+
+  for (j in ls_windows) {
+    fn_input <- paste0(dir_perwindow, "/", j, "/", j, ".fa")
+
+    # generate window trees
+    f_iqtree2_single(fn_input, "", FALSE, FALSE, "", "", 0, params$iqtree2dir)
+    log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for step ", i, "."))
+  }
 
   # perwindowsum
   fn_output <- paste0(dir_perwindow, wsizes[i+1], ".perwindowsum")

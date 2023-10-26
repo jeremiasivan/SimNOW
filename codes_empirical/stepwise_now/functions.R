@@ -15,8 +15,6 @@ f_window_aln <- function(fasta, start, end, dir_perwindow, i, width) {
 
   fn_out <- paste0(dir_window, window_name, ".fa")
   seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
-
-  return(fn_out)
 }
 
 # function: create window tree
@@ -59,10 +57,7 @@ f_perwindow_run <- function(dir_perwindow, wsize, len_window, fasta, dir_iqtree2
     
     for (j in 1:len_window) {
         # create window alignment
-        out <- f_window_aln(fasta, start, j*wsize, dir_perwindow, j, wi)
-
-        # create window tree
-        f_iqtree2_single(out, "", FALSE, FALSE, "", "", 0, dir_iqtree2)
+        f_window_aln(fasta, start, j*wsize, dir_perwindow, j, wi)
 
         # update the start position
         start <- start + wsize
