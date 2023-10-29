@@ -67,7 +67,7 @@ f_perwindow_run <- function(dir_perwindow, wsize, len_window, fasta, dir_iqtree2
 # function: create per-window aligment and tree
 # required packages: ape, data.table, stringr
 f_perwindow_sum <- function(dir_perwindow, wsize, len_taxa, min_informative_sites, fn_output) {
-    df_output <- data.table::data.table(name=character(),start=numeric(),end=numeric(),is_informative=logical())
+    df_output <- data.table::data.table()
 
     # list all windows
     start <- 1
