@@ -31,6 +31,7 @@ This pipeline requires several software and R packages to run. All software have
 | rmarkdown  | <a href="https://cran.r-project.org/package=rmarkdown">Link</a>  | <a href="https://anaconda.org/conda-forge/r-rmarkdown">Link</a>  |
 | seqinr     | <a href="https://cran.r-project.org/package=seqinr">Link</a>     | <a href="https://anaconda.org/conda-forge/r-seqinr">Link</a>     |
 | stringr    | <a href="https://cran.r-project.org/package=stringr">Link</a>    | <a href="https://anaconda.org/conda-forge/r-stringr">Link</a>    |
+| tidyverse  | <a href="https://cran.r-project.org/package=tidyverse">Link</a>  | <a href="https://anaconda.org/conda-forge/r-tidyverse">Link</a>  |
 | viridis    | <a href="https://cran.r-project.org/package=viridis">Link</a>    | <a href="https://anaconda.org/conda-forge/r-viridis">Link</a>    |
 
 ## <a id="genpipe">General Pipeline</a>
@@ -49,7 +50,7 @@ This pipeline requires several software and R packages to run. All software have
         ```
     -  Installing R packages
         ```
-        conda install -c conda-forge r-ape r-data.table r-dplyr r-dosnow r-forcats r-ggplot2 r-kableextra r-log4r r-rmarkdown r-seqinr r-stringr r-viridis
+        conda install -c conda-forge r-ape r-data.table r-dosnow r-kableextra r-log4r r-rmarkdown r-seqinr r-viridis r-tidyverse
         ```
         Notes: Here, I list all packages that are used in the pipeline, which is not ideal if you have a lot of packages. In that case, you can start by installing <a href="https://anaconda.org/conda-forge/r-essentials">`r-essentials`</a> which includes commonly-used packages in R.
 

@@ -1,5 +1,8 @@
 ---
-title: "Summary of Multiple Non-overlapping Windows Analyses"
+title: "Summary of SimNOW Runs"
+author: "Jeremias Ivan"
+date: "`r format(Sys.time(), '%d %B %Y, %H:%M%p')`"
+
 output:
   html_document:
     code_folding: show
@@ -18,8 +21,8 @@ source(paste0(params$codedir, "/4_all_runs_summary/functions.R"))
 source(paste0(params$codedir, "/4_all_runs_summary/functions_wo_size.R"))
 
 library(data.table)
-library(dplyr)
-library(ggplot2)
+library(kableExtra)
+library(tidyverse)
 ```
 
 ```{r setup, include=FALSE}
@@ -43,7 +46,7 @@ fn_rmse_ws <- paste0(rmsedir, params$prefix, ".rmse_ws.tiff")
 ```{r simsum, include=FALSE}
 # extract list of simulation
 allsims <- list.dirs(params$outdir, full.names = F, recursive = F)
-simulation <- allsims[grep(paste0("^",params$prefix), allsims)]
+simulation <- str_sort(allsims[grep(paste0("^",params$prefix), allsims)], numeric=T)
 simulation <- simulation[simulation != "summary"]
 
 # extract list of window size
@@ -89,18 +92,47 @@ rank_simsum <- simsum %>%
       where(is.numeric), min_rank))
 simsum$accuracy <- -1 * simsum$accuracy
 
+# select the best window size
+best_simsum <- simsum %>%
+  group_by(simulation, r) %>%
+  mutate(measure=case_when(
+    accuracy==max(accuracy) & rmse==min(rmse) ~ "site+rmse",
+    accuracy==max(accuracy) ~ "site",
+    rmse==min(rmse) ~ "rmse",
+    TRUE ~ "other"
+  )) %>%
+  filter(measure != "other")
+
+# extract column indices
+idx_site <- which(colnames(best_simsum) == "accuracy")
+idx_rmse <- which(colnames(best_simsum) == "rmse")
+
 # save the summary file
 data.table::fwrite(simsum, file=fn_simsum, quote = F, sep = "\t")
 ```
 
-## Plot summary between simulations
-### Summarizing accuracy and information criteria between simulations
+## Summary table of accuracy and information criteria between simulations {.tabset}
+### Summary
 ```{r}
-# summary file
-head(simsum)
+kable(simsum) %>%
+  kable_styling("striped", full_width = T) %>%
+  scroll_box(width = "100%", height = ifelse(nrow(simsum) > 7, "300px", NULL))
+```
 
-# ranked summary file
-head(rank_simsum)
+### Ranked summary
+```{r}
+kable(rank_simsum) %>%
+  kable_styling("striped", full_width = T) %>%
+  scroll_box(width = "100%", height = ifelse(nrow(rank_simsum) > 7, "300px", NULL))
+```
+
+### Best window size
+```{r}
+kable(best_simsum) %>%
+  kable_styling("striped", full_width = T) %>%
+  column_spec(idx_site, bold = grepl("site", best_simsum$measure)) %>%
+  column_spec(idx_rmse, bold = grepl("rmse", best_simsum$measure)) %>%
+  scroll_box(width = "100%", height = ifelse(nrow(best_simsum) > 7, "300px", NULL))
 ```
 
 ```{r allplots, include=FALSE}
@@ -192,24 +224,25 @@ for (i in 6:ncol(simsum)-2) {
 }
 ```
 
-### Plotting window size vs. site accuracy
-```{r, out.width="100%"}
+## Summary plots between simulations {.tabset}
+### Window size vs. site accuracy
+```{r, out.width="100%", echo=FALSE}
 print(f_acc_wsize_2(simsum, "site"))
 ```
 
-### Plotting window size vs. RMSE
-```{r, out.width="100%"}
+### Window size vs. RMSE
+```{r, out.width="100%", echo=FALSE}
 print(f_acc_wsize_2(simsum, "rmse"))
 ```
 
-### Plotting site accuracy vs. RMSE
-```{r, out.width="100%"}
+### Site accuracy vs. RMSE
+```{r, out.width="100%", echo=FALSE}
 print(f_acc_rmse_2(simsum))
 ```
 
-### Plotting accuracy vs information criteria {.tabset}
-#### AIC
-```{r, out.width="100%"}
+## Summary plots of information criteria
+### AIC {.tabset}
+```{r plot-aic, include=FALSE}
 ifc <- "aic"
 
 # calculate accuracy loss
@@ -218,12 +251,14 @@ acc_loss <- simsum %>%
   mutate(max_acc = max(accuracy), min_rmse = min(rmse)) %>%
   slice(which.min(!!as.name(ifc))) %>% 
   summarise(site_loss = max_acc - accuracy, rmse_gain = rmse - min_rmse)
+```
 
+```{r, results='asis', out.width="100%", echo=FALSE}
 f_plot_all(simsum, acc_loss, rank_simsum, 4, ifc)
 ```
 
-#### AICc
-```{r, out.width="100%"}
+### AICc {.tabset}
+```{r plot-aicc, include=FALSE}
 ifc <- "aicc"
 
 # calculate accuracy loss
@@ -232,12 +267,14 @@ acc_loss <- simsum %>%
   mutate(max_acc = max(accuracy), min_rmse = min(rmse)) %>%
   slice(which.min(!!as.name(ifc))) %>% 
   summarise(site_loss = max_acc - accuracy, rmse_gain = rmse - min_rmse)
+```
 
+```{r, results='asis', out.width="100%", echo=FALSE}
 f_plot_all(simsum, acc_loss, rank_simsum, 5, ifc)
 ```
 
-#### BIC
-```{r, out.width="100%"}
+### BIC {.tabset}
+```{r plot-bic, include=FALSE}
 ifc <- "bic"
 
 # calculate accuracy loss
@@ -246,6 +283,8 @@ acc_loss <- simsum %>%
   mutate(max_acc = max(accuracy), min_rmse = min(rmse)) %>%
   slice(which.min(!!as.name(ifc))) %>% 
   summarise(site_loss = max_acc - accuracy, rmse_gain = rmse - min_rmse)
+```
 
+```{r, results='asis', out.width="100%", echo=FALSE}
 f_plot_all(simsum, acc_loss, rank_simsum, 6, ifc)
 ```

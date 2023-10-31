@@ -6,11 +6,11 @@ f_acc_wsize_2 <- function(df, type) {
   plot <- NULL
   if (type == "site") {
     plot <- ggplot(df, aes(y=accuracy, x=window_size, ymin=0, ymax=100)) +
-      ggtitle("Site Classification Accuracy of Non-Overlapping Windows in Simulated Datasets") +
+      ggtitle("Site Accuracy of Non-Overlapping Windows") +
       xlab("Window size (kb)") + ylab("Accuracy (%)")
   } else if (type == "rmse") {
     plot <- ggplot(df, aes(y=rmse, x=window_size, ymin=0)) +
-      ggtitle("RMSE of Non-Overlapping Windows in Simulated Datasets") +
+      ggtitle("RMSE of Non-Overlapping Windows") +
       xlab("Window size (kb)") + ylab("RMSE (%)")
   }
 
@@ -18,10 +18,10 @@ f_acc_wsize_2 <- function(df, type) {
     geom_boxplot(outlier.shape = NA) +
     geom_point(shape=16, aes(colour=r)) +
     facet_wrap(.~r, scales = "free", ncol = 1) +
-    guides(size="none", colour="none") +
+    guides(colour="none") +
     theme(
       plot.title = element_text(face = "bold"),
-      plot.margin = margin(0.5, 0, 0.5, 0, "cm")
+      plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
     )
 
   return(plot)
@@ -31,15 +31,15 @@ f_acc_wsize_2 <- function(df, type) {
 # required library: ggplot2
 f_acc_rmse_2 <- function(df) {
   plot <- ggplot(df, aes(y=log10(accuracy), x=log10(rmse), ymin=0, xmin=0)) +
-    ggtitle("Correlation between Site Classification Accuracy and RMSE") +
+    ggtitle("Correlation between Site Accuracy and RMSE") +
     xlab("Log10-transformed RMSE") + ylab("Log10-transformed accuracy") +
     geom_point(aes(colour=r)) +
     geom_smooth(method = lm) +
     facet_wrap(.~r, scales = "free") +
-    guides(size="none", colour="none") +
+    guides(colour="none") +
     theme(
       plot.title = element_text(face = "bold"),
-      plot.margin = margin(0.5, 0, 0.5, 0, "cm")
+      plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
     )
 
   return(plot)
@@ -51,7 +51,7 @@ f_ic_acc_2 <- function(df, i, ifc, type) {
   plot <- NULL
   if (type == "site") {
     plot <- ggplot(df, aes(y=accuracy, x=as.numeric(unlist(df[,..i])), ymin=0, ymax=100, group=simulation)) +
-      ggtitle(paste("Correlation between", toupper(ifc), "and Site Classification Accuracy")) +
+      ggtitle(paste("Correlation between", toupper(ifc), "and Site Accuracy")) +
       xlab(toupper(ifc)) + ylab("Accuracy (%)")
   } else if (type == "rmse") {
     plot <- ggplot(df, aes(y=rmse, x=as.numeric(unlist(df[,..i])), ymin=0, group=simulation)) +
@@ -65,10 +65,10 @@ f_ic_acc_2 <- function(df, i, ifc, type) {
     facet_wrap(.~r, scales = "free") +
     viridis::scale_color_viridis(discrete = TRUE) + 
     labs(color="wsize (kb)") +
-    guides(alpha="none", size="none") +
+    guides(alpha="none") +
     theme(
       plot.title = element_text(face = "bold"),
-      plot.margin = margin(0.5, 0, 0.5, 0, "cm")
+      plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
     )
   
   return(plot)
@@ -87,7 +87,7 @@ f_delta_ic_acc_2 <- function(df, i, ifc, type) {
   plot <- NULL
   if (type == "site") {
     plot <- ggplot(sdf, aes(y=accuracy, x=d_ifc, ymin=0, ymax=100, group=simulation)) +
-      ggtitle(paste0("Correlation between \u0394", toupper(ifc), " and Site Classification Accuracy")) +
+      ggtitle(paste0("Correlation between \u0394", toupper(ifc), " and Site Accuracy")) +
       xlab(paste0("\u0394", toupper(ifc))) + ylab("Accuracy (%)")
   } else if (type == "rmse") {
     plot <- ggplot(sdf, aes(y=rmse, x=d_ifc, ymin=0, group=simulation)) +
@@ -101,10 +101,10 @@ f_delta_ic_acc_2 <- function(df, i, ifc, type) {
     facet_wrap(.~r, scales = "free") +
     viridis::scale_color_viridis(discrete = TRUE) + 
     labs(color="wsize (kb)") +
-    guides(alpha="none", size="none") +
+    guides(alpha="none") +
     theme(
       plot.title = element_text(face = "bold"),
-      plot.margin = margin(0.5, 0, 0.5, 0, "cm")
+      plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
     )
   
   return(plot)
@@ -116,8 +116,8 @@ f_acc_loss_2 <- function(df, ifc, type) {
   plot <- NULL
   if (type == "site") {
     plot <- ggplot(df, aes(y=site_loss, x=factor(r), ymin=0)) +
-      ggtitle(paste("Loss of Site Classification Accuracy for Lowest", toupper(ifc))) +
-      xlab("Recombination rate (rho)") + ylab("Loss of Site Classification Accuracy (%)")
+      ggtitle(paste("Loss of Site Accuracy for Lowest", toupper(ifc))) +
+      xlab("Recombination rate (rho)") + ylab("Loss of Site Accuracy (%)")
   } else if (type == "rmse") {
     plot <- ggplot(df, aes(y=rmse_gain, x=factor(r), ymin=0)) +
       ggtitle(paste("Increase in RMSE for Lowest", toupper(ifc))) +
@@ -127,10 +127,10 @@ f_acc_loss_2 <- function(df, ifc, type) {
   plot <- plot +
     geom_boxplot(outlier.shape = NA) +
     geom_point(shape=16, aes(colour=r)) +
-    guides(size="none", colour="none") +
+    guides(colour="none") +
     theme(
       plot.title = element_text(face = "bold"),
-      plot.margin = margin(0.5, 0, 0.5, 0, "cm")
+      plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
     )
   
   return(plot)
@@ -145,10 +145,10 @@ f_ic_wsize_2 <- function(df, i, ifc) {
     facet_wrap(.~r, scales = "free", ncol = 1) +
     viridis::scale_color_viridis(discrete = TRUE) +
     ggtitle(paste("Correlation between", toupper(ifc), "and Window Size")) + ylab(toupper(ifc)) + xlab("Window Size (kb)") +
-    guides(color="none", alpha="none", size="none") +
+    guides(color="none", alpha="none") +
     theme(
       plot.title = element_text(face = "bold"),
-      plot.margin = margin(0.5, 0, 0.5, 0, "cm")
+      plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
     )
   
   return(plot)
@@ -160,7 +160,7 @@ f_rank_ic_acc_2 <- function(df, i, ifc, type) {
   plot <- NULL
   if (type == "site") {
     plot <- ggplot(df, aes(y=accuracy, x=unlist(df[,i]), ymin=0, group=simulation)) +
-      ggtitle(paste("Correlation between Ranked", toupper(ifc), "and Ranked Site Classification Accuracy")) +
+      ggtitle(paste("Correlation between Ranked", toupper(ifc), "and Ranked Site Accuracy")) +
       xlab(paste("Ranked",toupper(ifc))) + ylab("Ranked Accuracy")
   } else if (type == "rmse") {
     plot <- ggplot(df, aes(y=rmse, x=unlist(df[,i]), ymin=0, group=simulation)) +
@@ -174,10 +174,10 @@ f_rank_ic_acc_2 <- function(df, i, ifc, type) {
     facet_wrap(.~r, scales = "free") +
     viridis::scale_color_viridis(discrete = TRUE) +
     labs(color="wsize (kb)") +
-    guides(alpha="none", size="none") +
+    guides(alpha="none") +
     theme(
       plot.title = element_text(face = "bold"),
-      plot.margin = margin(0.5, 0, 0.5, 0, "cm")
+      plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
     )
   
   return(plot)
@@ -186,21 +186,43 @@ f_rank_ic_acc_2 <- function(df, i, ifc, type) {
 # function: plot all plots
 f_plot_all <- function(simsum, acc_loss, rank_simsum, i, ifc) {
   # information criteria vs accuracy / rmse
+  cat('#### Accuracy {.tabset .tabset-pills} \n')
+  cat('##### Site accuracy \n')
   plot(f_ic_acc_2(simsum, i, ifc, "site"))
+  cat('  \n\n')
+  cat('##### RMSE \n')
   plot(f_ic_acc_2(simsum, i, ifc, "rmse"))
+  cat('  \n\n')
 
   # delta information criteria vs delta accuracy / rmse
+  cat('#### Delta accuracy {.tabset .tabset-pills} \n')
+  cat('##### Site accuracy \n')
   plot(f_delta_ic_acc_2(simsum, i, ifc, "site"))
+  cat('  \n\n')
+  cat('##### RMSE \n')
   plot(f_delta_ic_acc_2(simsum, i, ifc, "rmse"))
+  cat('  \n\n')
   
   # accuracy loss
+  cat('#### Accuracy loss {.tabset .tabset-pills} \n')
+  cat('##### Site accuracy \n')
   plot(f_acc_loss_2(acc_loss, ifc, "site"))
+  cat('  \n\n')
+  cat('##### RMSE \n')
   plot(f_acc_loss_2(acc_loss, ifc, "rmse"))
-  
-  # information criterion vs window size
-  plot(f_ic_wsize_2(simsum, i, ifc))
+  cat('  \n\n')
   
   # ranked IC vs ranked accuracy
+  cat('#### Ranked accuracy {.tabset .tabset-pills} \n')
+  cat('##### Site accuracy \n')
   plot(f_rank_ic_acc_2(rank_simsum, i, ifc, "site"))
+  cat('  \n\n')
+  cat('##### RMSE \n')
   plot(f_rank_ic_acc_2(rank_simsum, i, ifc, "rmse"))
+  cat('  \n\n')
+
+  # information criterion vs window size
+  cat('#### Window size \n')
+  plot(f_ic_wsize_2(simsum, i, ifc))
+  cat('  \n\n')
 }
