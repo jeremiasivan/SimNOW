@@ -2,13 +2,21 @@
 
 # function: open msfile and convert locus trees into data.table
 # required library: ape, data.table
-f_extract_locus_tree <- function(fn_msfile, len_aln) {
+f_extract_locus_tree <- function(fn_msfile) {
+    # prevent the use of scientific notation for big numbers
+    options(scipen=999)
+
     # open msfile
     ms <- data.table::fread(fn_msfile, col.names="cmd", sep="")
-  
+    
     # extract ms trees
     mstrees <- ms[grepl("^\\[", cmd)]
     if (nrow(mstrees) == 0) {
+        # extract the alignment length
+        ms_cmd <- strsplit(system(paste("grep 'ms'",fn_msfile), intern=T), " ")
+        len_aln <- as.numeric(ms_cmd[[1]][match("-r", ms_cmd[[1]]) + 2])
+
+        # extract the ms tree
         mstrees <- ms[grepl("^\\(.+\\);$", cmd)]
         mstrees[1, cmd := paste0("[", len_aln, "]", mstrees[1, cmd])]
     }
@@ -121,7 +129,7 @@ f_copy_gaps <- function(fn_target_aln, fn_source_aln) {
 
     # return error message if the taxa do not match
     if (!all(srctaxa == simtaxa)) {
-      err_msg <- "Error: source alignment has different taxa than the simulated one. Exited."
+      err_msg <- "Source alignment has different taxa than the simulated one. Exited."
       return(list(seq=NULL, err=err_msg))
     }
     

@@ -26,6 +26,7 @@ This pipeline requires several software and R packages to run. All software have
 | doSNOW     | <a href="https://cran.r-project.org/package=doSNOW">Link</a>     | <a href="https://anaconda.org/conda-forge/r-dosnow">Link</a>     |
 | forcats    | <a href="https://cran.r-project.org/package=forcats">Link</a>    | <a href="https://anaconda.org/conda-forge/r-forcats">Link</a>    |
 | ggplot2    | <a href="https://cran.r-project.org/package=ggplot2">Link</a>    | <a href="https://anaconda.org/conda-forge/r-ggplot2">Link</a>    |
+| kableExtra | <a href="https://cran.r-project.org/package=kableExtra">Link</a> | <a href="https://anaconda.org/conda-forge/r-kableextra">Link</a> |
 | log4r      | <a href="https://cran.r-project.org/package=log4r">Link</a>      | <a href="https://anaconda.org/conda-forge/r-log4r">Link</a>      |
 | rmarkdown  | <a href="https://cran.r-project.org/package=rmarkdown">Link</a>  | <a href="https://anaconda.org/conda-forge/r-rmarkdown">Link</a>  |
 | seqinr     | <a href="https://cran.r-project.org/package=seqinr">Link</a>     | <a href="https://anaconda.org/conda-forge/r-seqinr">Link</a>     |
@@ -48,7 +49,7 @@ This pipeline requires several software and R packages to run. All software have
         ```
     -  Installing R packages
         ```
-        conda install -c conda-forge r-ape r-data.table r-dplyr r-dosnow r-forcats r-ggplot2 r-log4r r-rmarkdown r-seqinr r-stringr r-viridis
+        conda install -c conda-forge r-ape r-data.table r-dplyr r-dosnow r-forcats r-ggplot2 r-kableextra r-log4r r-rmarkdown r-seqinr r-stringr r-viridis
         ```
         Notes: Here, I list all packages that are used in the pipeline, which is not ideal if you have a lot of packages. In that case, you can start by installing <a href="https://anaconda.org/conda-forge/r-essentials">`r-essentials`</a> which includes commonly-used packages in R.
 
