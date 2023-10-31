@@ -1,28 +1,33 @@
 ---
 title: "Sequence Simulation using ms and AliSim"
+author: "Jeremias Ivan"
+date: "`r format(Sys.time(), '%d %B %Y, %H:%M%p')`"
+
 output:
   html_document:
     code_folding: show
+    toc: true
+    toc_float: true
 
 params:
   # general
-  codedir: "~/SimNOW/codes"
-  prefix: "sim"
-  outdir: "~/simulation"
-  redo: TRUE
+  codedir: "~/Documents/SimNOW/codes"
+  prefix: "al"
+  outdir: "~/Documents/simulation/debug"
+  redo: FALSE
   
   # ms
-  msdir: "~/msdir/ms"
-  ms_params: ""
-  ms_r: 0
+  msdir: "~/Documents/msdir/ms"
+  ms_params: "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 2.13 2 1 -ej 5.60 3 1 -ej 7.07 4 1 -ej 6.67 5 6 -ej 8.13 6 1 -ej 15.47 7 1 -es 0.21 2 0.966 -ej 0.21 8 1 -es 0.21 1 0.796 -ej 0.21 9 2 -es 5.52 3 0.115 -ej 5.52 10 4 -es 6.84 6 0.778 -ej 6.84 11 4 -es 6.84 4 0.853 -ej 6.84 12 6"
+  ms_r: 200
   ms_l: 1000000
   
   # AliSim
-  iqtree2dir: "~/iqtree-2.2.2.4-MacOSX/bin/iqtree2"
+  iqtree2dir: "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
   alisim_model: "JC"
-  alisim_scale: 0.001
+  alisim_scale: 0.005
   
-  copy_gaps: TRUE
+  copy_gaps: FALSE
   src_aln: "~/empirical_aln.fa"
 ---
 
@@ -32,6 +37,7 @@ source(paste0(params$codedir, "/1_sequence_simulation/functions.R"))
 
 library(data.table)
 library(dplyr)
+library(kableExtra)
 ```
 
 ```{r, include=FALSE}
@@ -54,7 +60,9 @@ log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::defa
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
 if (params$redo) {
   unlink(fn_log)
-  write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
+  write.table(c("SimNOW (Simulation Non-Overlapping Windows)",
+                "Developed by Jeremias Ivan"),
+              file=fn_log, quote=F, row.names=F, col.names=F)
 }
 
 knitr::opts_knit$set(root.dir = currentdir)
@@ -87,6 +95,13 @@ fn_alisim_fa <- paste0(simulation_outdir, "/", params$prefix, ".fa")
 if (params$copy_gaps) {
   fn_alisim <- paste0(fn_alisim, "_nogaps")
 }
+
+# check if params$redo is TRUE
+if (params$redo) {
+  write.table(c("",
+                "WARNING: 'redo' is set to be TRUE. All previous analyses will be overwritten!"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+}
 ```
 
 ## Simulation of locus trees using ms
@@ -103,52 +118,78 @@ options(scipen=999)
 randseed <- paste(sample(10000:99999,3), collapse=" ")
 
 # combine all ms parameters into one variable
-ms_command <- paste(params$ms_params, "-r", params$ms_r, params$ms_l, "-seeds", randseed)
+ms_command <- paste(params$msdir,
+                    params$ms_params, "-r", params$ms_r, params$ms_l, "-seeds", randseed,
+                    ">", fn_msfile)
+
+# add ms command to logfile                    
+log_ms_command <- paste("Command:", ms_command)                   
+write.table(c(log_ms_command, ""),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 # generate msfile
 if (file.exists(fn_msfile) && !params$redo) {
-  log4r::info(fn_logger, paste0("File found: ", params$prefix, "ms."))
+  log4r::info(fn_logger, paste0("File found  : ", params$prefix, ".ms."))
 } else {
-  system(paste(params$msdir,ms_command,">",fn_msfile))
+  system(ms_command)
   log4r::info(fn_logger, paste0("File created: ", params$prefix, ".ms."))
 }
+
+# extract locus trees and topologies
+summary <- f_extract_locus_tree(fn_msfile)
+t_summary <- f_extract_locus_topology(summary)
+
+# print ms command in HTML document
+cat(log_ms_command)
 ```
 
-### Extracting locus trees and topologies from ms file
-```{r}
-# mstrees
-summary <- f_extract_locus_tree(fn_msfile, params$ms_l)
-head(summary)
+### Locus trees and topologies from ms file {.tabset}
+#### Trees
+Number of locus: `r nrow(summary)`  
+Number of unique trees: `r length(unique(summary$tree))`  
 
-# mstops
-t_summary <- f_extract_locus_topology(summary)
-head(t_summary)
+```{r}
+kable(summary) %>%
+  kable_styling("striped", full_width = T) %>%
+  scroll_box(width = "100%", height = ifelse(nrow(summary) > 4, "300px", NULL))
+```
+
+#### Topologies
+Number of topology switching: `r nrow(t_summary)`  
+Number of unique topologies: `r length(unique(t_summary$topology))`  
+
+```{r}
+kable(t_summary) %>%
+  kable_styling("striped", full_width = T) %>%
+  scroll_box(width = "100%", height = ifelse(nrow(t_summary) > 7, "300px", NULL))
 ```
 
 ```{r postms, include=FALSE}
+# prevent the use of scientific notation for big numbers
 options(scipen=999)
 
+# save the output files
 if (all(file.exists(fn_mstrees, fn_mttrees, fn_mstops, fn_uqtops)) && !params$redo) {
-  log4r::info(fn_logger, "File found: ms summary files.")
+  log4r::info(fn_logger, "File found  : ms summary files.")
   
 } else {
   # save the ms summary files
   data.table::fwrite(summary, file=fn_mstrees, sep="\t", quote=F)
   write.table(summary$tree, file=fn_mttrees, sep="\t", quote=F, row.names=F, col.names=F)
-  log4r::info(fn_logger, paste0(nrow(summary), " tree partition(s) found. File created: ",
-                               params$prefix, ".mstrees and ", params$prefix, ".multitree"))
+  log4r::info(fn_logger, paste0("File created: ",
+                                params$prefix, ".mstrees and ", params$prefix, ".multitree"))
   
   data.table::fwrite(t_summary, file=fn_mstops, sep="\t", quote=F)
   write.table(unique(t_summary$topology), file=fn_uqtops, sep="\t", quote=F, row.names=F, col.names=F)
-  log4r::info(fn_logger, paste0(nrow(t_summary), " topology partition(s) found. File created: ", 
-                               params$prefix, ".mstops and ", params$prefix, ".uqtops"))
+  log4r::info(fn_logger, paste0("File created: ", 
+                                params$prefix, ".mstops and ", params$prefix, ".uqtops"))
 }
 ```
 
 ## Simulation of FASTA alignment using AliSim
 ```{r prealisim, include=FALSE}
 if (file.exists(fn_nexus) && !params$redo) {
-  log4r::info(fn_logger, paste0("File found: ", params$prefix, ".nex."))
+  log4r::info(fn_logger, paste0("File found  : ", params$prefix, ".nex."))
   
 } else {
   # extract the boundary of each tree
@@ -174,11 +215,8 @@ write.table(c("",
               "-------------- AliSim --------------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
-if (file.exists(fn_alisim_fa) && !params$redo) {
-  log4r::info(fn_logger, paste0("File found: ", params$prefix, ".fa."))
-  
-} else {
-  iqtree_cmd <- paste(params$iqtree2dir,
+# combine all parameters
+alisim_command <- paste(params$iqtree2dir,
                       "--alisim", fn_alisim,
                       "-Q", fn_nexus,
                       "-t", fn_mttrees,
@@ -186,22 +224,39 @@ if (file.exists(fn_alisim_fa) && !params$redo) {
                       "--length", params$ms_l,
                       "--branch-scale", params$alisim_scale,
                       "-T 1 -af fasta -cptime 1000000 -redo --no-log")
-  system(iqtree_cmd)
+
+# add AliSim command to logfile                    
+log_alisim_command <- paste("Command:", alisim_command)                   
+write.table(c(log_alisim_command, ""),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+# generate FASTA alignment
+if (file.exists(fn_alisim_fa) && !params$redo) {
+  log4r::info(fn_logger, paste0("File found  : ", params$prefix, ".fa."))
+  
+} else {
+  # run AliSim
+  system(alisim_command)
   
   # add gaps
   if (params$copy_gaps) {
+    log4r::info(fn_logger, paste(". . . . . . . . . . Adding gaps based on", params$src_aln))
     output <- f_copy_gaps(paste0(fn_alisim, ".fa"), params$src_aln)
 
     if (!is.null(output$err)) {
-      log4r::error(fn_logger, output$err)
+      log4r::error(fn_logger, paste("ERROR       :", output$err))
       stop(output$err)
     }
-    
+
     seqinr::write.fasta(sequences=output$seq, names=names(output$seq), file.out=fn_alisim_fa)
+    log4r::info(fn_logger, ". . . . . . . . . . Finished!")
   }
-  
+
   log4r::info(fn_logger, paste0("File created: ", params$prefix, ".fa."))
 }
+
+# print AliSim command in HTML document
+cat(log_alisim_command)
 ```
 
 ```{r, include=FALSE}
