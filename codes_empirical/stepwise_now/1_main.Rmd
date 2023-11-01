@@ -32,7 +32,7 @@ params:
 sys_tic <- Sys.time()
 
 # load libraries
-source(paste0(codedir, "/stepwise_now/functions.R"), local=TRUE)
+source(paste0(params$codedir, "/stepwise_now/functions.R"), local=TRUE)
 
 library(data.table)
 library(dplyr)

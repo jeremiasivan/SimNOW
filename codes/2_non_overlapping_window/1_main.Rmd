@@ -1,8 +1,13 @@
 ---
 title: "Non-overlapping Windows Analysis"
+author: "Jeremias Ivan"
+date: "`r format(Sys.time(), '%d %B %Y, %H:%M%p')`"
+
 output:
   html_document:
     code_folding: show
+    toc: true
+    toc_float: true
 
 params:
   # general
