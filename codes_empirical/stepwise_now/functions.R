@@ -1,0 +1,154 @@
+# functions for codes_empirical/steowise_now
+
+# function: create window alignment
+# required packages: seqinr
+f_window_aln <- function(fasta, start, end, dir_perwindow, i, width) {
+  subfasta <- lapply(fasta, function(x) x[seq(from = start, to = end)])
+  subfasta <- do.call(rbind,subfasta)
+  subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
+  
+  window_name <- paste0("window_", formatC(i, width=width, format="d", flag="0"))
+  dir_window <- paste0(dir_perwindow, "/", window_name, "/")
+  if (!dir.exists(dir_window)) {
+    dir.create(dir_window, recursive = T)
+  }
+
+  fn_out <- paste0(dir_window, window_name, ".fa")
+  seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
+}
+
+# function: create window tree
+f_iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bs_type, bs, dir_iqtree2) {
+  iqtree_cmd <- paste(dir_iqtree2,
+                      "-s", input,
+                      "-T 1 --quiet -redo")
+  
+  if (!is.null(outgroup) && !outgroup == ""){
+    iqtree_cmd <- paste(iqtree_cmd, "-o", outgroup)
+  }
+  
+  if (setblmin) {
+    iqtree_cmd <- paste(iqtree_cmd, "-blmin", 1/i)
+  }
+  
+  if (setmodel) {
+    iqtree_cmd <- paste(iqtree_cmd, "-m", dna_model)
+  }
+
+  if (!is.null(bs_type) && bs_type != "") {
+    if (tolower(bs_type) == "ufboot") {
+      iqtree_cmd <- paste(iqtree_cmd, "-bb", bs)
+    } else if (tolower(bs_type) == "nonparametric") {
+      iqtree_cmd <- paste(iqtree_cmd, "-b", bs)
+    }
+  }
+  
+  system(iqtree_cmd)
+}
+
+# function: create per-window aligment and tree
+f_perwindow_run <- function(dir_perwindow, wsize, len_window, fasta, dir_iqtree2) {
+    # remove all alignments in the folder
+    unlink(paste0(dir_perwindow,"*.fa"))
+    
+    # generate window alignments
+    start <- 1
+    wi <- ceiling(log(len_window) / log(10)) + 1
+    
+    for (j in 1:len_window) {
+        # create window alignment
+        f_window_aln(fasta, start, j*wsize, dir_perwindow, j, wi)
+
+        # update the start position
+        start <- start + wsize
+    }
+}
+
+# function: create per-window aligment and tree
+# required packages: ape, data.table, stringr
+f_perwindow_sum <- function(dir_perwindow, wsize, len_taxa, min_informative_sites, fn_output) {
+    df_output <- data.table::data.table()
+
+    # list all windows
+    start <- 1
+    dirs <- stringr::str_sort(list.dirs(dir_perwindow, recursive=FALSE, full.names=FALSE), numeric=TRUE)
+    
+    # iterate over windows
+    for (j in 1:length(dirs)) {
+        is_informative <- FALSE
+
+        # alignment file
+        fn_fasta <- paste0(dir_perwindow, "/", dirs[j], "/", dirs[j], ".fa")
+
+        # output files from IQ-Tree2
+        fn_iqtree <- paste0(fn_fasta,".iqtree")
+        fn_treefile <- paste0(fn_fasta,".treefile")
+
+        if (file.exists(fn_treefile)) {
+            # check the number of indormative sites
+            len_informative_sites <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of parsimony informative sites'",fn_iqtree), intern = T)))
+
+            # check the number of leaf nodes
+            tree <- ape::read.tree(file=fn_treefile)
+            len_leaf <- length(tree$tip.label)
+
+            if (len_informative_sites >= min_informative_sites && len_leaf == len_taxa) {
+                is_informative <- TRUE
+            }
+        }
+
+        df_output <- rbind(df_output, list(name=dirs[j],start=start,end=j*wsize,is_informative=is_informative))
+        start <- start + wsize
+    }
+
+    data.table::fwrite(df_output, fn_output, quote=FALSE, sep="\t")
+}
+
+# function: extract window tree statistics
+# required package: ape
+f_window_tree_statistics <- function(fn_iqtree, fn_treefile, bootstrap_type, min_branch_support) {
+  # extract log-likelihood and number of free parameters
+  logl <- gsub(" \\(.*\\)$", "", system(paste("grep '^Log-likelihood of the tree'",fn_iqtree), intern = T))
+  logl <- as.numeric(gsub("^.* ", "", logl))
+  freeparams <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of free parameters'",fn_iqtree), intern = T)))
+  
+  # read treefile
+  tre <- readLines(fn_treefile)
+
+  tl <- ape::read.tree(text=tre)
+  tl$edge.length <- NULL
+
+  if (!is.null(bootstrap_type) && bootstrap_type != "") {
+    bl <- subset(tl$node.label, tl$node.label != "")
+
+    if (!is.null(bl) && mean(as.numeric(bl)) >= min_branch_support) {
+      tl$node.label <- NULL
+      return(list(logl=logl, freeparams=freeparams, tree=ape::write.tree(tl)))
+    }
+  }
+
+  return(list(logl=logl, freeparams=freeparams, tree=NULL))
+}
+
+# function: summary across window trees
+# required package: data.table, dplyr
+f_window_trees_summary <- function(ls_statistics, fn_uqtops) {
+  # extract AIC
+  logl <- sum(sapply(ls_statistics, function(x) x[[1]]))
+  freeparams <- sum(sapply(ls_statistics, function(x) x[[2]]))
+  aic <- (2 * freeparams) - (2 * logl)
+
+  tree <- unlist(sapply(ls_statistics, function(x) {x[[3]]}))
+
+  # calculate the topology distribution
+  df_topology <- data.table::as.data.table(tree)
+  data.table::setnames(df_topology, "topology")
+  sorted_topology <- df_topology %>%
+    group_by(topology) %>%
+    summarise(n = n()) %>%
+    arrange(desc(n)) %>%
+    mutate(cum.percentage=round(cumsum(n)/sum(n)*100,3))
+  data.table::fwrite(sorted_topology, file=fn_uqtops, quote=F, sep="\t")
+
+  return(list(aic=aic, tree=tree))
+}

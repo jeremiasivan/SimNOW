@@ -74,7 +74,7 @@ make_runs <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste0(codedir,"/2_stepping_now/1_main.Rmd"),
+  rmarkdown::render(input=paste0(codedir,"/stepwise_now/1_main.Rmd"),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
