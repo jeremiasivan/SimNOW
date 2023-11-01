@@ -2,6 +2,7 @@
 title: "Stepwise NOW for Empirical Dataset"
 ---
 
+# Summary of stepwise non-overlapping windows
 ```{r summary-setup, include=FALSE}
 write.table(c("",
               "####################################",
@@ -10,7 +11,7 @@ write.table(c("",
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
-```{r delta-aic}
+```{r delta-aic, include=FALSE}
 write.table(c("",
               "--------- Delta AIC per Step -------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
@@ -73,5 +74,27 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
 
   # save output file
   data.table::fwrite(df_output, file=fn_output, quote=FALSE, sep="\t")
+  log4r::info(fn_logger, paste0("Per-window AIC summary added: Step ", i, "."))
+}
+
+stopCluster(nwcl)
+```
+
+## Window-based delta AIC across chromosome {.tabset}
+```{r delta-aic-map, results='asis', echo=FALSE}
+for (i in 1:(length(wsizes)-1)) {
+    fn_output <- paste0(getwd(), "/", i, "/", i, ".aic.sum")
+    if (!file.exists(fn_output)) {
+        log4r::warn(fn_logger, paste0("File not found: per-window AIC summary for step ", i, ". Skipped."))
+        next
+    }
+
+    # open AIC summary file
+    df_aic_sum <- data.table::fread(fn_output)
+    
+    # visualization
+    cat(paste('###', i))
+    plot(f_chromosomal_delta_aic(df_aic_sum, wsizes[i], wsizes[i+1]))
+    cat('  \n\n')
 }
 ```
