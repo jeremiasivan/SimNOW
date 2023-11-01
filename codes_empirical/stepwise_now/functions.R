@@ -152,3 +152,23 @@ f_window_trees_summary <- function(ls_statistics, fn_uqtops) {
 
   return(list(aic=aic, tree=tree))
 }
+
+# functions: calculate AIC from iqtree file
+f_calculate_aic_from_iqtree <- function(ls_iqtree) {
+  total_logl <- 0
+  total_freeparams <- 0
+
+  for (fn_iqtree in ls_iqtree) {
+    # extract log-likelihood and number of free parameters
+    logl <- gsub(" \\(.*\\)$", "", system(paste("grep '^Log-likelihood of the tree'",fn_iqtree), intern = T))
+    logl <- as.numeric(gsub("^.* ", "", logl))
+    freeparams <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of free parameters'",fn_iqtree), intern = T)))
+
+    # update variables
+    total_logl <- total_logl + logl
+    total_freeparams <- total_freeparams + freeparams
+  }
+
+  aic <- (2 * total_freeparams) - (2 * total_logl)
+  return(aic)
+}

@@ -432,3 +432,6 @@ stopCluster(nwcl)
 data.table::fwrite(df_output, fn_summary, quote=FALSE, sep="\t")
 log4r::info(fn_logger, "File created: summary file.")
 ```
+
+```{r child = paste0(params$codedir,"/stepwise_now/3_summary.Rmd"), include=FALSE}
+```

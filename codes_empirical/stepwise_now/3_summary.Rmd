@@ -1,0 +1,77 @@
+---
+title: "Stepwise NOW for Empirical Dataset"
+---
+
+```{r summary-setup, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####           Summary          ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+```
+
+```{r delta-aic}
+write.table(c("",
+              "--------- Delta AIC per Step -------"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+# create doSNOW cluster
+nwcl <- makeCluster(stepthread)
+doSNOW::registerDoSNOW(nwcl)
+
+# window alignments for shorter window size
+foreach (i = 1:(length(wsizes)-1)) %dopar% {
+  options(scipen=999)
+
+  # output file
+  df_output <- data.table::data.table()
+  fn_output <- paste0(getwd(), "/", i, "/", i, ".aic.sum")
+
+  # create outdir
+  dir_long_filtered <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
+  dir_short_filtered <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
+
+  # extract the number of windows
+  long_numw <- s_ln_new/wsizes[i]
+  long_width <- ceiling(log(long_numw) / log(10)) + 1
+  short_width <- ceiling(log(short_numw) / log(10)) + 1
+
+  # iterate over long windows
+  for (j in 1:long_numw) {
+    start <- 1
+
+    # name of windows
+    long_name <- paste0("window_", formatC(j, width=long_width, format="d", flag="0"))
+    short_name_left <- paste0("window_", formatC((j*2)-1, width=short_width, format="d", flag="0"))
+    short_name_right <- paste0("window_", formatC(j*2, width=short_width, format="d", flag="0"))
+
+    # iqtree file for long window
+    fn_long_iqtree <- paste0(dir_long_filtered, long_name, "/", long_name, ".fa.iqtree")
+    fn_short_left_iqtree <- paste0(dir_short_filtered, short_name_left, "/", short_name_left, ".fa.iqtree")
+    fn_short_right_iqtree <- paste0(dir_short_filtered, short_name_right, "/", short_name_right, ".fa.iqtree")
+
+    if (!file.exists(fn_long_iqtree)) {
+        # update output data.table
+        df_output <- rbind(df_output,
+                           list(long=long_name, short_left=short_name_left, short_right=short_name_right,
+                                start=start, stop=j*wsizes[i],
+                                long_aic="NA", short_aic="NA", delta_aic="NA"))
+    } else {
+        # get the aic for all windows
+        long_aic <- f_calculate_aic_from_iqtree(fn_long_iqtree)
+        short_aic <- f_calculate_aic_from_iqtree(c(fn_short_left_iqtree, fn_short_right_iqtree))
+
+        # update output data.table
+        df_output <- rbind(df_output,
+                           list(long=long_name, short_left=short_name_left, short_right=short_name_right,
+                                start=start, stop=j*wsizes[i],
+                                long_aic=long_aic, short_aic=short_aic, delta_aic=short_aic-long_aic))
+    }
+
+    start <- start + wsizes[i]
+  }
+
+  # save output file
+  data.table::fwrite(df_output, file=fn_output, quote=FALSE, sep="\t")
+}
+```
