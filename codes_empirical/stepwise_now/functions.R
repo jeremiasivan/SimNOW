@@ -181,7 +181,7 @@ f_chromosomal_delta_aic <- function(df_aic_sum, long_wsize, short_wsize) {
   
   # visualization
   plot <- ggplot(df_delta_aic_plot, aes(x=mid, y=delta_aic, xmin=min(start), xmax=max(stop))) +
-            ggtitle(paste0("Window-based \u0394AIC between ", long_wsize, " and ", short_wsize, "bp")) +
+            ggplot2::ggtitle(paste0("Window-based \u0394AIC between ", long_wsize, " and ", short_wsize, "bp")) +
             xlab("Chromosomal position (bp)") + ylab("\u0394AIC") +
             geom_rect(aes(fill=bg_color, ymin=-Inf, ymax=Inf, xmin=start, xmax=stop),
                           alpha=0.5, inherit.aes = F) +
