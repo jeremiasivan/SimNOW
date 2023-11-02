@@ -11,7 +11,7 @@ write.table(c("",
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
-```{r delta-aic, include=FALSE}
+```{r delta-aic, eval=FALSE}
 write.table(c("",
               "--------- Delta AIC per Step -------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
@@ -63,8 +63,11 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
     fn_short_left_iqtree <- paste0(dir_short_filtered, short_name_left, "/", short_name_left, ".fa.iqtree")
     fn_short_right_iqtree <- paste0(dir_short_filtered, short_name_right, "/", short_name_right, ".fa.iqtree")
 
-    if (!all(file.exists(iqtree_path, treefile_path))) {
+    if (!file.exists(fn_short_left_iqtree)) {
       fn_short_left_iqtree <- paste0(dir_short_perwindow, short_name_left, "/", short_name_left, ".fa.iqtree")
+    }
+
+    if (!file.exists(fn_short_right_iqtree)) {
       fn_short_right_iqtree <- paste0(dir_short_perwindow, short_name_right, "/", short_name_right, ".fa.iqtree")
     }
 
