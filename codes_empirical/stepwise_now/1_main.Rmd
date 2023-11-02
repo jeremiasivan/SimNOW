@@ -38,7 +38,6 @@ source(paste0(params$codedir, "/stepwise_now/functions.R"), local=TRUE)
 library(data.table)
 library(dplyr)
 library(doSNOW)
-library(ggplot2)
 library(ggtree)
 library(kableExtra)
 

@@ -245,7 +245,7 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_bootstrap) {
   # plot all trees
   plot <- plot +
     geom_line(data=df_all, aes(x, y, color=label), alpha=0.5, linewidth=1) +
-    ggtitle("Comparison of Window Trees") +
+    ggplot2::ggtitle("Comparison of Window Trees") +
     guides(color="none") +
     theme(
       plot.title = element_text(face = "bold"),
