@@ -200,6 +200,8 @@ f_chromosomal_delta_aic <- function(df_aic_sum, long_wsize, short_wsize) {
 # functions: plot multiple trees next to each other
 # required packages: ggtree
 f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_bootstrap) {
+  print(min_bootstrap)
+  
   # set up variables
   plot <- NULL
   df_all <- NULL
@@ -217,12 +219,12 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_bootstrap) {
     # plot the tree
     if (i == 1) {
       plot <- ggtree(tree, size=1) +
-        geom_nodelab(aes(label="*", subset=support > min_bootstrap), hjust=1.9, vjust=0.2, size=6)
+        geom_nodelab(aes(label="*", subset=support >= 95), hjust=1.9, vjust=0.2, size=6)
     } else {
       df_tree$x <- df_tree$x + xmax + 0.5
       
       plot <- plot + geom_tree(data=df_tree, size=1) +
-        geom_nodelab(data=df_tree, aes(label="*", subset=support > min_bootstrap), hjust=1.9, vjust=0.2, size=6)
+        geom_nodelab(data=df_tree, aes(label="*", subset=support >= 95), hjust=1.9, vjust=0.2, size=6)
     }
     
     # add annotation under the tree
