@@ -177,7 +177,7 @@ f_calculate_aic_from_iqtree <- function(ls_iqtree) {
 f_chromosomal_delta_aic <- function(df_aic_sum, long_wsize, short_wsize) {
   # add two more columns for visualization
   df_delta_aic_plot <- df_aic_sum %>%
-      mutate(mid=floor((start+stop)/2), bg_color=ifelse(aic=="NA","red","white"))
+      mutate(mid=floor((start+stop)/2), bg_color=ifelse(delta_aic=="NA","red","white"))
   
   # visualization
   plot <- ggplot(df_delta_aic_plot, aes(x=mid, y=aic, xmin=min(start), xmax=max(stop))) +
