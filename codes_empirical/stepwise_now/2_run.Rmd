@@ -74,7 +74,7 @@ write.table(paste0("Updated number of sites: ", s_ln_new, "bp"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
-```{r window-aln, include=FALSE}
+```{r window-aln, eval=FALSE}
 options(scipen=999)
 
 ########################################### LONG ############################################
@@ -159,7 +159,7 @@ rm(s)
 stopCluster(nwcl)
 ```
 
-```{r window-filter, include=FALSE}
+```{r window-filter, eval=FALSE}
 # create doSNOW cluster
 nwcl <- makeCluster(stepthread)
 doSNOW::registerDoSNOW(nwcl)
@@ -273,7 +273,7 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
 stopCluster(nwcl)
 ```
 
-```{r window-tree, include=FALSE}
+```{r window-tree, eval=FALSE}
 write.table(c("",
               "------------ Window Tree -----------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
@@ -337,7 +337,7 @@ for (i in 2:length(wsizes)-1) {
 }
 ```
 
-```{r nowsummary, include=FALSE}
+```{r nowsummary, eval=FALSE}
 options(scipen=999)
 
 df_output <- data.table::data.table(step=numeric(),
@@ -433,5 +433,5 @@ data.table::fwrite(df_output, fn_summary, quote=FALSE, sep="\t")
 log4r::info(fn_logger, "File created: summary file.")
 ```
 
-```{r child = paste0(params$codedir,"/stepwise_now/3_summary.Rmd"), include=FALSE}
+```{r child = paste0(params$codedir,"/stepwise_now/3_summary.Rmd")}
 ```

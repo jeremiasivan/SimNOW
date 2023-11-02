@@ -34,6 +34,7 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
 
   # extract the number of windows
   long_numw <- s_ln_new/wsizes[i]
+  short_numw <- s_ln_new/wsizes[i+1]
   long_width <- ceiling(log(long_numw) / log(10)) + 1
   short_width <- ceiling(log(short_numw) / log(10)) + 1
 
@@ -149,9 +150,9 @@ for (i in 1:(length(wsizes)-1)) {
         fn_short_right_fa <- paste0(dir_short_filtered, df_aic_subset$short_right[j], "/", df_aic_subset$short_right[j], ".fa")
 
         # print alignments
-        cat(paste0('#####', paste0(wsizes[i+1],"bp (Left)"), '  \n'))
+        cat(paste('#####', paste0(wsizes[i+1],"bp (Left)"), ' \n'))
         f_print_fasta_alignment(fn_short_left_fa)
-        cat(paste0('#####', paste0(wsizes[i+1],"bp (Right)"), '  \n'))
+        cat(paste('#####', paste0(wsizes[i+1],"bp (Right)"), ' \n'))
         f_print_fasta_alignment(fn_short_right_fa)
 
         # update variables
