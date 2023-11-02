@@ -28,7 +28,7 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
   df_output <- data.table::data.table()
   fn_output <- paste0(getwd(), "/", i, "/", i, ".aic.sum")
 
-  # create outdir
+  # input directory
   dir_long_filtered <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
   dir_short_filtered <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
 
@@ -46,7 +46,7 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
     short_name_left <- paste0("window_", formatC((j*2)-1, width=short_width, format="d", flag="0"))
     short_name_right <- paste0("window_", formatC(j*2, width=short_width, format="d", flag="0"))
 
-    # iqtree file for long window
+    # iqtree files
     fn_long_iqtree <- paste0(dir_long_filtered, long_name, "/", long_name, ".fa.iqtree")
     fn_short_left_iqtree <- paste0(dir_short_filtered, short_name_left, "/", short_name_left, ".fa.iqtree")
     fn_short_right_iqtree <- paste0(dir_short_filtered, short_name_right, "/", short_name_right, ".fa.iqtree")
@@ -81,7 +81,7 @@ stopCluster(nwcl)
 ```
 
 ## Window-based delta AIC across chromosome {.tabset}
-```{r delta-aic-map, results='asis', echo=FALSE}
+```{r, results='asis', out.width="100%", echo=FALSE}
 for (i in 1:(length(wsizes)-1)) {
     fn_output <- paste0(getwd(), "/", i, "/", i, ".aic.sum")
     if (!file.exists(fn_output)) {
@@ -93,8 +93,72 @@ for (i in 1:(length(wsizes)-1)) {
     df_aic_sum <- data.table::fread(fn_output)
     
     # visualization
-    cat(paste('###', i))
+    cat(paste('###', wsizes[i], 'vs.', wsizes[i+1], '\n'))
     plot(f_chromosomal_delta_aic(df_aic_sum, wsizes[i], wsizes[i+1]))
+    cat('  \n\n')
+}
+```
+
+## Window-based delta AIC for selected windows {.tabset}
+```{r, results='asis', out.width="100%", echo=FALSE}
+options(scipen=999)
+
+for (i in 1:(length(wsizes)-1)) {
+    fn_output <- paste0(getwd(), "/", i, "/", i, ".aic.sum")
+    if (!file.exists(fn_output)) {
+        log4r::warn(fn_logger, paste0("File not found: per-window AIC summary for step ", i, ". Skipped."))
+        next
+    }
+
+    # input directory
+    dir_long_filtered <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
+    dir_short_filtered <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
+
+    # open AIC summary file
+    df_aic_sum <- data.table::fread(fn_output)
+    df_aic_subset <- df_aic_sum %>%
+        filter(delta_aic != "NA") %>%
+        arrange(delta_aic)
+    
+    # extract random indices
+    indices <- floor(seq(1, nrow(df_aic_subset), length.out = 10))
+
+    # visualization
+    cat(paste('###', wsizes[i], 'vs.', wsizes[i+1], '{.tabset .tabset-pills} \n'))
+    
+    iterator <- 1
+    for (j in indices) {
+        cat(paste('####', iterator, '\n'))
+        cat(paste0('Long: ', df_aic_subset$long[j], '  \n'))
+        cat(paste0('Short: ', df_aic_subset$short_left[j], ', ', df_aic_subset$short_right[j], '  \n'))
+        cat(paste0('Position: ', df_aic_subset$start[j], '-', df_aic_subset$stop[j], 'bp  \n'))
+        cat(paste0('Delta AIC: ', df_aic_subset$delta_aic[j], '  \n'))
+
+        # iqtree files
+        fn_long_iqtree <- paste0(dir_long_filtered, df_aic_subset$long[j], "/", df_aic_subset$long[j], ".fa.treefile")
+        fn_short_left_iqtree <- paste0(dir_short_filtered, df_aic_subset$short_left[j], "/", df_aic_subset$short_left[j], ".fa.treefile")
+        fn_short_right_iqtree <- paste0(dir_short_filtered, df_aic_subset$short_right[j], "/", df_aic_subset$short_right[j], ".fa.treefile")
+
+        # plotting
+        ls_treefile <- c(fn_long_iqtree, fn_short_left_iqtree, fn_short_right_iqtree)
+        ls_annotation <- c(paste0(wsizes[i],"bp"), paste0(wsizes[i+1],"bp (Left)"), paste0(wsizes[i+1],"bp (Right)"))
+        plot(f_plot_multiple_trees(ls_treefile, ls_annotation, min_branch_support))
+
+        # fasta files
+        fn_short_left_fa <- paste0(dir_short_filtered, df_aic_subset$short_left[j], "/", df_aic_subset$short_left[j], ".fa")
+        fn_short_right_fa <- paste0(dir_short_filtered, df_aic_subset$short_right[j], "/", df_aic_subset$short_right[j], ".fa")
+
+        # print alignments
+        cat(paste0('#####', paste0(wsizes[i+1],"bp (Left)"), '  \n'))
+        f_print_fasta_alignment(fn_short_left_fa)
+        cat(paste0('#####', paste0(wsizes[i+1],"bp (Right)"), '  \n'))
+        f_print_fasta_alignment(fn_short_right_fa)
+
+        # update variables
+        iterator <- iterator + 1
+        cat('  \n\n')
+    }
+
     cat('  \n\n')
 }
 ```

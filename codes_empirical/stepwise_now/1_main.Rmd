@@ -27,7 +27,7 @@ params:
 
 ```{r, include=FALSE}
 # install.packages("log4r")
-# install.packages("BioStrings")
+# install.packages("seqinr")
 
 # store initial system time
 sys_tic <- Sys.time()
@@ -38,6 +38,8 @@ source(paste0(params$codedir, "/stepwise_now/functions.R"), local=TRUE)
 library(data.table)
 library(dplyr)
 library(doSNOW)
+library(ggtree)
+library(kableExtra)
 
 # create outdir
 currentdir <- paste0(params$outdir, "/", params$prefix)

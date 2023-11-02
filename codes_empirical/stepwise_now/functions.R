@@ -196,3 +196,130 @@ f_chromosomal_delta_aic <- function(df_aic_sum, long_wsize, short_wsize) {
   
   return(plot)
 }
+
+# functions: plot multiple trees next to each other
+# required packages: ggtree
+f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_bootstrap) {
+  # set up variables
+  plot <- NULL
+  df_all <- NULL
+  xmax <- 0
+
+  # iterate over treefile
+  for (i in 1:length(ls_treefile)) {
+    # read tree in Newick format
+    tree <- treeio::read.newick(ls_treefile[i], node.label='support')
+    df_tree <- ggtree::fortify(tree)
+    
+    # set the window size for the tree
+    tree_text <- grid::textGrob(ls_annotation[i])
+    
+    # plot the tree
+    if (i == 1) {
+      plot <- ggtree(tree, size=1) +
+        geom_nodelab(aes(label="*", subset=support>min_bootstrap), hjust=1.9, vjust=0.2, size=6)
+    } else {
+      df_tree$x <- df_tree$x + xmax + 0.5
+      
+      plot <- plot + geom_tree(data=df_tree, size=1) +
+        geom_nodelab(data=df_tree, aes(label="*", subset=support>min_bootstrap), hjust=1.9, vjust=0.2, size=6)
+    }
+    
+    # add annotation under the tree
+    plot <- plot +
+      annotation_custom(grob = tree_text,  xmin = min(df_tree$x), xmax = max(df_tree$x), ymin = min(df_tree$y)-0.3, ymax = min(df_tree$y)-0.3)
+    
+    # add species name for the last tree
+    if (i == length(ls_treefile)) {
+      plot <- plot + geom_tiplab(data=df_tree, fontface = "italic")
+    }
+    
+    # update variables
+    xmax <- max(df_tree$x)
+    df_all <- bind_rows(df_all, df_tree)
+  }
+
+  # filter trees without labels
+  df_all <- df_all %>% filter(!is.na(label))
+
+  # plot all trees
+  plot <- plot +
+    geom_line(data=df_all, aes(x, y, color=label), alpha=0.5, linewidth=1) +
+    ggtitle("Comparison of Window Trees") +
+    guides(color="none") +
+    theme(
+      plot.title = element_text(face = "bold"),
+      plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
+    )
+
+  return(plot)
+}
+
+# functions: set colours for each nucleobase
+f_extract_base_color <- function(base) {
+  switch (base,
+    "A" = "red",
+    "C" = "blue",
+    "G" = "orange",
+    "T" = "darkgreen",
+    "-" = "lightgrey"
+  )
+}
+
+# functions: print FASTA alignment as data.frame
+# required packages: kableExtra, seqinr
+f_print_fasta_alignment <- function(fn_fasta) {
+  # read fasta
+  fasta_aln <- seqinr::read.fasta(fn_fasta, whole.header = T)
+
+  # convert fasta to data.frame
+  df_fasta <- do.call(rbind, fasta_aln)
+  df_fasta <- as.data.frame(toupper(df_fasta))
+  colnames(df_fasta) <- seq(1, ncol(df_fasta))
+
+  # set up variables
+  len_taxa <- nrow(df_fasta)
+  len_fasta <- ncol(df_fasta)
+  vct_cols <- seq(1, len_fasta)
+
+  # extract polymorphic sites
+  idx_polymorphic <- NULL
+  for (i in 1:len_fasta) {
+    uq_bases <- subset(df_fasta[,i], df_fasta[,i] != "-")
+    
+    if (length(unique(uq_bases)) > 1) {
+      idx_polymorphic <- c(idx_polymorphic, i)
+    }
+  }
+
+  # extract spaced column names
+  df_colnames <- list(" " = 1)
+  min_multiplier <- floor(len_fasta/10)
+  for (i in 0:min_multiplier) {
+    if (i == 0) {
+      df_colnames[["1"]] <- 9
+    } else if (i == min_multiplier) {
+      df_colnames[[paste(i*10)]] <- 10
+      df_colnames[[paste(len_fasta)]] <- len_fasta - (i*10) + 1
+    } else {
+      df_colnames[[paste(i*10)]] <- 10
+    }
+  }
+
+  # visualization
+  plot <- df_fasta %>%
+    mutate(across(vct_cols[!vct_cols %in% idx_polymorphic], function(z) {
+      cell_spec(z, color = "lightgrey")
+    })) %>%
+    mutate(across(idx_polymorphic, function(x) {
+      sapply(x, function(y) {
+        cell_spec(y, bold = T, color = f_extract_base_color(y))
+      })
+    })) %>%
+    kable(escape = F, col.names=NULL) %>%
+    kable_styling(full_width = T) %>%
+    add_header_above(df_colnames, align="l") %>%
+    scroll_box(width = "100%", fixed_thead = TRUE, height = ifelse(len_taxa > 7, "300px", ""))
+  
+  return(plot)
+}
