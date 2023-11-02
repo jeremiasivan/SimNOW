@@ -298,7 +298,7 @@ f_print_fasta_alignment <- function(fn_fasta) {
   for (i in 0:min_multiplier) {
     if (i == 0) {
       df_colnames[["1"]] <- 9
-    } else if (i == min_multiplier && ) {
+    } else if (i == min_multiplier) {
       if (i*10 > len_fasta) {
         df_colnames[[paste(i*10)]] <- len_fasta - (i*10)
       }
