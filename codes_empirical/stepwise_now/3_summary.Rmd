@@ -124,7 +124,7 @@ for (i in 1:(length(wsizes)-1)) {
 ```{r, results='asis', out.width="100%", echo=FALSE}
 options(scipen=999)
 
-for (i in 1:(length(wsizes)-1)) {
+for (i in 1:1) {
     fn_output <- paste0(getwd(), "/", i, "/", i, ".aic.sum")
     if (!file.exists(fn_output)) {
         log4r::warn(fn_logger, paste0("File not found: per-window AIC summary for step ", i, ". Skipped."))

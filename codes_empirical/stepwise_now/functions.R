@@ -47,7 +47,7 @@ f_iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bs_
 }
 
 # function: create per-window aligment and tree
-f_perwindow_run <- function(dir_perwindow, wsize, len_window, fasta, dir_iqtree2) {
+f_perwindow_run <- function(dir_perwindow, wsize, len_window, fasta) {
     # remove all alignments in the folder
     unlink(paste0(dir_perwindow,"*.fa"))
     
@@ -199,9 +199,7 @@ f_chromosomal_delta_aic <- function(df_aic_sum, long_wsize, short_wsize) {
 
 # functions: plot multiple trees next to each other
 # required packages: ggtree
-f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_bootstrap) {
-  print(min_bootstrap)
-  
+f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support) {
   # set up variables
   plot <- NULL
   df_all <- NULL
@@ -219,12 +217,12 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_bootstrap) {
     # plot the tree
     if (i == 1) {
       plot <- ggtree(tree, size=1) +
-        geom_nodelab(aes(label="*", subset=support >= 95), hjust=1.9, vjust=0.2, size=6)
+        geom_nodelab(aes(label="*", subset=support >= min_branch_support), hjust=1.9, vjust=0.2, size=6)
     } else {
       df_tree$x <- df_tree$x + xmax + 0.5
       
       plot <- plot + geom_tree(data=df_tree, size=1) +
-        geom_nodelab(data=df_tree, aes(label="*", subset=support >= 95), hjust=1.9, vjust=0.2, size=6)
+        geom_nodelab(data=df_tree, aes(label="*", subset=support >= min_branch_support), hjust=1.9, vjust=0.2, size=6)
     }
     
     # add annotation under the tree
@@ -300,9 +298,11 @@ f_print_fasta_alignment <- function(fn_fasta) {
   for (i in 0:min_multiplier) {
     if (i == 0) {
       df_colnames[["1"]] <- 9
-    } else if (i == min_multiplier) {
-      df_colnames[[paste(i*10)]] <- 10
-      df_colnames[[paste(len_fasta)]] <- len_fasta - (i*10) + 1
+    } else if (i == min_multiplier && ) {
+      if (i*10 > len_fasta) {
+        df_colnames[[paste(i*10)]] <- len_fasta - (i*10)
+      }
+      df_colnames[[paste(len_fasta)]] <- 1
     } else {
       df_colnames[[paste(i*10)]] <- 10
     }
