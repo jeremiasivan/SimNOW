@@ -181,7 +181,7 @@ f_chromosomal_delta_aic <- function(df_aic_sum, long_wsize, short_wsize) {
   
   # visualization
   plot <- ggplot(df_delta_aic_plot, aes(x=mid, y=delta_aic, xmin=min(start), xmax=max(stop))) +
-            ggplot2::ggtitle(paste0("Window-based \u0394AIC between ", long_wsize, " and ", short_wsize, "bp")) +
+            ggtitle(paste0("Window-based \u0394AIC between ", long_wsize, " and ", short_wsize, "bp")) +
             xlab("Chromosomal position (bp)") + ylab("\u0394AIC") +
             geom_rect(aes(fill=bg_color, ymin=-Inf, ymax=Inf, xmin=start, xmax=stop),
                           alpha=0.5, inherit.aes = F) +
@@ -217,12 +217,12 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_bootstrap) {
     # plot the tree
     if (i == 1) {
       plot <- ggtree(tree, size=1) +
-        geom_nodelab(aes(label="*", subset=support>min_bootstrap), hjust=1.9, vjust=0.2, size=6)
+        geom_nodelab(aes(label="*", subset=support > min_bootstrap), hjust=1.9, vjust=0.2, size=6)
     } else {
       df_tree$x <- df_tree$x + xmax + 0.5
       
       plot <- plot + geom_tree(data=df_tree, size=1) +
-        geom_nodelab(data=df_tree, aes(label="*", subset=support>min_bootstrap), hjust=1.9, vjust=0.2, size=6)
+        geom_nodelab(data=df_tree, aes(label="*", subset=support > min_bootstrap), hjust=1.9, vjust=0.2, size=6)
     }
     
     # add annotation under the tree
@@ -245,7 +245,7 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_bootstrap) {
   # plot all trees
   plot <- plot +
     geom_line(data=df_all, aes(x, y, color=label), alpha=0.5, linewidth=1) +
-    ggplot2::ggtitle("Comparison of Window Trees") +
+    ggtitle("Comparison of Window Trees") +
     guides(color="none") +
     theme(
       plot.title = element_text(face = "bold"),
