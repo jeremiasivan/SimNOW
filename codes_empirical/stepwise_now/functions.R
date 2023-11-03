@@ -186,12 +186,11 @@ f_chromosomal_delta_aic <- function(df_aic_sum, long_wsize, short_wsize) {
             geom_rect(aes(fill=bg_color, ymin=-Inf, ymax=Inf, xmin=start, xmax=stop),
                           alpha=0.5, inherit.aes = F) +
             scale_fill_identity() +
-            geom_line() +
             geom_point(shape=16) +
             guides(colour="none", shape="none") +
             theme(
                 plot.title = element_text(face = "bold"),
-                plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
+                plot.margin = margin(0.5, 0, 0.5, 0, "cm")
             )
   
   return(plot)
@@ -245,10 +244,11 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
   # plot all trees
   plot <- plot +
     geom_line(data=df_all, aes(x, y, color=label), alpha=0.5, linewidth=1) +
+    ggtitle("Comparison of window trees") +
     guides(color="none") +
     theme(
-      plot.title = element_text(face = "bold"),
-      plot.margin = margin(0.5, 2, 0.5, 0.5, "cm")
+      plot.title = element_text(face = "bold"), 
+      plot.margin = margin(0.5, 0, 0.5, 0, "cm")
     )
 
   return(plot)

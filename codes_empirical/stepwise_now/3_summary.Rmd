@@ -181,7 +181,7 @@ for (j in indices) {
     ls_treefile <- c(fn_long_iqtree, fn_short_left_iqtree, fn_short_right_iqtree)
     ls_annotation <- c(paste0(wsizes[i],"bp"), paste0(wsizes[i+1],"bp (Left)"), paste0(wsizes[i+1],"bp (Right)"))
 
-    cat('##### Comparison of window trees  \n')
+    cat('  \n\n')
     plot(f_plot_multiple_trees(ls_treefile, ls_annotation, min_branch_support))
     cat('  \n\n')
 
