@@ -225,7 +225,8 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
       plot <- ggtree(tree, size=1)
 
       if ("support" %in% colnames(df_tree)) {
-        plot <- plot + geom_nodelab(aes(label="*", subset=support >= min_branch_support), hjust=1.9, vjust=0.2, size=6)
+        plot <- plot + geom_nodelab(aes(label="*", subset=support >= min_branch_support),
+                                    hjust=1.9, vjust=0.2, size=6)
       }
         
     } else {
@@ -233,10 +234,9 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
       plot <- plot + geom_tree(data=df_tree, size=1)
 
       if ("support" %in% colnames(df_tree)) {
-        plot <- plot + geom_nodelab(data=df_tree,
-                                    aes(label="*", subset=support >= min_branch_support),
-                                    hjust=1.9, vjust=0.2, size=6,
-                                    inherit.aes = FALSE)
+        plot <- plot + geom_nodelab(aes(label="*", subset=support >= min_branch_support),
+                                    data=df_tree,
+                                    hjust=1.9, vjust=0.2, size=6)
       }
     }
     
@@ -246,7 +246,7 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
     
     # add species name for the last tree
     if (i == length(ls_treefile)) {
-      plot <- plot + geom_tiplab(data=df_tree, fontface = "italic")
+      plot <- plot + geom_tiplab(data=df_tree, fontface = "italic", inherit.aes = FALSE)
     }
     
     # update variables
@@ -259,7 +259,7 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
 
   # plot all trees
   plot <- plot +
-    geom_line(data=df_all, aes(x, y, color=label), alpha=0.5, linewidth=1) +
+    geom_line(aes(x, y, color=label), data=df_all, alpha=0.5, linewidth=1, inherit.aes = FALSE) +
     ggtitle("Comparison of window trees") +
     guides(color="none") +
     theme(
