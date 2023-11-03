@@ -142,7 +142,7 @@ for (i in 1:1) {
         arrange(delta_aic)
     
     # extract random indices
-    indices <- floor(seq(1, nrow(df_aic_subset), length.out = 10))
+    indices <- floor(seq(1, nrow(df_aic_subset), length.out = 2))
 
     # visualization
     cat(paste('###', wsizes[i], 'vs.', wsizes[i+1], '{.tabset .tabset-pills} \n'))
