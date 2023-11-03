@@ -52,15 +52,27 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
     short_name_left <- paste0("window_", formatC((j*2)-1, width=short_width, format="d", flag="0"))
     short_name_right <- paste0("window_", formatC(j*2, width=short_width, format="d", flag="0"))
 
-    # iqtree file for long window
+    # iqtree and fasta files for long window
+    fn_long_fa <- paste0(dir_long_filtered, long_name, "/", long_name, ".fa")
     fn_long_iqtree <- paste0(dir_long_filtered, long_name, "/", long_name, ".fa.iqtree")
     
-    if (!file.exists(fn_long_iqtree)) {
+    # check if file exists
+    if (!file.exists(fn_long_iqtree) && file.exists(fn_long_fa)) {
       if (i == 1) {
         fn_long_iqtree <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", long_name, "/", long_name, ".fa.iqtree")
       } else {
         fn_long_iqtree <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", long_name, "/", long_name, ".fa.iqtree")
       }
+
+    } else if (all(!file.exists(fn_long_iqtree, fn_long_fa))) {
+      # update output data.table
+      df_output <- rbind(df_output,
+                          list(long=long_name, short_left=short_name_left, short_right=short_name_right,
+                              start=start, stop=j*wsizes[i],
+                              long_aic="NA", short_aic="NA", delta_aic="NA"))
+      
+      start <- start + wsizes[i]
+      next
     }
 
     # iqtree files for short windows
@@ -75,24 +87,15 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
       fn_short_right_iqtree <- paste0(dir_short_perwindow, short_name_right, "/", short_name_right, ".fa.iqtree")
     }
 
-    # check if iqtree file exists
-    if (!file.exists(fn_long_iqtree)) {
-        # update output data.table
-        df_output <- rbind(df_output,
-                           list(long=long_name, short_left=short_name_left, short_right=short_name_right,
-                                start=start, stop=j*wsizes[i],
-                                long_aic="NA", short_aic="NA", delta_aic="NA"))
-    } else {
-        # get the aic for all windows
-        long_aic <- f_calculate_aic_from_iqtree(fn_long_iqtree)
-        short_aic <- f_calculate_aic_from_iqtree(c(fn_short_left_iqtree, fn_short_right_iqtree))
+    # get the aic for all windows
+    long_aic <- f_calculate_aic_from_iqtree(fn_long_iqtree)
+    short_aic <- f_calculate_aic_from_iqtree(c(fn_short_left_iqtree, fn_short_right_iqtree))
 
-        # update output data.table
-        df_output <- rbind(df_output,
-                           list(long=long_name, short_left=short_name_left, short_right=short_name_right,
-                                start=start, stop=j*wsizes[i],
-                                long_aic=long_aic, short_aic=short_aic, delta_aic=short_aic-long_aic))
-    }
+    # update output data.table
+    df_output <- rbind(df_output,
+                        list(long=long_name, short_left=short_name_left, short_right=short_name_right,
+                            start=start, stop=j*wsizes[i],
+                            long_aic=long_aic, short_aic=short_aic, delta_aic=short_aic-long_aic))
 
     start <- start + wsizes[i]
   }
