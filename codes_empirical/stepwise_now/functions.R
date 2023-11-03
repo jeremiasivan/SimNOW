@@ -249,7 +249,7 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
     guides(color="none") +
     theme(
       plot.title = element_text(face = "bold"),
-      plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
+      plot.margin = margin(0.5, 2, 0.5, 0.5, "cm")
     )
 
   return(plot)
@@ -309,11 +309,11 @@ f_print_fasta_alignment <- function(fn_fasta) {
   }
 
   # visualization
-  plot <- df_fasta %>%
-    mutate(across(vct_cols[!vct_cols %in% idx_polymorphic], function(z) {
+  df_fasta %>%
+    mutate(across(all_of(vct_cols[!vct_cols %in% idx_polymorphic]), function(z) {
       cell_spec(z, color = "lightgrey")
     })) %>%
-    mutate(across(idx_polymorphic, function(x) {
+    mutate(across(all_of(idx_polymorphic), function(x) {
       sapply(x, function(y) {
         cell_spec(y, bold = T, color = f_extract_base_color(y))
       })
@@ -322,6 +322,4 @@ f_print_fasta_alignment <- function(fn_fasta) {
     kable_styling(full_width = T) %>%
     add_header_above(df_colnames, align="l") %>%
     scroll_box(width = "100%", fixed_thead = TRUE, height = ifelse(len_taxa > 7, "300px", ""))
-  
-  return(plot)
 }
