@@ -207,7 +207,14 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
   # iterate over treefile
   for (i in 1:length(ls_treefile)) {
     # read tree in Newick format
-    tree <- treeio::read.newick(ls_treefile[i], node.label='support')
+    tree <- tryCatch(
+      {
+      treeio::read.newick(ls_treefile[i], node.label='support')
+      },
+      error = function(x) {
+        treeio::read.newick(ls_treefile[i])
+      }
+    )
     df_tree <- ggtree::fortify(tree)
     
     # set the window size for the tree
@@ -215,13 +222,19 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
     
     # plot the tree
     if (i == 1) {
-      plot <- ggtree(tree, size=1) +
-        geom_nodelab(aes(label="*", subset=support >= min_branch_support), hjust=1.9, vjust=0.2, size=6)
+      plot <- ggtree(tree, size=1)
+
+      if ("support" %in% colnames(df_tree)) {
+        plot <- plot + geom_nodelab(aes(label="*", subset=support >= min_branch_support), hjust=1.9, vjust=0.2, size=6)
+      }
+        
     } else {
       df_tree$x <- df_tree$x + xmax + 0.5
-      
-      plot <- plot + geom_tree(data=df_tree, size=1) +
-        geom_nodelab(data=df_tree, aes(label="*", subset=support >= min_branch_support), hjust=1.9, vjust=0.2, size=6)
+      plot <- plot + geom_tree(data=df_tree, size=1)
+
+      if ("support" %in% colnames(df_tree)) {
+        plot <- plot + geom_nodelab(data=df_tree, aes(label="*", subset=support >= min_branch_support), hjust=1.9, vjust=0.2, size=6)
+      }
     }
     
     # add annotation under the tree
