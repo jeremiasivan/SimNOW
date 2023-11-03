@@ -295,6 +295,10 @@ write.table(c("",
 
 options(scipen=999)
 
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
+
 # iterate through window sizes
 for (i in 1:(length(wsizes)-1)) {
   ########################################### LONG ############################################
@@ -346,6 +350,8 @@ for (i in 1:(length(wsizes)-1)) {
 
   log4r::info(fn_logger, paste("File created: Step", i, "window treefile."))
 }
+
+stopCluster(nwcl)
 ```
 
 ```{r nowsummary, include=FALSE}
