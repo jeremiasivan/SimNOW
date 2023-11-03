@@ -9,6 +9,11 @@ write.table(c("",
               "####           Summary          ####",
               "####################################"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+min_branch_support <- 80
+if (tolower(params$bootstrap_type) == "ufboot") {
+  min_branch_support <- 95
+}
 ```
 
 ```{r delta-aic, include=FALSE}
