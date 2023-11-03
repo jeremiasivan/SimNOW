@@ -27,6 +27,10 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
   # output file
   df_output <- data.table::data.table()
   fn_output <- paste0(getwd(), "/", i, "/", i, ".aic.sum")
+  if (file.exists(fn_output)) {
+    log4r::info(fn_logger, paste0("File found: per-window AIC summary for step ", i, ". Skipped."))
+    return(NULL)
+  }
 
   # input directory
   dir_long_filtered <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
