@@ -74,7 +74,7 @@ write.table(paste0("Updated number of sites: ", s_ln_new, "bp"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
 
-```{r window-aln, eval=FALSE}
+```{r window-aln, include=FALSE}
 options(scipen=999)
 
 ########################################### LONG ############################################
@@ -175,7 +175,7 @@ rm(s)
 stopCluster(nwcl)
 ```
 
-```{r window-filter, eval=FALSE}
+```{r window-filter, include=FALSE}
 # create doSNOW cluster
 nwcl <- makeCluster(stepthread)
 doSNOW::registerDoSNOW(nwcl)
@@ -289,7 +289,7 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
 stopCluster(nwcl)
 ```
 
-```{r window-tree, eval=FALSE}
+```{r window-tree, include=FALSE}
 write.table(c("",
               "------------ Window Tree -----------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
@@ -353,100 +353,106 @@ for (i in 1:(length(wsizes)-1)) {
 }
 ```
 
-```{r nowsummary, eval=FALSE}
+```{r nowsummary, include=FALSE}
 options(scipen=999)
 
-df_output <- data.table::data.table(step=numeric(),
-                        l_wsize=numeric(), s_wsize=numeric(),
-                        l_aic=numeric(), s_aic=numeric(), diff_aic=numeric(),
-                        fasta_ln=numeric(), fasta_ln_percent=numeric(),
-                        l_bs_tree=numeric(), l_bs_topology=numeric(), s_bs_tree=numeric(), s_bs_topology=numeric()
-                        )
+if (file.exists(fn_summary)) {
+  log4r::info(fn_logger, "File found: summary of stepwise non-overlapping windows.")
 
-# create doSNOW cluster
-nwcl <- makeCluster(params$thread)
-doSNOW::registerDoSNOW(nwcl)
+} else {
+  df_output <- data.table::data.table(step=numeric(),
+                          l_wsize=numeric(), s_wsize=numeric(),
+                          l_aic=numeric(), s_aic=numeric(), diff_aic=numeric(),
+                          fasta_ln=numeric(), fasta_ln_percent=numeric(),
+                          l_bs_tree=numeric(), l_bs_topology=numeric(), s_bs_tree=numeric(), s_bs_topology=numeric()
+                          )
 
-# iterate through window sizes
-for (i in 1:(length(wsizes)-1)) {
-  ########################################### LONG ############################################
-  long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
-  dirs <- list.dirs(long_path, full.names = F, recursive = F)
-  dirs <- dirs[grepl("^window", dirs)]
+  # create doSNOW cluster
+  nwcl <- makeCluster(params$thread)
+  doSNOW::registerDoSNOW(nwcl)
 
-  # extract alignment length
-  s_ln_step <- length(dirs) * wsizes[i]
+  # iterate through window sizes
+  for (i in 1:(length(wsizes)-1)) {
+    ########################################### LONG ############################################
+    long_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
+    dirs <- list.dirs(long_path, full.names = F, recursive = F)
+    dirs <- dirs[grepl("^window", dirs)]
 
-  # extract statistics for each window
-  long_windows <- foreach(j = dirs, .combine=c) %dopar% {
-    iqtree_path <- paste0(long_path, j, "/", j, ".fa.iqtree")
-    treefile_path <- paste0(long_path, j, "/", j, ".fa.treefile")
+    # extract alignment length
+    s_ln_step <- length(dirs) * wsizes[i]
 
-    if (!all(file.exists(iqtree_path, treefile_path))) {
-      log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Extracting from perwindow result."))
+    # extract statistics for each window
+    long_windows <- foreach(j = dirs, .combine=c) %dopar% {
+      iqtree_path <- paste0(long_path, j, "/", j, ".fa.iqtree")
+      treefile_path <- paste0(long_path, j, "/", j, ".fa.treefile")
 
-      if (i == 1) {
-        iqtree_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.iqtree")
-        treefile_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.treefile")
-      } else {
-        iqtree_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.iqtree")
-        treefile_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.treefile")
+      if (!all(file.exists(iqtree_path, treefile_path))) {
+        log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Extracting from perwindow result."))
+
+        if (i == 1) {
+          iqtree_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.iqtree")
+          treefile_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.treefile")
+        } else {
+          iqtree_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.iqtree")
+          treefile_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.treefile")
+        }
       }
+
+      out <- f_window_tree_statistics(iqtree_path, treefile_path, params$bootstrap_type, min_branch_support)
+      return(list(list(out$logl, out$freeparams, out$tree)))
+    }
+    
+    # extract the summary of all windows
+    fn_uqtops <- paste0(getwd(), "/", i, "/", wsizes[i], "/", wsizes[i], ".uqtops")
+    long_output <- f_window_trees_summary(long_windows, fn_uqtops)
+
+    ########################################### SHORT ###########################################
+    short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
+    dirs <- list.dirs(short_path, full.names = F, recursive = F)
+    dirs <- dirs[grepl("^window", dirs)]
+
+    # double check the alignment length
+    if (s_ln_step != length(dirs) * wsizes[i+1]) {
+      log4r::error(fn_logger, paste0("Error: different alignment lengths on Step", i, "."))
     }
 
-    out <- f_window_tree_statistics(iqtree_path, treefile_path, params$bootstrap_type, min_branch_support)
-    return(list(list(out$logl, out$freeparams, out$tree)))
-  }
-  
-  # extract the summary of all windows
-  fn_uqtops <- paste0(getwd(), "/", i, "/", wsizes[i], "/", wsizes[i], ".uqtops")
-  long_output <- f_window_trees_summary(long_windows, fn_uqtops)
+    # extract statistics for each window
+    short_windows <- foreach(j = dirs, .combine=c) %dopar% {
+      iqtree_path <- paste0(short_path, j, "/", j, ".fa.iqtree")
+      treefile_path <- paste0(short_path, j, "/", j, ".fa.treefile")
 
-  ########################################### SHORT ###########################################
-  short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
-  dirs <- list.dirs(short_path, full.names = F, recursive = F)
-  dirs <- dirs[grepl("^window", dirs)]
+      if (!all(file.exists(iqtree_path, treefile_path))) {
+        log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Extracting from perwindow result."))
 
-  # double check the alignment length
-  if (s_ln_step != length(dirs) * wsizes[i+1]) {
-    log4r::error(fn_logger, paste0("Error: different alignment lengths on Step", i, "."))
-  }
+        iqtree_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa.iqtree")
+        treefile_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa.treefile")
+      }
 
-  # extract statistics for each window
-  short_windows <- foreach(j = dirs, .combine=c) %dopar% {
-    iqtree_path <- paste0(short_path, j, "/", j, ".fa.iqtree")
-    treefile_path <- paste0(short_path, j, "/", j, ".fa.treefile")
-
-    if (!all(file.exists(iqtree_path, treefile_path))) {
-      log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Extracting from perwindow result."))
-
-      iqtree_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa.iqtree")
-      treefile_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa.treefile")
+      out <- f_window_tree_statistics(iqtree_path, treefile_path, params$bootstrap_type, min_branch_support)
+      return(list(list(out$logl, out$freeparams, out$tree)))
     }
 
-    out <- f_window_tree_statistics(iqtree_path, treefile_path, params$bootstrap_type, min_branch_support)
-    return(list(list(out$logl, out$freeparams, out$tree)))
+    # extract the summary of all windows
+    fn_uqtops <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/", wsizes[i+1], ".uqtops")
+    short_output <- f_window_trees_summary(short_windows, fn_uqtops)
+
+    ########################################## SUMMARY ##########################################
+    df_output <- rbind(df_output,
+                      list(step=i,l_wsize=wsizes[i],s_wsize=wsizes[i+1],
+                          l_aic=long_output$aic, s_aic=short_output$aic, diff_aic=short_output$aic-long_output$aic,
+                          fasta_ln=s_ln_step, fasta_ln_percent=round((s_ln_step/s_ln)*100,3),
+                          l_bs_tree=length(long_output$tree), l_bs_topology=length(unique(long_output$tree)),
+                          s_bs_tree=length(short_output$tree), s_bs_topology=length(unique(short_output$tree))),
+                      fill=TRUE)
+    log4r::info(fn_logger, paste0("Summary added: Step ", i, "."))
   }
 
-  # extract the summary of all windows
-  fn_uqtops <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/", wsizes[i+1], ".uqtops")
-  short_output <- f_window_trees_summary(short_windows, fn_uqtops)
+  stopCluster(nwcl)
 
-  ########################################## SUMMARY ##########################################
-  df_output <- rbind(df_output,
-                    list(step=i,l_wsize=wsizes[i],s_wsize=wsizes[i+1],
-                        l_aic=long_output$aic, s_aic=short_output$aic, diff_aic=short_output$aic-long_output$aic,
-                        fasta_ln=s_ln_step, fasta_ln_percent=round((s_ln_step/s_ln)*100,3),
-                        l_bs_tree=length(long_output$tree), l_bs_topology=length(unique(long_output$tree)),
-                        s_bs_tree=length(short_output$tree), s_bs_topology=length(unique(short_output$tree))),
-                    fill=TRUE)
-  log4r::info(fn_logger, paste0("Summary added: Step ", i, "."))
+  data.table::fwrite(df_output, fn_summary, quote=FALSE, sep="\t")
+  log4r::info(fn_logger, "File created: summary file.")
 }
 
-stopCluster(nwcl)
-
-data.table::fwrite(df_output, fn_summary, quote=FALSE, sep="\t")
-log4r::info(fn_logger, "File created: summary file.")
 ```
 
 ```{r child = paste0(params$codedir,"/stepwise_now/3_summary.Rmd")}

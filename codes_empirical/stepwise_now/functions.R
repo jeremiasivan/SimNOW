@@ -240,12 +240,11 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
   }
 
   # filter trees without labels
-  df_all <- df_all %>% filter(!is.na(label))
+  df_all <- subset(df_all, !is.na(label))
 
   # plot all trees
   plot <- plot +
     geom_line(data=df_all, aes(x, y, color=label), alpha=0.5, linewidth=1) +
-    ggtitle("Comparison of Window Trees") +
     guides(color="none") +
     theme(
       plot.title = element_text(face = "bold"),
@@ -309,7 +308,7 @@ f_print_fasta_alignment <- function(fn_fasta) {
   }
 
   # visualization
-  df_fasta %>%
+  output <- df_fasta %>%
     mutate(across(all_of(vct_cols[!vct_cols %in% idx_polymorphic]), function(z) {
       cell_spec(z, color = "lightgrey")
     })) %>%
@@ -322,4 +321,6 @@ f_print_fasta_alignment <- function(fn_fasta) {
     kable_styling(full_width = T) %>%
     add_header_above(df_colnames, align="l") %>%
     scroll_box(width = "100%", fixed_thead = TRUE, height = ifelse(len_taxa > 7, "300px", ""))
+
+  return(output)
 }
