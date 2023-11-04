@@ -326,7 +326,7 @@ for (i in 1:(length(wsizes)-1)) {
       system(paste("cp", treefile, windowdir))
     } else {
       logfile <- paste0(windowdir, j, ".fa.log")
-      err_msg <- suppressWarnings(system(paste("grep '.*It makes no sense to perform bootstrap with less than 4 sequences*', logfile), intern=T))
+      err_msg <- suppressWarnings(system(paste("grep '.*It makes no sense to perform bootstrap with less than 4 sequences*'", logfile), intern=T))
 
       # check if bootstrap is useless
       if (length(err_msg) != 0) {
@@ -336,7 +336,7 @@ for (i in 1:(length(wsizes)-1)) {
       }
     }
   }
-  
+
   stopCluster(nwcl)
 
   ########################################### SHORT ###########################################
