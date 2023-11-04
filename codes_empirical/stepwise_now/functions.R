@@ -222,27 +222,21 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
     
     # plot the tree
     if (i == 1) {
-      plot <- ggtree(tree, size=1)
-
-      if ("support" %in% colnames(df_tree)) {
-        plot <- plot + geom_nodelab(aes(label="*", subset=support >= min_branch_support),
-                                    hjust=1.9, vjust=0.2, size=6)
-      }
-        
+      plot <- ggtree(tree, size=1) 
     } else {
       df_tree$x <- df_tree$x + xmax + 0.5
       plot <- plot + geom_tree(data=df_tree, size=1)
+    }
 
-      if ("support" %in% colnames(df_tree)) {
-        plot <- plot + geom_nodelab(aes(label="*", subset=support >= min_branch_support),
-                                    data=df_tree,
-                                    hjust=1.9, vjust=0.2, size=6)
-      }
+    if ("support" %in% colnames(df_tree)) {
+      plot <- plot + geom_nodelab(aes(label="*", subset=support >= min_branch_support),
+                                  data=df_tree,
+                                  hjust=1.9, vjust=0.2, size=6)
     }
     
     # add annotation under the tree
-    #plot <- plot +
-    #  annotation_custom(grob = tree_text,  xmin = min(df_tree$x), xmax = max(df_tree$x), ymin = min(df_tree$y)-0.3, ymax = min(df_tree$y)-0.3)
+    plot <- plot +
+      annotation_custom(grob = tree_text,  xmin = min(df_tree$x), xmax = max(df_tree$x), ymin = min(df_tree$y)-0.3, ymax = min(df_tree$y)-0.3)
     
     # add species name for the last tree
     if (i == length(ls_treefile)) {

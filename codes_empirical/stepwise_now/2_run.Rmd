@@ -325,7 +325,15 @@ for (i in 1:(length(wsizes)-1)) {
       system(paste("cp", iqtreefile, windowdir))
       system(paste("cp", treefile, windowdir))
     } else {
-      f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+      logfile <- paste0(windowdir, j, ".fa.log")
+      err_msg <- suppressWarnings(system(paste("grep '.*It makes no sense to perform bootstrap with less than 4 sequences*', logfile), intern=T))
+
+      # check if bootstrap is useless
+      if (length(err_msg) != 0) {
+        return(NULL)
+      } else {
+        f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+      }
     }
   }
 

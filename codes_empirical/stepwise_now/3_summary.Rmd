@@ -146,10 +146,6 @@ for (j in nrow(df_summary):1) {
 
 # add example pairs for the best window size
 fn_output <- paste0(getwd(), "/", i, "/", i, ".aic.sum")
-if (!file.exists(fn_output)) {
-    log4r::warn(fn_logger, paste0("File not found: per-window AIC summary for step ", i, ". Skipped."))
-    next
-}
 
 # input directory
 dir_long_filtered <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
@@ -173,7 +169,7 @@ for (j in indices) {
     cat(paste0('Long: ', df_aic_subset$long[j], '  \n'))
     cat(paste0('Short: ', df_aic_subset$short_left[j], ', ', df_aic_subset$short_right[j], '  \n'))
     cat(paste0('Position: ', df_aic_subset$start[j], '-', df_aic_subset$stop[j], 'bp  \n'))
-    cat(paste0('Delta AIC: ', df_aic_subset$delta_aic[j], '  \n\n'))
+    cat(paste0('Delta AIC: ', round(df_aic_subset$delta_aic[j], 4), '  \n\n'))
 
     # iqtree files
     fn_long_iqtree <- paste0(dir_long_filtered, df_aic_subset$long[j], "/", df_aic_subset$long[j], ".fa.treefile")
