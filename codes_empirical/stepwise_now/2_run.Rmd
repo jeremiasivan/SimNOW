@@ -295,10 +295,6 @@ write.table(c("",
 
 options(scipen=999)
 
-# create doSNOW cluster
-nwcl <- makeCluster(params$thread)
-doSNOW::registerDoSNOW(nwcl)
-
 # iterate through window sizes
 for (i in 1:(length(wsizes)-1)) {
   ########################################### LONG ############################################
@@ -307,6 +303,10 @@ for (i in 1:(length(wsizes)-1)) {
   # check input alignments
   dirs <- list.dirs(long_path, full.names = F, recursive = F)
   dirs <- dirs[grepl("^window", dirs)]
+
+  # create doSNOW cluster
+  nwcl <- makeCluster(params$thread)
+  doSNOW::registerDoSNOW(nwcl)
   
   foreach (j = dirs) %dopar% {
     windowdir <- paste0(long_path, j, "/")
@@ -336,6 +336,8 @@ for (i in 1:(length(wsizes)-1)) {
       }
     }
   }
+  
+  stopCluster(nwcl)
 
   ########################################### SHORT ###########################################
   short_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/filtered/")
@@ -344,6 +346,10 @@ for (i in 1:(length(wsizes)-1)) {
   dirs <- list.dirs(short_path, full.names = F, recursive = F)
   dirs <- dirs[grepl("^window", dirs)]
   
+  # create doSNOW cluster
+  nwcl <- makeCluster(params$thread)
+  doSNOW::registerDoSNOW(nwcl)
+
   foreach (j = dirs) %dopar% {
     fastadir <- paste0(short_path, j, "/", j, ".fa")
 
@@ -356,10 +362,9 @@ for (i in 1:(length(wsizes)-1)) {
     f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
   }
 
+  stopCluster(nwcl)
   log4r::info(fn_logger, paste("File created: Step", i, "window treefile."))
 }
-
-stopCluster(nwcl)
 ```
 
 ```{r nowsummary, include=FALSE}
