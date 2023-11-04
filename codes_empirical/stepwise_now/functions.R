@@ -229,7 +229,7 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
     }
 
     if ("support" %in% colnames(df_tree)) {
-      plot <- plot + geom_nodelab(aes(label="*", subset=support >= min_branch_support),
+      plot <- plot + geom_nodelab(aes(label="*", subset=support >= .data[[min_branch_support]]),
                                   data=df_tree,
                                   hjust=1.9, vjust=0.2, size=6)
     }
