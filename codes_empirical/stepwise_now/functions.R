@@ -231,9 +231,11 @@ f_plot_multiple_trees <- function(ls_treefile, ls_annotation, min_branch_support
     if ("support" %in% colnames(df_tree)) {
       df_tree_subset <- subset(df_tree, support >= min_branch_support)
 
-      plot <- plot + geom_nodelab(aes(label="*"),
+      if (nrow(df_tree_subset) > 0) {
+        plot <- plot + geom_nodelab(aes(label="*"),
                                   data=df_tree_subset,
                                   hjust=1.9, vjust=0.2, size=6)
+      }
     }
     
     # add annotation under the tree
