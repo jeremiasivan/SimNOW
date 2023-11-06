@@ -11,7 +11,7 @@ output:
     
 params:
   # general
-  codedir: "~/SimNOW/codes_empirical"
+  codedir: "~/SimNOW/empirical_analysis"
   prefix: "sim"
   outdir: "~/simulation"
   thread: 1

@@ -2,7 +2,7 @@
 title: "Non-overlapping Window Analysis for Empirical Datasets"
 params:
   # general
-  codedir: "~/SimNOW/codes"
+  codedir: "~/SimNOW/empirical_analysis"
   prefix: "sim"
   outdir: "~/simulation"
   thread: 5

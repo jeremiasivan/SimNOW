@@ -2,14 +2,14 @@
 nthread <- 50
 
 # general
-codedir <- "~/SimNOW/codes_empirical"
+codedir <- "~/SimNOW/empirical_analysis"
 thread <- 10
 outdir <- ""
 redo <- FALSE
 
 # data_edelman.Rmd
 fn_hal <- ""
-fn_refseq <- ""
+fn_refseq <- paste0(codedir, "/datasets/edelman_etal_2019/files/refseq.txt")
 
 dir_hal2maf <- "~/hal2maf"
 dir_singleCopy <- "~/getSingleCopy.py"
@@ -20,23 +20,16 @@ dir_msaview <- "~/msa_view"
 prefix <- ""
 dir_iqtree2 <- "~/iqtree2"
 
-set_blmin <- TRUE
-set_model <- TRUE
-dna_model <- "JC"
+set_blmin <- FALSE
+set_model <- FALSE
+dna_model <- ""
+
+bootstrap <- 1000
+bootstrap_type <- "ufboot"
 outgroup <- "HmelRef"
 
-window_len <- 20
-window_size <- c(50000)
-min_window_size <- 1000
-
-window_size_nogaps <- c(25000)
-min_window_size_nogaps <- 100
-
-ic_type <- "aic"
-
-# summary
-colour_scheme <- ""
-
+initial_wsize <- 64000
+min_informative_sites <- 4
 #################################
 
 if (nthread / thread < 1) {
@@ -66,29 +59,12 @@ for (c in ls_chr) {
 
   # filtered sequence
   out <- paste0(currentdir,c,".html")
-  input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa")
+  input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat.fa")
   temprun <- list(out=out, params=list(codedir=codedir,
                                        prefix=c, outdir=run_outdir, thread=thread, redo=redo,
-                                       iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, outgroup=outgroup,
-                                       input_aln=input_aln, window_len=window_len, window_size=window_size, min_window_size=min_window_size,
-                                       ic_type=ic_type
-  ))
-  runs <- append(runs, list(temprun))
-
-  # no_gaps sequence
-  no_gaps_c <- paste0("nogaps_",c)
-  currentdir <- paste0(run_outdir,"/",no_gaps_c,"/")
-  if (!dir.exists(currentdir)) {
-    dir.create(currentdir, recursive = T)
-  }
-
-  out <- paste0(currentdir,no_gaps_c,".html")
-  input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_nogaps.fa")
-  temprun <- list(out=out, params=list(codedir=codedir,
-                                       prefix=no_gaps_c, outdir=run_outdir, thread=thread, redo=redo,
-                                       iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, outgroup=outgroup,
-                                       input_aln=input_aln, window_len=window_len, window_size=window_size_nogaps, min_window_size=min_window_size_nogaps,
-                                       ic_type=ic_type                                     
+                                       iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, 
+                                       bootstrap=bootstrap, bootstrap_type=bootstrap_type, outgroup=outgroup,
+                                       input_aln=input_aln, initial_wsize=initial_wsize, min_informative_sites=min_informative_sites
   ))
   runs <- append(runs, list(temprun))
 }
@@ -98,7 +74,7 @@ make_runs <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste0(codedir,"/1_non_overlapping_window/1_main.Rmd"),
+  rmarkdown::render(input=paste0(codedir,"/stepwise_now/1_main.Rmd"),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
@@ -118,9 +94,9 @@ foreach(r=runs, .errorhandling = 'pass') %dopar% {
 stopCluster(cl)
 
 # summary for all chromosomes
-rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/summary_all_1.Rmd"),
+rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/codes/stepwise_now/summary_all.Rmd"),
                   output_file=paste0(outdir,"/",prefix,"/edelman_summary.html"),
-                  params=list(prefix=prefix, outdir=outdir, ic_type=ic_type, colour_scheme=colour_scheme),
+                  params=list(prefix=prefix, outdir=outdir, initial_wsize=initial_wsize),
                   quiet=TRUE)
-
+                  
 #################################
