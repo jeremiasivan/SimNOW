@@ -37,7 +37,7 @@ if (nthread / thread < 1) {
 }
 
 # data conversion from HAL -> FASTA
-rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/data_preparation.Rmd"),
+rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/codes/data_preparation.Rmd"),
                   output_file=paste0(outdir,"/edelman.html"),
                   params=list(fn_hal=fn_hal, fn_refseq=fn_refseq, thread=thread, outdir=outdir, redo=redo,
                               dir_hal2maf=dir_hal2maf, dir_singleCopy=dir_singleCopy, dir_mafsort=dir_mafsort, dir_msaview=dir_msaview),

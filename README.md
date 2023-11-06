@@ -22,15 +22,11 @@ This pipeline requires several software and R packages to run. All software have
 | ---------- |:----------------------------------------------------------------:|:----------------------------------------------------------------:|
 | ape        | <a href="https://cran.r-project.org/package=ape">Link</a>        | <a href="https://anaconda.org/conda-forge/r-ape">Link</a>        |
 | data.table | <a href="https://cran.r-project.org/package=data.table">Link</a> | <a href="https://anaconda.org/conda-forge/r-data.table">Link</a> |
-| dplyr      | <a href="https://cran.r-project.org/package=dplyr">Link</a>      | <a href="https://anaconda.org/conda-forge/r-dplyr">Link</a>      |
 | doSNOW     | <a href="https://cran.r-project.org/package=doSNOW">Link</a>     | <a href="https://anaconda.org/conda-forge/r-dosnow">Link</a>     |
-| forcats    | <a href="https://cran.r-project.org/package=forcats">Link</a>    | <a href="https://anaconda.org/conda-forge/r-forcats">Link</a>    |
-| ggplot2    | <a href="https://cran.r-project.org/package=ggplot2">Link</a>    | <a href="https://anaconda.org/conda-forge/r-ggplot2">Link</a>    |
 | kableExtra | <a href="https://cran.r-project.org/package=kableExtra">Link</a> | <a href="https://anaconda.org/conda-forge/r-kableextra">Link</a> |
 | log4r      | <a href="https://cran.r-project.org/package=log4r">Link</a>      | <a href="https://anaconda.org/conda-forge/r-log4r">Link</a>      |
 | rmarkdown  | <a href="https://cran.r-project.org/package=rmarkdown">Link</a>  | <a href="https://anaconda.org/conda-forge/r-rmarkdown">Link</a>  |
 | seqinr     | <a href="https://cran.r-project.org/package=seqinr">Link</a>     | <a href="https://anaconda.org/conda-forge/r-seqinr">Link</a>     |
-| stringr    | <a href="https://cran.r-project.org/package=stringr">Link</a>    | <a href="https://anaconda.org/conda-forge/r-stringr">Link</a>    |
 | tidyverse  | <a href="https://cran.r-project.org/package=tidyverse">Link</a>  | <a href="https://anaconda.org/conda-forge/r-tidyverse">Link</a>  |
 | viridis    | <a href="https://cran.r-project.org/package=viridis">Link</a>    | <a href="https://anaconda.org/conda-forge/r-viridis">Link</a>    |
 
@@ -50,9 +46,9 @@ This pipeline requires several software and R packages to run. All software have
         ```
     -  Installing R packages
         ```
-        conda install -c conda-forge r-ape r-data.table r-dosnow r-kableextra r-log4r r-rmarkdown r-seqinr r-viridis r-tidyverse
+        conda install package-name
         ```
-        Notes: Here, I list all packages that are used in the pipeline, which is not ideal if you have a lot of packages. In that case, you can start by installing <a href="https://anaconda.org/conda-forge/r-essentials">`r-essentials`</a> which includes commonly-used packages in R.
+        Notes: Please install all of the R packages and their dependencies. A good starting point is to install <a href="https://anaconda.org/conda-forge/r-essentials">`r-essentials`</a> which includes commonly-used packages in R. 
 
 3. **Update the parameters in the file** <br>
     Please refer to `codes/README.md` for the details of each parameter and which files to be updated. 
@@ -78,7 +74,7 @@ Running the whole pipeline with the second scenario (see <a href="/codes/README.
 - Non-overlapping windows: ~2.25 hours
 
 ## <a id="emps">Empirical Analyses</a>
-In order to run non-overlapping windows on empirical datasets, please refer to <a href="codes_empirical/README.md">`codes_empirical/README.md`</a>. There are additional software and R packages required to run the pipeline, specific for each dataset:
+In order to run non-overlapping windows on empirical datasets, please refer to <a href="empirical_analysis/README.md">`empirical_analysis/README.md`</a>. There are additional software and R packages required to run the pipeline, specific for each dataset:
 
 ### Edelman et al. (2019)
 #### Software
@@ -88,10 +84,11 @@ In order to run non-overlapping windows on empirical datasets, please refer to <
 - `msa_view` from <a href="http://compgen.cshl.edu/phast/">`PHAST`</a>
 
 #### R packages
-|    Name    |                               CRAN                               |                             Anaconda                             |
-| ---------- |:----------------------------------------------------------------:|:----------------------------------------------------------------:|
-| numbers    | <a href="https://cran.r-project.org/package=numbers">Link</a>    | <a href="https://anaconda.org/conda-forge/r-numbers">Link</a>    |
-| tidyr      | <a href="https://cran.r-project.org/package=tidyr">Link</a>      | <a href="https://anaconda.org/conda-forge/r-tidyr">Link</a>      |
+|    Name    |                                 CRAN / Bioconductor                                |            Anaconda            |
+| ---------- |:----------------------------------------------------------------------------------:|:------------------------------:|
+| numbers    | <a href="https://cran.r-project.org/package=numbers">Link</a>                      | <a href="https://anaconda.org/conda-forge/r-numbers">Link</a>                            |
+| tidyr      | <a href="https://cran.r-project.org/package=tidyr">Link</a>                        | <a href="https://anaconda.org/conda-forge/r-tidyr">Link</a>                            |
+| ggtree     | <a href="https://bioconductor.org/packages/release/bioc/html/ggtree.html">Link</a> | <a href="https://anaconda.org/bioconda/bioconductor-ggtree">Link</a> |
 
 ---
 ## <a id="refs">References</a>
@@ -108,4 +105,4 @@ In order to run non-overlapping windows on empirical datasets, please refer to <
 6. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). **PHAST and RPHAST: phylogenetic analysis with space/time models**. *Briefings in Bioinformatics*, *12*(1), 41–51.
 
 ---
-*Last update: 06 September 2023 by Jeremias Ivan*
+*Last update: 06 November 2023 by Jeremias Ivan*
