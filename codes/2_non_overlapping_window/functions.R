@@ -6,6 +6,7 @@ f_window_alignment <- function(fasta_aln, window_size, len_window, dir_output) {
     start <- 1
     wi <- ceiling(log(len_window) / log(10)) + 1
     
+    # iterate over windows
     for (i in 1:len_window) {
         subfasta <- lapply(fasta_aln, function(x) x[seq(from = start, to = as.numeric(i*window_size))])
         df <- do.call(rbind,subfasta)

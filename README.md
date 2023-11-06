@@ -62,7 +62,7 @@ This pipeline requires several software and R packages to run. All software have
     ```
     Rscript -e "rmarkdown::render('~/SimNOW/codes/1_sequence_simulation/simulation.Rmd')"
     Rscript -e "rmarkdown::render('~/SimNOW/codes/2_non_overlapping_window/1_main.Rmd')"
-    Rscript -e "rmarkdown::render('~/SimNOW/codes/4_all_runs_summary/summary_all.Rmd')"
+    Rscript -e "rmarkdown::render('~/SimNOW/codes/3_all_runs_summary/summary_all.Rmd')"
     ```
 
     For running the whole pipeline:

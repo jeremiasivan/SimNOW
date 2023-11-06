@@ -4,5 +4,5 @@
 *.html
 *seedms
 
-codes/3_hmm/*
+codes/*hmm/*
 notes.txt

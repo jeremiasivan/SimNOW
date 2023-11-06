@@ -120,7 +120,7 @@ foreach(r=repnow, .errorhandling = 'pass') %dopar% {
 stopCluster(cl)
 
 # summary
-rmarkdown::render(input=paste(codedir,"/4_all_runs_summary/summary_all.Rmd", sep=""),
+rmarkdown::render(input=paste(codedir,"/3_all_runs_summary/summary_all.Rmd", sep=""),
                   output_file=paste(outdir, "/", prefix, ".html", sep=""),
                   params=list(prefix=prefix, codedir=codedir, outdir=outdir),
                   quiet=TRUE)

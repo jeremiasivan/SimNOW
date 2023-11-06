@@ -1,5 +1,14 @@
 ---
 title: "Stepwise NOW for Empirical Datasets"
+author: "Jeremias Ivan"
+date: "`r format(Sys.time(), '%d %B %Y, %H:%M%p')`"
+
+output:
+  html_document:
+    code_folding: show
+    toc: true
+    toc_float: true
+    
 params:
   # general
   codedir: "~/SimNOW/codes_empirical"
