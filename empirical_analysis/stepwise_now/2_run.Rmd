@@ -286,14 +286,14 @@ for (i in 1:(length(wsizes)-1)) {
       system(paste("cp", iqtreefile, windowdir))
       system(paste("cp", treefile, windowdir))
     } else {
+      f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+
+      # check if bootstrap is useless
       logfile <- paste0(windowdir, j, ".fa.log")
       err_msg <- suppressWarnings(system(paste("grep '.*It makes no sense to perform bootstrap with less than 4 sequences*'", logfile), intern=T))
 
-      # check if bootstrap is useless
       if (length(err_msg) != 0) {
-        return(NULL)
-      } else {
-        f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+        f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
       }
     }
   }
@@ -321,6 +321,14 @@ for (i in 1:(length(wsizes)-1)) {
     }
 
     f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+
+    # check if bootstrap is useless
+    logfile <- paste0(fastadir, ".log")
+    err_msg <- suppressWarnings(system(paste("grep '.*It makes no sense to perform bootstrap with less than 4 sequences*'", logfile), intern=T))
+
+    if (length(err_msg) != 0) {
+      f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+    }
   }
 
   stopCluster(nwcl)
@@ -362,15 +370,8 @@ if (file.exists(fn_summary)) {
       treefile_path <- paste0(long_path, j, "/", j, ".fa.treefile")
 
       if (!all(file.exists(iqtree_path, treefile_path))) {
-        log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Extracting from perwindow result."))
-
-        if (i == 1) {
-          iqtree_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.iqtree")
-          treefile_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.treefile")
-        } else {
-          iqtree_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.iqtree")
-          treefile_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, "/", j, ".fa.treefile")
-        }
+        log4r::error(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Exited."))
+        knitr::knit_exit()
       }
 
       out <- f_window_tree_statistics(iqtree_path, treefile_path, params$bootstrap_type, min_branch_support)
@@ -397,10 +398,8 @@ if (file.exists(fn_summary)) {
       treefile_path <- paste0(short_path, j, "/", j, ".fa.treefile")
 
       if (!all(file.exists(iqtree_path, treefile_path))) {
-        log4r::warn(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Extracting from perwindow result."))
-
-        iqtree_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa.iqtree")
-        treefile_path <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/", j, "/", j, ".fa.treefile")
+        log4r::error(fn_logger, paste0("File not found: .treefile or .iqtree for ", j, " in Step ", i, ". Exited."))
+        knitr::knit_exit()
       }
 
       out <- f_window_tree_statistics(iqtree_path, treefile_path, params$bootstrap_type, min_branch_support)
