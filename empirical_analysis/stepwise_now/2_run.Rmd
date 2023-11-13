@@ -80,7 +80,7 @@ options(scipen=999)
 ########################################### LONG ############################################
 # create outdir
 dir_long <- paste0(getwd(), "/1/", wsizes[1], "/")
-dir_perwindow <- paste0(dir_long "perwindow/")
+dir_perwindow <- paste0(dir_long, "perwindow/")
 if (!dir.exists(dir_perwindow)) {
   dir.create(dir_perwindow, recursive = T)
 }
@@ -110,7 +110,7 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
 
   # create outdir
   dir_short <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/")
-  dir_perwindow <- paste0(dir_short "perwindow/")
+  dir_perwindow <- paste0(dir_short, "perwindow/")
   if (!dir.exists(dir_perwindow)) {
     dir.create(dir_perwindow, recursive = T)
   }
