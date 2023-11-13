@@ -2,6 +2,8 @@
 
 # function: identify if window alignment is informative or not
 f_filter_uninformative_window <- function(df_seq, len_taxa, min_informative_sites) {
+  df_seq <- as.data.frame(df_seq)
+
   # first filter: remove alignment with incomplete taxa
   is_any_all_gaps <- any(apply(df_seq, 1, function(x) all(x == "-")))
   if (length(seq) != len_taxa || is_any_all_gaps) {
