@@ -6,7 +6,7 @@ f_filter_uninformative_window <- function(df_seq, len_taxa, min_informative_site
 
   # first filter: remove alignment with incomplete taxa
   is_any_all_gaps <- any(apply(df_seq, 1, function(x) all(x == "-")))
-  if (length(seq) != len_taxa || is_any_all_gaps) {
+  if (nrow(df_seq) != len_taxa || is_any_all_gaps) {
     return(list(is_informative=FALSE, err_msg="Error: one or more taxa has all gaps"))
   }
 
