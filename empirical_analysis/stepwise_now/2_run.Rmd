@@ -287,14 +287,6 @@ for (i in 1:(length(wsizes)-1)) {
       system(paste("cp", treefile, windowdir))
     } else {
       f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
-
-      # check if bootstrap is useless
-      logfile <- paste0(windowdir, j, ".fa.log")
-      err_msg <- suppressWarnings(system(paste("grep '.*It makes no sense to perform bootstrap with less than 4 sequences*'", logfile), intern=T))
-
-      if (length(err_msg) != 0) {
-        f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
-      }
     }
   }
 
@@ -321,14 +313,6 @@ for (i in 1:(length(wsizes)-1)) {
     }
 
     f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
-
-    # check if bootstrap is useless
-    logfile <- paste0(fastadir, ".log")
-    err_msg <- suppressWarnings(system(paste("grep '.*It makes no sense to perform bootstrap with less than 4 sequences*'", logfile), intern=T))
-
-    if (length(err_msg) != 0) {
-      f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
-    }
   }
 
   stopCluster(nwcl)
