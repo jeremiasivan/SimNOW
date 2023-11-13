@@ -31,13 +31,15 @@ f_filter_uninformative_window <- function(df_seq, len_taxa, min_informative_site
 f_window_aln <- function(fasta, start, end, dir_perwindow, i, width, len_taxa, min_informative_sites) {
   subfasta <- lapply(fasta, function(x) x[seq(from = start, to = end)])
   subfasta <- do.call(rbind,subfasta)
+
+  # check if window is informative
+  output <- f_filter_uninformative_window(subfasta, len_taxa, min_informative_sites)
+
+  # convert into list
   subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
   
   # update window name
   window_name <- paste0("window_", formatC(i, width=width, format="d", flag="0"))
-
-  # check if window is informative
-  output <- f_filter_uninformative_window(subfasta, len_taxa, min_informative_sites)
 
   # write FASTA file
   fn_out <- paste0(dir_perwindow, "/", window_name, ".fa")
