@@ -1,20 +1,47 @@
 # functions for codes_empirical/steowise_now
 
+# function: identify if window alignment is informative or not
+f_filter_uninformative_window <- function(df_seq, len_taxa, min_informative_sites) {
+  # first filter: remove alignment with incomplete taxa
+  is_any_all_gaps <- any(apply(df_seq, 1, function(x) all(x == "-")))
+  if (length(seq) != len_taxa || is_any_all_gaps) {
+    return(list(is_informative=FALSE, err_msg="Error: one or more taxa has all gaps"))
+  }
+
+  # second filter: remove aligment with all constant sites
+  is_all_constant <- all(apply(df_seq, 2, function(x) all(x == x[1])))
+  if (is_all_constant) {
+    return(list(is_informative=FALSE, err_msg="Error: alignment consists of all gaps"))
+  }
+
+  # third filter: minimum informative sites
+  count_constant <- sum(apply(df_seq, 2, function(x) all(x == x[1])))
+  n_informative_sites <- ncol(df_seq) - count_constant
+  if (n_informative_sites < min_informative_sites) {
+    return(list(is_informative=FALSE, err_msg=paste("Error: alignment only has", n_informative_sites, "informative sites")))
+  }
+
+  return(list(is_informative=TRUE, err_msg=NULL))
+}
+
 # function: create window alignment
 # required packages: seqinr
-f_window_aln <- function(fasta, start, end, dir_perwindow, i, width) {
+f_window_aln <- function(fasta, start, end, dir_perwindow, i, width, len_taxa, min_informative_sites) {
   subfasta <- lapply(fasta, function(x) x[seq(from = start, to = end)])
   subfasta <- do.call(rbind,subfasta)
   subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
   
+  # update window name
   window_name <- paste0("window_", formatC(i, width=width, format="d", flag="0"))
-  dir_window <- paste0(dir_perwindow, "/", window_name, "/")
-  if (!dir.exists(dir_window)) {
-    dir.create(dir_window, recursive = T)
-  }
 
-  fn_out <- paste0(dir_window, window_name, ".fa")
+  # check if window is informative
+  output <- f_filter_uninformative_window(subfasta, len_taxa, min_informative_sites)
+
+  # write FASTA file
+  fn_out <- paste0(dir_perwindow, "/", window_name, ".fa")
   seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
+
+  return(list(name=window_name, is_informative=output$is_informative, err_msg=output$err_msg))
 }
 
 # function: create window tree
@@ -47,61 +74,35 @@ f_iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bs_
 }
 
 # function: create per-window aligment and tree
-f_perwindow_run <- function(dir_perwindow, wsize, len_window, fasta) {
+# required package: data.table
+f_perwindow_run <- function(dir_perwindow, wsize, len_window, fasta, len_taxa, min_informative_sites) {
     # remove all alignments in the folder
     unlink(paste0(dir_perwindow,"*.fa"))
     
+    # output file
+    df_output <- data.table::data.table()
+
     # generate window alignments
     start <- 1
     wi <- ceiling(log(len_window) / log(10)) + 1
     
     for (j in 1:len_window) {
         # create window alignment
-        f_window_aln(fasta, start, j*wsize, dir_perwindow, j, wi)
+        output <- f_window_aln(fasta, start, j*wsize, dir_perwindow, j, wi, len_taxa, min_informative_sites)
+
+        # update output data.frame
+        df_output <- rbind(df_output, list(name=output$name,
+                                           start=start,
+                                           end=j*wsize,
+                                           is_informative=output$is_informative,
+                                           notes=output$err_msg),
+                           fill=TRUE)
 
         # update the start position
         start <- start + wsize
     }
-}
 
-# function: create per-window aligment and tree
-# required packages: ape, data.table, stringr
-f_perwindow_sum <- function(dir_perwindow, wsize, len_taxa, min_informative_sites, fn_output) {
-    df_output <- data.table::data.table()
-
-    # list all windows
-    start <- 1
-    dirs <- stringr::str_sort(list.dirs(dir_perwindow, recursive=FALSE, full.names=FALSE), numeric=TRUE)
-    
-    # iterate over windows
-    for (j in 1:length(dirs)) {
-        is_informative <- FALSE
-
-        # alignment file
-        fn_fasta <- paste0(dir_perwindow, "/", dirs[j], "/", dirs[j], ".fa")
-
-        # output files from IQ-Tree2
-        fn_iqtree <- paste0(fn_fasta,".iqtree")
-        fn_treefile <- paste0(fn_fasta,".treefile")
-
-        if (file.exists(fn_treefile)) {
-            # check the number of indormative sites
-            len_informative_sites <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of parsimony informative sites'",fn_iqtree), intern = T)))
-
-            # check the number of leaf nodes
-            tree <- ape::read.tree(file=fn_treefile)
-            len_leaf <- length(tree$tip.label)
-
-            if (len_informative_sites >= min_informative_sites && len_leaf == len_taxa) {
-                is_informative <- TRUE
-            }
-        }
-
-        df_output <- rbind(df_output, list(name=dirs[j],start=start,end=j*wsize,is_informative=is_informative))
-        start <- start + wsize
-    }
-
-    data.table::fwrite(df_output, fn_output, quote=FALSE, sep="\t")
+    return(df_output)
 }
 
 # function: extract window tree statistics
