@@ -16,7 +16,13 @@ f_filter_uninformative_window <- function(df_seq, len_taxa, min_informative_site
     return(list(is_informative=FALSE, err_msg="Error: alignment consists of all gaps"))
   }
 
-  # third filter: minimum informative sites
+  # third filter: unique sequences
+  n_unique_seq <- nrow(unique(df_seq))
+  if (n_unique_seq != len_taxa) {
+    return(list(is_informative=FALSE, err_msg="Error: some alignments are duplicate"))
+  }
+
+  # fourth filter: minimum informative sites
   count_constant <- sum(apply(df_seq, 2, function(x) all(x == x[1])))
   n_informative_sites <- ncol(df_seq) - count_constant
   if (n_informative_sites < min_informative_sites) {

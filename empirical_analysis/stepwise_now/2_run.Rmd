@@ -119,15 +119,17 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
   numw <- s_ln_new/wsizes[i+1]
   if (length(list.files(dir_perwindow, pattern='*.fa', recursive=FALSE)) == numw && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp window alignment for step ", i, "."))
-  } else {
-    fn_output <- paste0(dir_short, wsizes[i+1], ".perwindowsum")
-
-    # generate window alingments
-    df_output <- f_perwindow_run(dir_perwindow, wsizes[i+1], numw, s, len_taxa, params$min_informative_sites)
-    data.table::fwrite(df_output, fn_output, quote=FALSE, sep="\t")
-
-    log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for step ", i, "."))
+    return(NULL)
   }
+
+  # output file
+  fn_output <- paste0(dir_short, wsizes[i+1], ".perwindowsum")
+
+  # generate window alingments
+  df_output <- f_perwindow_run(dir_perwindow, wsizes[i+1], numw, s, len_taxa, params$min_informative_sites)
+  data.table::fwrite(df_output, fn_output, quote=FALSE, sep="\t")
+
+  log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for step ", i, "."))
 }
 
 stopCluster(nwcl)
