@@ -29,6 +29,7 @@ bootstrap_type <- "ufboot"
 outgroup <- "HmelRef"
 
 initial_wsize <- 64000
+min_wsize <- 0
 min_informative_sites <- 4
 #################################
 
@@ -64,7 +65,7 @@ for (c in ls_chr) {
                                        prefix=c, outdir=run_outdir, thread=thread, redo=redo,
                                        iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, 
                                        bootstrap=bootstrap, bootstrap_type=bootstrap_type, outgroup=outgroup,
-                                       input_aln=input_aln, initial_wsize=initial_wsize, min_informative_sites=min_informative_sites
+                                       input_aln=input_aln, initial_wsize=initial_wsize, min_wsize=min_wsize, min_informative_sites=min_informative_sites
   ))
   runs <- append(runs, list(temprun))
 }

@@ -47,6 +47,7 @@ while (max_wsize %% 2 == 0) {
   wsizes <- c(wsizes, max_wsize / 2)
   max_wsize <- max_wsize / 2
 }
+wsizes <- wsizes[wsizes > params$min_wsize]
 wsizes <- sort(wsizes, decreasing=T)
 
 # set number of thread based on the number of window sizes
@@ -229,7 +230,7 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
 
   # check if files already exist
   if (length(list.files(short_path, pattern='*.fa$', recursive=TRUE)) == length(short_names) && !params$redo) {
-    log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp filtered windows for Step", i, "."))
+    log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp filtered windows for Step ", i, "."))
     return(NULL)
   }
 
