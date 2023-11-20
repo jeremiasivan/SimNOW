@@ -289,7 +289,16 @@ for (i in 1:(length(wsizes)-1)) {
       system(paste("cp", iqtreefile, windowdir))
       system(paste("cp", treefile, windowdir))
     } else {
-      f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+      # read FASTA file
+      seq <- seqinr::read.fasta(fastadir, whole.header=T)
+      seq <- as.data.frame(do.call(rbind, seq))
+
+      # conditional if bootstrap is needed
+      if (nrow(unique(seq)) <= 3) {
+        f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+      } else {
+        f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+      }
     }
   }
 
@@ -315,7 +324,16 @@ for (i in 1:(length(wsizes)-1)) {
       return(NULL)
     }
 
-    f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+    # read FASTA file
+    seq <- seqinr::read.fasta(fastadir, whole.header=T)
+    seq <- as.data.frame(do.call(rbind, seq))
+
+    # conditional if bootstrap is needed
+    if (nrow(unique(seq)) <= 3) {
+      f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+    } else {
+      f_iqtree2_single(fastadir, params$outgroup, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+    }
   }
 
   stopCluster(nwcl)
