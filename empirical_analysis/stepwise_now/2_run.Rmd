@@ -138,6 +138,10 @@ rm(s)
 ```
 
 ```{r window-filter, include=FALSE}
+write.table(c("",
+              "---------- Window Filtering --------"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
 # create doSNOW cluster
 nwcl <- makeCluster(stepthread)
 doSNOW::registerDoSNOW(nwcl)
