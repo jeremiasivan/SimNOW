@@ -1,13 +1,13 @@
 #################################
 # general
-codedir <- "~/Documents/SimNOW/empirical_analysis"
-prefix <- "primates_chrY"
-outdir <- "~/Downloads/mammals"
-thread <- 2
+codedir <- "~/SimNOW/empirical_analysis"
+prefix <- "sim"
+outdir <- "~/simulation"
+thread <- 10
 redo <- FALSE
 
 # IQ-Tree2
-iqtree2dir <- "~/Downloads/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
+iqtree2dir <- "~/iqtree2"
 set_blmin <- FALSE
 set_model <- FALSE
 dna_model <- ""
@@ -17,9 +17,9 @@ bootstrap_type <- "ufboot"
 outgroup <- ""
 
 # NOW analysis
-input_aln <- "~/Downloads/mammals/primates_chrY.fa"
-initial_wsize <- 5000
-min_wsize <- 1000
+input_aln <- "~/input_aln.fa"
+initial_wsize <- 100000
+min_wsize <- 100
 
 min_informative_sites <- 0
 #################################
