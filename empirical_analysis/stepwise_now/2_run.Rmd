@@ -137,10 +137,10 @@ if (!dir.exists(dir_perwindow)) {
 # check if alignments already exist
 numw <- s_ln_new/wsizes[1]
 if (length(list.files(dir_perwindow, pattern='*.fa', recursive=FALSE)) == numw && !params$redo) {
-  log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp window alignments for step 1."))
+  log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp window alignments for Step 1."))
 } else {
   f_perwindow_run(dir_perwindow, s, numw, s_ln_new, wsizes[1], params$thread)
-  log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window alignments for step 1."))
+  log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window alignments for Step 1."))
 }
 
 ########################################## SHORT ############################################
@@ -156,19 +156,23 @@ for (i in 1:(length(wsizes)-1)) {
   # check if files already exist
   numw <- s_ln_new/wsizes[i+1]
   if (length(list.files(dir_perwindow, pattern='*.fa', recursive=FALSE)) == numw && !params$redo) {
-    log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp window alignment for step ", i, "."))
+    log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp window alignment for Step ", i, "."))
     next
   }
 
   # generate window alingments
   f_perwindow_run(dir_perwindow, s, numw, s_ln_new, wsizes[i+1], params$thread)
-  log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for step ", i, "."))
+  log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for Step ", i, "."))
 }
 
 rm(s)
 ```
 
 ```{r perwindowsum, include=FALSE}
+write.table(c("",
+              "------ Per-window Summary File -----"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
 options(scipen=999)
 
 ########################################### LONG ############################################
@@ -177,13 +181,13 @@ fn_output <- paste0(getwd(), "/1/", wsizes[1], "/", wsizes[1], ".perwindowsum")
 
 # check if file exists
 if (file.exists(fn_output) && !params$redo) {
-  log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp per-window summary for step 1."))
+  log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp per-window summary for Step 1."))
 } else {
   # extract the summary of each window
   df_output <- f_generate_perwindowsum(dir_perwindow, s_ln_new, wsizes[1], len_taxa, params$min_informative_sites, params$thread)
   
   data.table::fwrite(df_output, file=fn_output, quote=FALSE, sep="\t")
-  log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window summary for step 1."))
+  log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window summary for Step 1."))
 }
 
 ########################################## SHORT ############################################
@@ -194,7 +198,7 @@ for (i in 1:(length(wsizes)-1)) {
 
   # check if file already exist
   if (file.exists(fn_output) && !params$redo) {
-    log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp per-window summary for step ", i, "."))
+    log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp per-window summary for Step ", i, "."))
     next
   }
 
@@ -202,7 +206,7 @@ for (i in 1:(length(wsizes)-1)) {
   df_output <- f_generate_perwindowsum(dir_perwindow, s_ln_new, wsizes[i+1], len_taxa, params$min_informative_sites, params$thread)
   
   data.table::fwrite(df_output, file=fn_output, quote=FALSE, sep="\t")
-  log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window summary for step ", i, "."))
+  log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window summary for Step ", i, "."))
 }
 ```
 
@@ -218,15 +222,12 @@ doSNOW::registerDoSNOW(nwcl)
 foreach (i = 1:(length(wsizes)-1)) %dopar% {
   # input files
   fn_short <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/", wsizes[i+1], ".perwindowsum")
-  fn_long <- ""
-  if (i == 1) {
-    fn_long <- paste0(getwd(), "/", i, "/", wsizes[i], "/", wsizes[i], ".perwindowsum")
-  } else {
-    fn_long <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/", wsizes[i], ".perwindowsum")
-  }
+  fn_long <- ifelse(i==1,
+                    paste0(getwd(), "/", i, "/", wsizes[i], "/", wsizes[i], ".perwindowsum"),
+                    paste0(getwd(), "/", i-1, "/", wsizes[i], "/", wsizes[i], ".perwindowsum"))
 
   if (!all(file.exists(fn_long, fn_short))) {
-    log4r::warn(fn_logger, paste0("File not found: .perwindowsum file(s) for step ", i, ". Skipped."))
+    log4r::warn(fn_logger, paste0("File not found: .perwindowsum file(s) for Step ", i, ". Skipped."))
     return(NULL)
   }
   
@@ -259,17 +260,14 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
 
   # check if files already exist
   if (length(list.files(long_path, pattern='*.fa$', recursive=TRUE)) == length(long_names) && !params$redo) {
-    log4r::info(fn_logger, paste0("File found: ", wsizes[i], "bp filtered windows for Step", i, "."))
+    log4r::info(fn_logger, paste0("File found: ", wsizes[i], "bp filtered windows for Step ", i, "."))
 
   } else {
     # iteration to copy the alignment
     for (j in long_names) {
-      fn_path <- NULL 
-      if (i == 1) {
-        fn_path <- paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, ".fa")
-      } else {
-        fn_path <- paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, ".fa")
-      }
+      fn_path <- ifelse(i == 1,
+                        paste0(getwd(), "/", i, "/", wsizes[i], "/perwindow/", j, ".fa"),
+                        paste0(getwd(), "/", i-1, "/", wsizes[i], "/perwindow/", j, ".fa"))
 
       temp_path <- paste0(long_path, j, "/")
       if (!dir.exists(temp_path)) {
@@ -415,10 +413,14 @@ for (i in 1:(length(wsizes)-1)) {
 ```
 
 ```{r nowsummary, include=FALSE}
+write.table(c("",
+              "------------ Summary Table ---------"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
 options(scipen=999)
 
-if (file.exists(fn_summary)) {
-  log4r::info(fn_logger, "File found: summary of stepwise non-overlapping windows.")
+if (file.exists(fn_summary) && !params$redo) {
+  log4r::info(fn_logger, "File found: summary table of stepwise non-overlapping windows.")
 
 } else {
   df_output <- data.table::data.table(step=numeric(),
@@ -502,9 +504,8 @@ if (file.exists(fn_summary)) {
   stopCluster(nwcl)
 
   data.table::fwrite(df_output, fn_summary, quote=FALSE, sep="\t")
-  log4r::info(fn_logger, "File created: summary file.")
+  log4r::info(fn_logger, "File created: summary table of stepwise non-overlapping windows.")
 }
-
 ```
 
 ```{r child = paste0(params$codedir,"/stepwise_now/3_summary.Rmd")}
