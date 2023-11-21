@@ -56,7 +56,7 @@ if (stepthread > length(wsizes)-1) {
 }
 
 # extract number of taxa
-len_taxa <- as.numeric(system(paste("grep '^>', params$input_aln, "| wc -l"), intern=TRUE))
+len_taxa <- as.numeric(system(paste("grep '^>'", params$input_aln, "| wc -l"), intern=TRUE))
 
 # extract alignment lengths
 s_ln <- f_get_alignment_length(params$input_aln)
@@ -102,6 +102,9 @@ stopCluster(nwcl)
 
 # update variable value
 is_generate_window_alignment <- all(is_window_aln_complete)
+if (!is_generate_window_alignment) {
+  log4r::info(fn_logger, paste0("File found: window alignments for all window sizes. Skipped."))
+}
 ```
 
 ```{r window-aln, include=FALSE, eval=is_generate_window_alignment}

@@ -103,11 +103,11 @@ f_filter_uninformative_window <- function(df_seq, len_taxa, min_informative_site
     return(list(is_informative=FALSE, err_msg=paste("Error: alignment only has", n_informative_sites, "non-constant sites")))
   }
 
-  return(list(is_informative=TRUE, err_msg=NULL))
+  return(list(is_informative=TRUE, err_msg=""))
 }
 
 # function: create window alignment
-# required packages: doSNOW, dplyr, seqinr
+# required packages: data.table, doSNOW, dplyr, seqinr
 f_generate_perwindowsum <- function(dir_perwindow, fasta_len, window_size, len_taxa, min_informative_sites, thread) {
   # generate data.frame for all windows
   numw <- fasta_len/window_size
@@ -116,6 +116,9 @@ f_generate_perwindowsum <- function(dir_perwindow, fasta_len, window_size, len_t
   # create doSNOW cluster
   nwcl <- makeCluster(thread)
   doSNOW::registerDoSNOW(nwcl)
+
+  # export function
+  snow::clusterExport(nwcl, "f_filter_uninformative_window")
 
   # generate window alignments
   ls_windows <- foreach (i = 1:nrow(df_windows), .combine='c') %dopar% {
@@ -127,14 +130,13 @@ f_generate_perwindowsum <- function(dir_perwindow, fasta_len, window_size, len_t
     fasta <- as.data.frame(do.call(rbind, fasta))
     output <- f_filter_uninformative_window(fasta, len_taxa, min_informative_sites)
 
-    return(list(name=df_windows$window_name[i], start=df_windows$start[i], end=df_windows$end[i], is_informative=output$is_informative, err_msg=output$err_msg))
+    return(list(list(name=df_windows$window_name[i], start=df_windows$start[i], end=df_windows$end[i], is_informative=output$is_informative, err_msg=output$err_msg)))
   }
 
   stopCluster(nwcl)
 
-  # convert to data.frame
-  df_output <- as.data.frame(do.call(rbind, ls_windows), fill=TRUE)
-  df_output <- df_output %>% arrange(name)
+  # convert to data.table
+  df_output <- data.table::as.data.table(do.call(rbind, ls_windows), fill=TRUE) %>% arrange(name)
 
   return(df_output)
 }
