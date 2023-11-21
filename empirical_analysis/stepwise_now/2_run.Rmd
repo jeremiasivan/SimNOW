@@ -55,11 +55,15 @@ if (stepthread > length(wsizes)-1) {
   stepthread <- length(wsizes)-1
 }
 
+# extract number of taxa
+len_taxa <- as.numeric(system(paste("grep '^>', params$input_aln, "| wc -l"), intern=TRUE))
+
 # extract alignment lengths
 s_ln <- f_get_alignment_length(params$input_aln)
 s_ln_new <- floor(s_ln/params$initial_wsize) * params$initial_wsize
 
 # update logfile
+write.table(paste0("Number of taxa: ", len_taxa), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 write.table(paste0("Number of sites: ", s_ln, "bp"), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 write.table(paste0("Updated number of sites: ", s_ln_new, "bp"), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 ```
@@ -70,7 +74,7 @@ nwcl <- makeCluster(stepthread)
 doSNOW::registerDoSNOW(nwcl)
 
 # check if alignments for each step is complete
-is_window_aln_complete <- foreach (i = 1:(length(wsizes)-1), combine='.c') %dopar% {
+is_window_aln_complete <- foreach (i = 1:(length(wsizes)-1), .combine='c') %dopar% {
   # check window alignments for long window size
   if (i == 1) {
     dir_perwindow_long <- paste0(getwd(), "/1/", wsizes[1], "/perwindow/")
@@ -105,11 +109,8 @@ write.table(c("",
               "---------- Window Alignment --------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
-options(scipen=999)
-
 # read fasta file
 s <- seqinr::read.fasta(params$input_aln, whole.header = T)
-len_taxa <- length(s)
 
 # get length of the alignment
 if (s_ln != seqinr::getLength(s)[1]) {
@@ -135,24 +136,13 @@ numw <- s_ln_new/wsizes[1]
 if (length(list.files(dir_perwindow, pattern='*.fa', recursive=FALSE)) == numw && !params$redo) {
   log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp window alignments for step 1."))
 } else {
-  fn_output <- paste0(dir_long, wsizes[1], ".perwindowsum")
-
-  # generate window alignments
-  df_output <- f_perwindow_run(dir_perwindow, wsizes[1], numw, s, len_taxa, params$min_informative_sites)
-  data.table::fwrite(df_output, fn_output, quote=FALSE, sep="\t")
-
+  f_perwindow_run(dir_perwindow, s, numw, s_ln_new, wsizes[1], params$thread)
   log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window alignments for step 1."))
 }
 
 ########################################## SHORT ############################################
-# create doSNOW cluster
-nwcl <- makeCluster(stepthread)
-doSNOW::registerDoSNOW(nwcl)
-
 # window alignments for shorter window size
-foreach (i = 1:(length(wsizes)-1)) %dopar% {
-  options(scipen=999)
-
+for (i in 1:(length(wsizes)-1)) {
   # create outdir
   dir_short <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/")
   dir_perwindow <- paste0(dir_short, "perwindow/")
@@ -164,21 +154,53 @@ foreach (i = 1:(length(wsizes)-1)) %dopar% {
   numw <- s_ln_new/wsizes[i+1]
   if (length(list.files(dir_perwindow, pattern='*.fa', recursive=FALSE)) == numw && !params$redo) {
     log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp window alignment for step ", i, "."))
-    return(NULL)
+    next
   }
 
-  # output file
-  fn_output <- paste0(dir_short, wsizes[i+1], ".perwindowsum")
-
   # generate window alingments
-  df_output <- f_perwindow_run(dir_perwindow, wsizes[i+1], numw, s, len_taxa, params$min_informative_sites)
-  data.table::fwrite(df_output, fn_output, quote=FALSE, sep="\t")
-
+  f_perwindow_run(dir_perwindow, s, numw, s_ln_new, wsizes[i+1], params$thread)
   log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for step ", i, "."))
 }
 
-stopCluster(nwcl)
 rm(s)
+```
+
+```{r perwindowsum, include=FALSE}
+options(scipen=999)
+
+########################################### LONG ############################################
+dir_perwindow <- paste0(getwd(), "/1/", wsizes[1], "/perwindow/")
+fn_output <- paste0(getwd(), "/1/", wsizes[1], "/", wsizes[1], ".perwindowsum")
+
+# check if file exists
+if (file.exists(fn_output) && !params$redo) {
+  log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp per-window summary for step 1."))
+} else {
+  # extract the summary of each window
+  df_output <- f_generate_perwindowsum(dir_perwindow, s_ln_new, wsizes[1], len_taxa, params$min_informative_sites, params$thread)
+  
+  data.table::fwrite(df_output, file=fn_output, quote=FALSE, sep="\t")
+  log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window summary for step 1."))
+}
+
+########################################## SHORT ############################################
+# window alignments for shorter window size
+for (i in 1:(length(wsizes)-1)) {
+  dir_perwindow <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/")
+  fn_output <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/", wsizes[i+1], ".perwindowsum")
+
+  # check if file already exist
+  if (file.exists(fn_output) && !params$redo) {
+    log4r::info(fn_logger, paste0("File found: ", wsizes[i+1], "bp per-window summary for step ", i, "."))
+    next
+  }
+
+  # extract the summary of each window
+  df_output <- f_generate_perwindowsum(dir_perwindow, s_ln_new, wsizes[i+1], len_taxa, params$min_informative_sites, params$thread)
+  
+  data.table::fwrite(df_output, file=fn_output, quote=FALSE, sep="\t")
+  log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window summary for step ", i, "."))
+}
 ```
 
 ```{r window-filter, include=FALSE}
