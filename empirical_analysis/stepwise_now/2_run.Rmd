@@ -15,6 +15,7 @@ fn_summary <- paste0(getwd(), "/", params$prefix, ".sumtable")
 # check input parameters
 if (params$initial_wsize <= 0 || params$initial_wsize%%2 != 0) {
   log4r::error(fn_logger, "Error: invalid starting window size. Exited.")
+  knitr::knit_exit()
 }
 
 if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
@@ -22,11 +23,15 @@ if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
 
   if (bs_type == "ufboot" && params$bootstrap < 1000) {
     log4r::error(fn_logger, "Error: invalid number of bootstrap for UFBoot. Exited.")
+    knitr::knit_exit()
   } else if (bs_type == "nonparametric" && params$bootstrap < 100) {
     log4r::error(fn_logger, "Error: invalid number of bootstrap for non-parametric bootstrap. Exited.")
+    knitr::knit_exit()
   }
 }
 
+# set up variables
+is_generate_window_alignment <- TRUE
 min_branch_support <- 80
 if (tolower(params$bootstrap_type) == "ufboot") {
   min_branch_support <- 95
@@ -34,12 +39,6 @@ if (tolower(params$bootstrap_type) == "ufboot") {
 ```
 
 ```{r window-size, include=FALSE}
-write.table(c("",
-              "---------- Window Alignment --------"),
-              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-
-options(scipen=999)
-
 # extract window sizes based on the initial size
 max_wsize <- params$initial_wsize
 wsizes <- max_wsize
@@ -56,27 +55,72 @@ if (stepthread > length(wsizes)-1) {
   stepthread <- length(wsizes)-1
 }
 
+# extract alignment lengths
+s_ln <- f_get_alignment_length(params$input_aln)
+s_ln_new <- floor(s_ln/params$initial_wsize) * params$initial_wsize
+
+# update logfile
+write.table(paste0("Number of sites: ", s_ln, "bp"), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+write.table(paste0("Updated number of sites: ", s_ln_new, "bp"), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+```
+
+```{r check-window-aln, include=FALSE}
+# create doSNOW cluster
+nwcl <- makeCluster(stepthread)
+doSNOW::registerDoSNOW(nwcl)
+
+# check if alignments for each step is complete
+is_window_aln_complete <- foreach (i = 1:(length(wsizes)-1), combine='.c') %dopar% {
+  # check window alignments for long window size
+  if (i == 1) {
+    dir_perwindow_long <- paste0(getwd(), "/1/", wsizes[1], "/perwindow/")
+    
+    # check if long alignments already exist
+    numw <- s_ln_new/wsizes[1]
+    if (length(list.files(dir_perwindow_long, pattern='*.fa', recursive=FALSE)) == numw && !params$redo) {
+      return(FALSE)
+    }
+  }
+
+  # check window alignments for short window size
+  dir_perwindow_short <- paste0(getwd(), "/", i, "/", wsizes[i+1], "/perwindow/")
+
+  # check if long alignments already exist
+  numw <- s_ln_new/wsizes[i+1]
+  if (length(list.files(dir_perwindow_short, pattern='*.fa', recursive=FALSE)) == numw && !params$redo) {
+    return(FALSE)
+  }
+
+  return(TRUE)
+}
+
+stopCluster(nwcl)
+
+# update variable value
+is_generate_window_alignment <- all(is_window_aln_complete)
+```
+
+```{r window-aln, include=FALSE, eval=is_generate_window_alignment}
+write.table(c("",
+              "---------- Window Alignment --------"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+options(scipen=999)
+
 # read fasta file
 s <- seqinr::read.fasta(params$input_aln, whole.header = T)
 len_taxa <- length(s)
 
 # get length of the alignment
-s_ln <- seqinr::getLength(s)[1]
-write.table(paste0("Number of sites: ", s_ln, "bp"),
-            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+if (s_ln != seqinr::getLength(s)[1]) {
+  log4r::error(fn_logger, "Error: inconsistent FASTA alignment length. Exited.")
+  knitr::knit_exit()
+}
 
 # update the alignment to be divisible by the initial window size
-s_ln_new <- floor(s_ln/params$initial_wsize) * params$initial_wsize
-
 s <- lapply(s, function(x) x[seq(from = 1, to = s_ln_new)])
 s <- do.call(rbind, s)
 s <- setNames(split(s, seq(nrow(s))), rownames(s))
-write.table(paste0("Updated number of sites: ", s_ln_new, "bp"),
-            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-```
-
-```{r window-aln, include=FALSE}
-options(scipen=999)
 
 ########################################### LONG ############################################
 # create outdir

@@ -1,5 +1,37 @@
 # functions for codes_empirical/steowise_now
 
+# function: calculate FASTA alignment length
+f_get_alignment_length <- function(filepath) {
+  # set up variables
+  alignment_length <- 0
+  first_sequence <- FALSE
+  
+  # open the FASTA file
+  con <- file(filepath, "r")
+  
+  # read the file line by line
+  while (length(line <- readLines(con, n = 1)) > 0) {
+    # check if the header is the first in the alignment
+    if (grepl("^>+", line)) {
+      if (first_sequence) {
+        break
+      }
+
+      # update variable
+      first_sequence <- TRUE
+
+    } else {
+      # update the alignment length
+      alignment_length <- alignment_length + nchar(line)
+    }
+  }
+  
+  # close the file connection
+  close(con)
+  
+  return(alignment_length)
+}
+
 # function: identify if window alignment is informative or not
 f_filter_uninformative_window <- function(df_seq, len_taxa, min_informative_sites) {
   df_seq <- as.data.frame(df_seq)
