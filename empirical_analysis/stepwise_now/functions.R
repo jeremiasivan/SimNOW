@@ -142,7 +142,7 @@ f_generate_perwindowsum <- function(dir_perwindow, fasta_len, window_size, len_t
 }
 
 # function: create window tree
-f_iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bs_type, bs, dir_iqtree2) {
+f_iqtree2_single <- function(input, outgroup, window_size, setblmin, setmodel, dna_model, bs_type, bs, dir_iqtree2) {
   iqtree_cmd <- paste(dir_iqtree2,
                       "-s", input,
                       "-T 1 --quiet -redo")
@@ -152,7 +152,7 @@ f_iqtree2_single <- function(input, outgroup, setblmin, setmodel, dna_model, bs_
   }
   
   if (setblmin) {
-    iqtree_cmd <- paste(iqtree_cmd, "-blmin", 1/i)
+    iqtree_cmd <- paste(iqtree_cmd, "-blmin", 1/window_size)
   }
   
   if (setmodel) {
