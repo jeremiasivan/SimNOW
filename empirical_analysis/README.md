@@ -72,10 +72,12 @@ In this step, we run stepwise non-overlapping window analysis on empirical align
 
 #### Output
 Running the code will create a new folder for each pair of window sizes, starting from the `initial_wsize` and its half (i.e., `initial_wsize/2`). Each folder is named incrementally from `1` (hitherto referred as `step`) and comprised of the following folders and files:
-- `perwindow/`: store individual folder for each window, including alignment and tree (if possible)
-    - `wsize.perwindowsum`: summary table that shows if windows are informative or not according to `min_informative_sites` and `IQ-Tree2`
-- `filtered/`: similar with `perwindow/` but with uninformative windows filtered out
 - `step.aic.sum`: table that shows the delta AIC and chromosomal positions for each window(s) pair
+- `wsize/`
+    - `perwindow/`: store individual fasta alignment for each window
+    - `filtered/`: store individual folder for each window, including alignment and tree, but with uninformative windows filtered out
+    - `wsize.perwindowsum`: summary table that shows if windows are informative or not
+    - `wsize.uqtops`: distribution of unique window topologies and their respective frequency
 
 ### <a id="hmm">HMM</a>
 *(to be implemented later)*
@@ -195,17 +197,20 @@ prefix/
 │   ├── 1/
 │   │   ├── 64000/
 │   │   │   ├── perwindow/
+│   │   │   │   ├── window_0001.fa
+│   │   │   │   ├── window_0002.fa
+│   │   │   │   ...
+│   │   │   │   └── window_0262.fa
+│   │   │   ├── filtered/
 │   │   │   │   ├── window_0001/
 │   │   │   │   │   ├── window_01.fa
 │   │   │   │   │   ├── window_01.fa.log
-│   │   │   │   │   ├── window_01.fa.iqtree (if possible)
-│   │   │   │   │   └── window_01.fa.treefile (if possible)
+│   │   │   │   │   ├── window_01.fa.iqtree
+│   │   │   │   │   └── window_01.fa.treefile
 │   │   │   │   ...
-│   │   │   │   ├── window_0262/
-│   │   │   │   │   └── ...
-│   │   │   │   └── 64000.perwindowsum
-│   │   │   ├── filtered/
-│   │   │   │   └── ...
+│   │   │   │   └── window_0262/
+│   │   │   │       └── ...
+│   │   │   ├── 64000.perwindowsum
 │   │   │   └── 64000.uqtops
 │   │   ├── 32000
 │   │   │   └── ...
@@ -220,4 +225,4 @@ prefix/
 ```
 
 ---
-*Last update: 06 November 2023 by Jeremias Ivan*
+*Last update: 22 November 2023 by Jeremias Ivan*

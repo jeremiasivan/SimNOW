@@ -74,21 +74,21 @@ Running the whole pipeline with the second scenario (see <a href="/codes/README.
 - Non-overlapping windows: ~2.25 hours
 
 ## <a id="emps">Empirical Analyses</a>
-In order to run non-overlapping windows on empirical datasets, please refer to <a href="empirical_analysis/README.md">`empirical_analysis/README.md`</a>. There are additional software and R packages required to run the pipeline, specific for each dataset:
+In order to run non-overlapping windows on empirical datasets, please refer to <a href="empirical_analysis/README.md">`empirical_analysis/README.md`</a>. There are additional software and R packages required to run the pipeline.
 
-### Edelman et al. (2019)
-#### Software
-- `hal2maf` from <a href="https://github.com/ComparativeGenomicsToolkit/hal">`HAL Toolkit`</a>
-- `getSingleCopy.py` from <a href="https://doi.org/10.5281/zenodo.3401692">Edelman et al. (2019)</a>
-- `maf-sort.sh` from <a href="https://github.com/UCSantaCruzComputationalGenomicsLab/last">`last`</a>
-- `msa_view` from <a href="http://compgen.cshl.edu/phast/">`PHAST`</a>
-
-#### R packages
+### R packages
 |    Name    |                                 CRAN / Bioconductor                                |            Anaconda            |
 | ---------- |:----------------------------------------------------------------------------------:|:------------------------------:|
 | numbers    | <a href="https://cran.r-project.org/package=numbers">Link</a>                      | <a href="https://anaconda.org/conda-forge/r-numbers">Link</a>                            |
 | tidyr      | <a href="https://cran.r-project.org/package=tidyr">Link</a>                        | <a href="https://anaconda.org/conda-forge/r-tidyr">Link</a>                            |
 | ggtree     | <a href="https://bioconductor.org/packages/release/bioc/html/ggtree.html">Link</a> | <a href="https://anaconda.org/bioconda/bioconductor-ggtree">Link</a> |
+
+### Software
+#### Edelman et al. (2019)
+- `hal2maf` from <a href="https://github.com/ComparativeGenomicsToolkit/hal">`HAL Toolkit`</a>
+- `getSingleCopy.py` from <a href="https://doi.org/10.5281/zenodo.3401692">Edelman et al. (2019)</a>
+- `maf-sort.sh` from <a href="https://github.com/UCSantaCruzComputationalGenomicsLab/last">`last`</a>
+- `msa_view` from <a href="http://compgen.cshl.edu/phast/">`PHAST`</a>
 
 ---
 ## <a id="refs">References</a>
@@ -105,4 +105,4 @@ In order to run non-overlapping windows on empirical datasets, please refer to <
 6. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). **PHAST and RPHAST: phylogenetic analysis with space/time models**. *Briefings in Bioinformatics*, *12*(1), 41–51.
 
 ---
-*Last update: 06 November 2023 by Jeremias Ivan*
+*Last update: 22 November 2023 by Jeremias Ivan*
