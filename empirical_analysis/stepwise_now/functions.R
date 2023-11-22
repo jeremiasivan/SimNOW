@@ -84,11 +84,11 @@ f_filter_uninformative_window <- function(df_seq, len_taxa, min_informative_site
     return(list(is_informative=FALSE, err_msg="Error: one or more taxa has all gaps"))
   }
 
-  # second filter: remove aligment with all constant sites
-  is_all_constant <- all(apply(df_seq, 2, function(x) all(x == x[1])))
-  if (is_all_constant) {
-    return(list(is_informative=FALSE, err_msg="Error: alignment consists of all constant sites"))
-  }
+  # # second filter: remove aligment with all constant sites
+  # is_all_constant <- all(apply(df_seq, 2, function(x) all(x == x[1])))
+  # if (is_all_constant) {
+  #   return(list(is_informative=FALSE, err_msg="Error: alignment consists of all constant sites"))
+  # } 
 
   # # third filter: unique sequences
   # n_unique_seq <- nrow(unique(df_seq))
