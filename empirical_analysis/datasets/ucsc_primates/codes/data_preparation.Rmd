@@ -1,0 +1,97 @@
+---
+title: "Data Preparation from Edelman et al. (2019)"
+params:
+  # general
+  thread: 1
+  outdir: ""
+  redo: FALSE
+  
+  # data preparation
+  fn_mafseq: ""
+  dir_msaview: ""
+---
+
+```{r, include=FALSE}
+# install.packages(data.table)
+# install.packages(log4r)
+
+# store initial system time
+sys_tic <- Sys.time()
+
+# load libraries
+library(doSNOW)
+
+# create outdir
+if (!dir.exists(params$outdir)) {
+  dir.create(params$outdir, recursive = T)
+}
+
+# create log file
+fn_log <- paste0(params$outdir, "/ucsc_primates.log")
+log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
+fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
+if (!file.exists(fn_log) || params$redo) {
+  unlink(fn_log)
+  write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
+}
+
+knitr::opts_knit$set(root.dir = params$outdir)
+```
+
+```{r preparation, include=FALSE}
+# check if input files exist
+if (!file.exists(params$fn_mafseq)) {
+  log4r::error(fn_logger, "Error: input file is not found. Exited.")
+  knitr::knit_exit()
+}
+
+# loop over entries
+write.table(c("",
+              "####################################",
+              "####       Data Conversion      ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+# create directories
+maf_dir <- paste0(params$outdir, "/data/maf/")
+fasta_dir <- paste0(params$outdir, "/data/fasta/")
+fasta_primates_dir <- paste0(fastadir, "primates/")
+lapply(list(maf_dir,fasta_primates_dir), function(x) if(!dir.exists(x)) dir.create(x, recursive=T))
+
+# open reference sequence file
+df_mafseq <- data.table::fread(params$mafseq)
+
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
+
+# run
+foreach (i=1:nrow(df_mafseq)) %dopar% {
+  # output filenames
+  fn_maf_gz <- paste0(maf_dir, df_mafseq$chr[i], ".maf.gz")
+  fn_maf <- paste0(maf_dir, df_mafseq$chr[i], ".maf")
+  fn_fasta <- paste0(fasta_dir, df_mafseq$chr[i], ".fa")
+  fn_primates_fasta <- paste0(fasta_primates_dir, df_mafseq$chr[i], ".fa")
+
+  if (all(file.exists(fn_maf, fn_fasta)) && !params$redo) {
+    log4r::info(fn_logger, paste0("File found: MAF and FASTA alignments for ", df_mafseq$chr[i], "."))
+    return(NULL)
+  }
+
+  # download compressed MAF from UCSC
+  system(paste("wget -P", maf_dir, df_mafseq$source[i]))
+  log4r::info(fn_logger, paste0("Run: Download compressed MAF from UCSC (", df_mafseq$chr[i], ")."))
+  
+  # run msa_view
+  system(paste(params$dir_msaview, fn_maf, "-i MAF -m -G 1 >", fn_fasta))
+  log4r::info(fn_logger, paste0("Run: MAF to FASTA (", df_mafseq$chr[i], ")."))
+
+  # run msa_view to extract taxa of interest
+  system(paste(params$dir_msaview, "-l hg38,gorGor3,panTro4,ponAbe2", fn_fasta, ">", fn_primates_fasta))
+  log4r::info(fn_logger, paste0("Run: Extract taxa of interest (", df_mafseq$chr[i], ")."))
+
+  return(NULL)
+}
+
+stopCluster(nwcl)
+```

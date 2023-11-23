@@ -21,6 +21,7 @@ params:
 
 ```{r, include=FALSE}
 # install.packages(data.table)
+# install.packages(log4r)
 # install.packages(seqinr)
 
 # store initial system time
