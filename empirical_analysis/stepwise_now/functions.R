@@ -191,9 +191,11 @@ f_window_tree_statistics <- function(fn_iqtree, fn_treefile, bootstrap_type, min
       tl$node.label <- NULL
       return(list(logl=logl, freeparams=freeparams, tree=ape::write.tree(tl)))
     }
+
+    return(list(logl=logl, freeparams=freeparams, tree=NULL))
   }
 
-  return(list(logl=logl, freeparams=freeparams, tree=NULL))
+  return(list(logl=logl, freeparams=freeparams, tree=ape::write.tree(tl)))
 }
 
 # function: summary across window trees

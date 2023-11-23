@@ -77,7 +77,9 @@ Running the code will create a new folder for each pair of window sizes, startin
     - `perwindow/`: store individual fasta alignment for each window
     - `filtered/`: store individual folder for each window, including alignment and tree, but with uninformative windows filtered out
     - `wsize.perwindowsum`: summary table that shows if windows are informative or not
-    - `wsize.uqtops`: distribution of unique window topologies and their respective frequency
+    - `wsize.uqtops`: distribution of unique window topologies and their respective frequency. If `bootstrap_type` is provided, it only includes window trees with average bootstrap value more than 80 (parametric) or 95 (UFBoot).
+
+Additionally, the code will generate `prefix.sumtable` in the output folder, which summarises the delta BIC and window trees for each `step`. If `bootstrap_type` is provided, the counts for window trees and topologies only include those with average bootstrap value more than 80 (parametric) or 95 (UFBoot).
 
 ### <a id="hmm">HMM</a>
 *(to be implemented later)*
@@ -218,11 +220,13 @@ prefix/
 │   ...
 │   ├── 9/
 │   │   └── ...
-│   └── chr1.log
+│   ├── chr1.html
+│   ├── chr1.log
+│   └── chr1.sumtable
 ...
 └── chr21/
     └── ...
 ```
 
 ---
-*Last update: 22 November 2023 by Jeremias Ivan*
+*Last update: 23 November 2023 by Jeremias Ivan*
