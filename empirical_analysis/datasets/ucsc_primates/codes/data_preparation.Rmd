@@ -59,7 +59,7 @@ fasta_primates_dir <- paste0(fasta_dir, "primates/")
 lapply(list(maf_dir,fasta_primates_dir), function(x) if(!dir.exists(x)) dir.create(x, recursive=T))
 
 # open reference sequence file
-df_mafseq <- data.table::fread(params$mafseq)
+df_mafseq <- data.table::fread(params$fn_mafseq)
 
 # create doSNOW cluster
 nwcl <- makeCluster(params$thread)
