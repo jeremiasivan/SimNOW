@@ -82,6 +82,9 @@ foreach (i=1:nrow(df_mafseq)) %dopar% {
   system(paste("wget -P", maf_dir, df_mafseq$source[i]))
   log4r::info(fn_logger, paste0("Run: Download compressed MAF from UCSC (", df_mafseq$chr[i], ")."))
   
+  # uncompressed MAF
+  system(paste("gzip -d", fn_maf_gz))
+
   # run msa_view
   system(paste(params$dir_msaview, fn_maf, "-i MAF -m -G 1 >", fn_fasta))
   log4r::info(fn_logger, paste0("Run: MAF to FASTA (", df_mafseq$chr[i], ")."))
