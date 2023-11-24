@@ -55,7 +55,7 @@ write.table(c("",
 # create directories
 maf_dir <- paste0(params$outdir, "/data/maf/")
 fasta_dir <- paste0(params$outdir, "/data/fasta/")
-fasta_primates_dir <- paste0(fastadir, "primates/")
+fasta_primates_dir <- paste0(fasta_dir, "primates/")
 lapply(list(maf_dir,fasta_primates_dir), function(x) if(!dir.exists(x)) dir.create(x, recursive=T))
 
 # open reference sequence file
