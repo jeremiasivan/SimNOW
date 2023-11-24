@@ -112,6 +112,8 @@ write.table(c("",
               "---------- Window Alignment --------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
+options(scipen=999)
+
 # read fasta file
 s <- seqinr::read.fasta(params$input_aln, whole.header = T)
 
@@ -139,8 +141,24 @@ numw <- s_ln_new/wsizes[1]
 if (length(list.files(dir_perwindow, pattern='*.fa', recursive=FALSE)) == numw && !params$redo) {
   log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp window alignments for Step 1."))
 } else {
-  f_perwindow_run(dir_perwindow, s, numw, s_ln_new, wsizes[1], params$thread)
+  # generate data.frame for each window
+  df_windows <- f_create_perwindow_df(numw, s_ln_new, wsizes[1])
+
+  # remove all alignments in the folder
+  unlink(paste0(dir_perwindow,"*.fa"))
+  
+  # create doSNOW cluster
+  nwcl <- makeCluster(params$thread)
+  doSNOW::registerDoSNOW(nwcl)
+
+  # generate window alignments
+  foreach (i = 1:nrow(df_windows)) %dopar% {
+    f_perwindow_run(dir_perwindow, s, df_windows$window_name[i], df_windows$start[i], df_windows$end[i])
+    return(NULL)
+  }
+  
   log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window alignments for Step 1."))
+  stopCluster(nwcl)
 }
 
 ########################################## SHORT ############################################
@@ -160,9 +178,24 @@ for (i in 1:(length(wsizes)-1)) {
     next
   }
 
-  # generate window alingments
-  f_perwindow_run(dir_perwindow, s, numw, s_ln_new, wsizes[i+1], params$thread)
+  # generate data.frame for each window
+  df_windows <- f_create_perwindow_df(numw, s_ln_new, wsizes[i+1])
+
+  # remove all alignments in the folder
+  unlink(paste0(dir_perwindow,"*.fa"))
+  
+  # create doSNOW cluster
+  nwcl <- makeCluster(params$thread)
+  doSNOW::registerDoSNOW(nwcl)
+
+  # generate window alignments
+  foreach (j = 1:nrow(df_windows)) %dopar% {
+    f_perwindow_run(dir_perwindow, s, df_windows$window_name[j], df_windows$start[j], df_windows$end[j])
+    return(NULL)
+  }
+
   log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window alignments for Step ", i, "."))
+  stopCluster(nwcl)
 }
 
 rm(s)

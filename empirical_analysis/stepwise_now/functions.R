@@ -49,29 +49,14 @@ f_create_perwindow_df <- function(numw, fasta_len, window_size) {
 
 # function: create per-window aligments
 # required package: seqinr, doSNOW
-f_perwindow_run <- function(dir_perwindow, fasta, numw, fasta_len, window_size, thread) {
-  # generate data.frame for all windows
-  df_windows <- f_create_perwindow_df(numw, fasta_len, window_size)
+f_perwindow_run <- function(dir_perwindow, fasta, window_name, start, end) {
+  subfasta <- lapply(fasta, function(x) x[seq(from = start, to = end)])
+  subfasta <- do.call(rbind,subfasta)
+  subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
 
-  # remove all alignments in the folder
-  unlink(paste0(dir_perwindow,"*.fa"))
-  
-  # create doSNOW cluster
-  nwcl <- makeCluster(thread)
-  doSNOW::registerDoSNOW(nwcl)
-
-  # generate window alignments
-  foreach (i = 1:nrow(df_windows)) %dopar% {
-    subfasta <- lapply(fasta, function(x) x[seq(from = df_windows$start[i], to = df_windows$end[i])])
-    subfasta <- do.call(rbind,subfasta)
-    subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
-
-    # write FASTA file
-    fn_out <- paste0(dir_perwindow, "/", df_windows$window_name[i], ".fa")
-    seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
-  }
-
-  stopCluster(nwcl)
+  # write FASTA file
+  fn_out <- paste0(dir_perwindow, "/", window_name, ".fa")
+  seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
 }
 
 # function: identify if window alignment is informative or not
