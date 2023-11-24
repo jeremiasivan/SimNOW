@@ -48,7 +48,7 @@ f_create_perwindow_df <- function(numw, fasta_len, window_size) {
 }
 
 # function: create per-window aligments
-# required package: seqinr, doSNOW
+# required package: seqinr
 f_perwindow_run <- function(dir_perwindow, fasta, window_name, start, end) {
   subfasta <- lapply(fasta, function(x) x[seq(from = start, to = end)])
   subfasta <- do.call(rbind,subfasta)
@@ -92,38 +92,17 @@ f_filter_uninformative_window <- function(df_seq, len_taxa, min_informative_site
 }
 
 # function: create window alignment
-# required packages: data.table, doSNOW, dplyr, seqinr
-f_generate_perwindowsum <- function(dir_perwindow, fasta_len, window_size, len_taxa, min_informative_sites, thread) {
-  # generate data.frame for all windows
-  numw <- fasta_len/window_size
-  df_windows <- f_create_perwindow_df(numw, fasta_len, window_size)
+# required packages: seqinr
+f_generate_perwindowsum <- function(dir_perwindow, window_name, len_taxa, min_informative_sites) {
+  # set up variables
+  file_fasta <- paste0(dir_perwindow, "/", window_name, ".fa")
 
-  # create doSNOW cluster
-  nwcl <- makeCluster(thread)
-  doSNOW::registerDoSNOW(nwcl)
+  # convert sequence to data.frame
+  fasta <- seqinr::read.fasta(file_fasta, whole.header=T)
+  fasta <- as.data.frame(do.call(rbind, fasta))
+  output <- f_filter_uninformative_window(fasta, len_taxa, min_informative_sites)
 
-  # export function
-  snow::clusterExport(nwcl, "f_filter_uninformative_window")
-
-  # generate window alignments
-  ls_windows <- foreach (i = 1:nrow(df_windows), .combine='c') %dopar% {
-    # set up variables
-    file_fasta <- paste0(dir_perwindow, "/", df_windows$window_name[i], ".fa")
-
-    # convert sequence to data.frame
-    fasta <- seqinr::read.fasta(file_fasta, whole.header=T)
-    fasta <- as.data.frame(do.call(rbind, fasta))
-    output <- f_filter_uninformative_window(fasta, len_taxa, min_informative_sites)
-
-    return(list(list(name=df_windows$window_name[i], start=df_windows$start[i], end=df_windows$end[i], is_informative=output$is_informative, err_msg=output$err_msg)))
-  }
-
-  stopCluster(nwcl)
-
-  # convert to data.table
-  df_output <- data.table::as.data.table(do.call(rbind, ls_windows), fill=TRUE) %>% arrange(name)
-
-  return(df_output)
+  return(list(is_informative=output$is_informative, err_msg=output$err_msg))
 }
 
 # function: create window tree

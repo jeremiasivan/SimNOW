@@ -216,10 +216,33 @@ fn_output <- paste0(getwd(), "/1/", wsizes[1], "/", wsizes[1], ".perwindowsum")
 if (file.exists(fn_output) && !params$redo) {
   log4r::info(fn_logger, paste0("File found: ", wsizes[1], "bp per-window summary for Step 1."))
 } else {
-  # extract the summary of each window
-  df_output <- f_generate_perwindowsum(dir_perwindow, s_ln_new, wsizes[1], len_taxa, params$min_informative_sites, params$thread)
-  
+  # generate data.frame for all windows
+  numw <- s_ln_new/wsizes[1]
+  df_windows <- f_create_perwindow_df(numw, s_ln_new, wsizes[1])
+
+  # create doSNOW cluster
+  nwcl <- makeCluster(params$thread)
+  doSNOW::registerDoSNOW(nwcl)
+
+  # export function
+  snow::clusterExport(nwcl, "f_filter_uninformative_window")
+
+  # generate window alignments
+  ls_windows <- foreach (i = 1:nrow(df_windows), .combine='c') %dopar% {
+    # extract the summary of each window
+    output <- f_generate_perwindowsum(dir_perwindow, df_windows$window_name[i], len_taxa, params$min_informative_sites)
+
+    return(list(list(name=df_windows$window_name[i],
+                     start=df_windows$start[i], end=df_windows$end[i],
+                     is_informative=output$is_informative, err_msg=output$err_msg)))
+  }
+
+  stopCluster(nwcl)
+
+  # convert to data.table
+  df_output <- data.table::as.data.table(do.call(rbind, ls_windows), fill=TRUE) %>% arrange(name)
   data.table::fwrite(df_output, file=fn_output, quote=FALSE, sep="\t")
+
   log4r::info(fn_logger, paste0("File created: ", wsizes[1], "bp per-window summary for Step 1."))
 }
 
@@ -235,10 +258,33 @@ for (i in 1:(length(wsizes)-1)) {
     next
   }
 
-  # extract the summary of each window
-  df_output <- f_generate_perwindowsum(dir_perwindow, s_ln_new, wsizes[i+1], len_taxa, params$min_informative_sites, params$thread)
-  
+  # generate data.frame for all windows
+  numw <- s_ln_new/wsizes[i+1]
+  df_windows <- f_create_perwindow_df(numw, s_ln_new, wsizes[i+1])
+
+  # create doSNOW cluster
+  nwcl <- makeCluster(params$thread)
+  doSNOW::registerDoSNOW(nwcl)
+
+  # export function
+  snow::clusterExport(nwcl, "f_filter_uninformative_window")
+
+  # generate window alignments
+  ls_windows <- foreach (j = 1:nrow(df_windows), .combine='c') %dopar% {
+    # extract the summary of each window
+    output <- f_generate_perwindowsum(dir_perwindow, df_windows$window_name[j], len_taxa, params$min_informative_sites)
+
+    return(list(list(name=df_windows$window_name[j],
+                     start=df_windows$start[j], end=df_windows$end[j],
+                     is_informative=output$is_informative, err_msg=output$err_msg)))
+  }
+
+  stopCluster(nwcl)
+
+  # convert to data.table
+  df_output <- data.table::as.data.table(do.call(rbind, ls_windows), fill=TRUE) %>% arrange(name)
   data.table::fwrite(df_output, file=fn_output, quote=FALSE, sep="\t")
+
   log4r::info(fn_logger, paste0("File created: ", wsizes[i+1], "bp per-window summary for Step ", i, "."))
 }
 ```
