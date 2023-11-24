@@ -59,38 +59,6 @@ f_perwindow_run <- function(dir_perwindow, fasta, window_name, start, end) {
   seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
 }
 
-# function: identify if window alignment is informative or not
-f_filter_uninformative_window <- function(df_seq, len_taxa, min_informative_sites) {
-  df_seq <- as.data.frame(df_seq)
-
-  # first filter: remove alignment with incomplete taxa
-  is_any_all_gaps <- any(apply(df_seq, 1, function(x) all(x == "-")))
-  if (nrow(df_seq) != len_taxa || is_any_all_gaps) {
-    return(list(is_informative=FALSE, err_msg="Error: one or more taxa has all gaps"))
-  }
-
-  # # second filter: remove aligment with all constant sites
-  # is_all_constant <- all(apply(df_seq, 2, function(x) all(x == x[1])))
-  # if (is_all_constant) {
-  #   return(list(is_informative=FALSE, err_msg="Error: alignment consists of all constant sites"))
-  # } 
-
-  # # third filter: unique sequences
-  # n_unique_seq <- nrow(unique(df_seq))
-  # if (n_unique_seq != len_taxa) {
-  #   return(list(is_informative=FALSE, err_msg="Error: some alignments are duplicate"))
-  # }
-
-  # fourth filter: minimum informative sites
-  count_constant <- sum(apply(df_seq, 2, function(x) all(x == x[1])))
-  n_informative_sites <- ncol(df_seq) - count_constant
-  if (n_informative_sites < min_informative_sites) {
-    return(list(is_informative=FALSE, err_msg=paste("Error: alignment only has", n_informative_sites, "non-constant sites")))
-  }
-
-  return(list(is_informative=TRUE, err_msg=""))
-}
-
 # function: create window alignment
 # required packages: seqinr
 f_generate_perwindowsum <- function(dir_perwindow, window_name, len_taxa, min_informative_sites) {
@@ -99,10 +67,22 @@ f_generate_perwindowsum <- function(dir_perwindow, window_name, len_taxa, min_in
 
   # convert sequence to data.frame
   fasta <- seqinr::read.fasta(file_fasta, whole.header=T)
-  fasta <- as.data.frame(do.call(rbind, fasta))
-  output <- f_filter_uninformative_window(fasta, len_taxa, min_informative_sites)
+  df_seq <- as.data.frame(do.call(rbind, fasta))
 
-  return(list(is_informative=output$is_informative, err_msg=output$err_msg))
+  # first filter: remove alignment with incomplete taxa
+  is_any_all_gaps <- any(apply(df_seq, 1, function(x) all(x == "-")))
+  if (nrow(df_seq) != len_taxa || is_any_all_gaps) {
+    return(list(is_informative=FALSE, err_msg="Error: one or more taxa has all gaps"))
+  }
+
+  # second filter: minimum informative sites
+  count_constant <- sum(apply(df_seq, 2, function(x) all(x == x[1])))
+  n_informative_sites <- ncol(df_seq) - count_constant
+  if (n_informative_sites < min_informative_sites) {
+    return(list(is_informative=FALSE, err_msg=paste("Error: alignment only has", n_informative_sites, "non-constant sites")))
+  }
+
+  return(list(is_informative=TRUE, err_msg=""))
 }
 
 # function: create window tree

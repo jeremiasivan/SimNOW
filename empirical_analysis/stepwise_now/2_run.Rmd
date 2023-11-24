@@ -224,9 +224,6 @@ if (file.exists(fn_output) && !params$redo) {
   nwcl <- makeCluster(params$thread)
   doSNOW::registerDoSNOW(nwcl)
 
-  # export function
-  snow::clusterExport(nwcl, "f_filter_uninformative_window")
-
   # generate window alignments
   ls_windows <- foreach (i = 1:nrow(df_windows), .combine='c') %dopar% {
     # extract the summary of each window
@@ -265,9 +262,6 @@ for (i in 1:(length(wsizes)-1)) {
   # create doSNOW cluster
   nwcl <- makeCluster(params$thread)
   doSNOW::registerDoSNOW(nwcl)
-
-  # export function
-  snow::clusterExport(nwcl, "f_filter_uninformative_window")
 
   # generate window alignments
   ls_windows <- foreach (j = 1:nrow(df_windows), .combine='c') %dopar% {
