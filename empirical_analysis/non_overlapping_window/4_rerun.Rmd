@@ -164,7 +164,7 @@ foreach (j = dirs) %dopar% {
   
   # generate window treefile
   iqtree_cmd <- paste(params$iqtree2dir,
-                      "-S", fastafile,
+                      "-s", fastafile,
                       "-T 1 -cptime 1000000 --quiet -redo")
   
   if (!is.null(params$outgroup) && !params$outgroup == ""){
