@@ -16,6 +16,25 @@ if (!file.exists(fn_summary)){
   log4r::info(fn_logger, paste0("File not found: ", params$prefix, ".sum. Exited."))
   knitr::knit_exit()
 }
+
+# check if bootstrap value is valid
+if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
+  bs_type <- tolower(params$bootstrap_type)
+
+  if (bs_type == "ufboot" && params$bootstrap < 1000) {
+    log4r::error(fn_logger, "Error: invalid number of bootstrap for UFBoot. Exited.")
+    knitr::knit_exit()
+  } else if (bs_type == "nonparametric" && params$bootstrap < 100) {
+    log4r::error(fn_logger, "Error: invalid number of bootstrap for non-parametric bootstrap. Exited.")
+    knitr::knit_exit()
+  }
+}
+
+# set up variables
+min_branch_support <- 80
+if (tolower(params$bootstrap_type) == "ufboot") {
+  min_branch_support <- 95
+}
 ```
 
 ```{r window-size-rerun, include=FALSE}
@@ -64,7 +83,7 @@ if (!dir.exists(temp_outdir)) {
 
 # check if window alignments exist
 numw <- floor(s_ln/best_wsize)
-if (length(list.files(temp_outdir, pattern='fa')) == numw && !params$redo) {
+if (length(list.files(temp_outdir, pattern='*.fa$', recursive=TRUE)) == numw && !params$redo) {
   log4r::info(fn_logger, paste0("File found: ", best_wsize, "bp window alignment."))
 
 } else {
@@ -86,7 +105,10 @@ if (length(list.files(temp_outdir, pattern='fa')) == numw && !params$redo) {
     subfasta <- do.call(rbind,subfasta)
     subfasta <- setNames(split(subfasta, seq(nrow(subfasta))), rownames(subfasta))
     
-    fn_out <- paste0(temp_outdir,"window_",formatC(i,width=wi,format="d",flag="0"),".fa")
+    # window name
+    window_name <- paste0("window_",formatC(i,width=wi,format="d",flag="0"))
+
+    fn_out <- paste0(temp_outdir, window_name, "/", window_name, ".fa")
     seqinr::write.fasta(sequences=subfasta, names=names(subfasta),
                         file.out=fn_out, nbchar=100)
       
@@ -107,54 +129,64 @@ write.table(c("",
 
 options(scipen=999)
 
-# create outdir
-temp_outdir <- paste0(best_wsize_outdir, "trees/")
-if (!dir.exists(temp_outdir)) {
-  dir.create(temp_outdir, recursive = T)
-}
-
 # check input alignments
 fastadir <- paste0(best_wsize_outdir, "alignment/")
-numf <- length(list.files(fastadir, pattern='fa'))
+numf <- length(list.files(fastadir, pattern='*.fa$', recursive=TRUE))
 numw <- floor(s_ln/best_wsize)
 if (numw != numf) {
   log4r::warn(fn_logger, paste0("Warning: ", best_wsize, "bp window has ", numf, "/", numw, " alignments. Exited."))
   knitr::knit_exit()
 }
 
-prefix <- paste0(temp_outdir, params$prefix)
-if (file.exists(paste0(prefix, ".treefile")) && !params$redo) {
-  log4r::info(fn_logger, paste0("File found: ", best_wsize, "bp window treefile."))
+# check input alignments
+dirs <- list.dirs(fastadir, full.names = F, recursive = F)
+dirs <- dirs[grepl("^window", dirs)]
 
-} else {
-  # set the number of threads according to the number of windows
-  tthread <- params$thread
-  if (numw < tthread) {
-    tthread <- numw
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
+
+# iterate over windows
+foreach (j = dirs) %dopar% {
+  fastafile <- paste0(fastadir, j, "/", j, ".fa")
+
+  # check if files exist
+  iqtreefile <- paste0(fastafile, ".iqtree")
+  treefile <- paste0(fastafile, ".treefile")
+  if (all(file.exists(iqtreefile, treefile)) && !params$redo) {
+    return(NULL)
   }
-
+  
   # generate window treefile
   iqtree_cmd <- paste(params$iqtree2dir,
-                      "-S", fastadir,
-                      "-pre", prefix,
-                      "-T", tthread,
-                      "-cptime 1000000 --quiet -redo")
-
+                      "-S", fastafile,
+                      "-T 1 -cptime 1000000 --quiet -redo")
+  
   if (!is.null(params$outgroup) && !params$outgroup == ""){
     iqtree_cmd <- paste(iqtree_cmd, "-o", params$outgroup)
   }
-
+  
   if (params$set_blmin) {
-    iqtree_cmd <- paste(iqtree_cmd, "-blmin", 1/best_wsize)
+    iqtree_cmd <- paste(iqtree_cmd, "-blmin", 1/i)
   }
-
+  
   if (params$set_model) {
     iqtree_cmd <- paste(iqtree_cmd, "-m", params$dna_model)
   }
 
+  if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
+    if (tolower(params$bootstrap_type) == "ufboot") {
+      iqtree_cmd <- paste(iqtree_cmd, "-bb", params$bootstrap)
+    } else if (tolower(params$bootstrap_type) == "nonparametric") {
+      iqtree_cmd <- paste(iqtree_cmd, "-b", params$bootstrap)
+    }
+  }
+
   system(iqtree_cmd)
-  log4r::info(fn_logger, paste0("File created: ", best_wsize, "bp window treefile."))
 }
+
+stopCluster(nwcl)
+log4r::info(fn_logger, paste0("File created: ", best_wsize, "bp window treefile."))
 ```
 
 ```{r nowsummary-rerun, include=FALSE}
@@ -173,36 +205,53 @@ if (all(file.exists(fn_atsum, fn_cnsum, fn_tops)) && !params$redo) {
   knitr::knit_exit()
 }
 
-# retrieve each fasta file and its respective topology
-fn_treefile <- paste0(best_wsize_outdir, "trees/", params$prefix, ".treefile")
-if (!file.exists(fn_treefile)) {
-  log4r::warn(fn_logger, paste0("Warning: ", best_wsize, "bp window treefile is not found. Exited."))
-  knitr::knit_exit()
-}
-
-seq_list <- stringr::str_sort(list.files(paste0(best_wsize_outdir, "alignment/")), numeric=TRUE)
-iqtree_file <- file(description = fn_treefile, open="r", blocking = TRUE)
-
+# initiate variables
 seq_len <- c()
 start <- 0
 
-while (length(trl <- readLines(iqtree_file, n=1))) {
-  tl <- ape::read.tree(text=trl)
-  tl$edge.length <- NULL
-  tree <- ape::write.tree(tl)
-
-  # store the values in dataframe
-  pl <- seq_list[start/best_wsize+1]
+# iterate over windows
+for (window in dirs) {
+  stop <- start+best_wsize
+  length <- best_wsize
 
   if (start == best_wsize*(numw-1)) {
-    seq_len <- rbind(seq_len, c(pl,start+1,s_ln,s_ln-start,tree))
-  } else {
-    seq_len <- rbind(seq_len, c(pl,start+1,start+best_wsize,best_wsize,tree))
+    stop <- s_ln
+    length <- s_ln-start
   }
-  
+
+  # open treefile
+  treefile <- paste0(fastadir, window, "/", window, ".fa.treefile")
+  if (!file.exists(treefile)) {
+    seq_len <- rbind(seq_len, c(window, start+1, stop, length, ""))
+
+    start <- start+best_wsize
+    next
+  }
+
+  # read Newick file
+  tre <- readLines(treefile)
+
+  tl <- ape::read.tree(text=tre)
+  tl$edge.length <- NULL
+
+  # check if there is bootstrap value
+  if (!is.null(params$bootstrap_type) && params$bootstrap_type != "") {
+    bl <- subset(tl$node.label, tl$node.label != "")
+
+    if (!is.null(bl) && mean(as.numeric(bl)) >= min_branch_support) {
+      tl$node.label <- NULL
+      seq_len <- rbind(seq_len, c(window, start+1, stop, length, ape::write.tree(tl)))
+    } else {
+      seq_len <- rbind(seq_len, c(window, start+1, stop, length, ""))
+    }
+
+    start <- start+best_wsize
+    next
+  }
+
+  seq_len <- rbind(seq_len, c(window, start+1, stop, length, ape::write.tree(tl)))
   start <- start+best_wsize
 }
-close(iqtree_file)
 
 seq_len <- data.table::as.data.table(seq_len)
 data.table::setnames(seq_len, c("source", "start", "stop", "length", "topology"))

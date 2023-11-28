@@ -13,6 +13,9 @@ params:
   set_blmin: TRUE
   set_model: TRUE
   dna_model: "JC"
+
+  bootstrap: 1000
+  bootstrap_type: ""
   outgroup: ""
   
   # NOW analysis
