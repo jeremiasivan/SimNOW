@@ -48,7 +48,7 @@ f_compare_topology_weight <- function(df_input, df_uqtops, colname) {
   }
 
   # iterate over unique topology
-  tops_dist <- c()
+  top_dist <- c()
   for (r in 1:nrow(df_input)) {
     idx <- match(df_input$topology[r], df_uqtops$topology)
     if (is.na(idx)) {
