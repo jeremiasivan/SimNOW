@@ -108,9 +108,14 @@ if (length(list.files(temp_outdir, pattern='*.fa$', recursive=TRUE)) == numw && 
     # window name
     window_name <- paste0("window_",formatC(i,width=wi,format="d",flag="0"))
 
-    fn_out <- paste0(temp_outdir, window_name, "/", window_name, ".fa")
-    seqinr::write.fasta(sequences=subfasta, names=names(subfasta),
-                        file.out=fn_out, nbchar=100)
+    window_dir <- paste0(temp_outdir, window_name, "/")
+    if (!dir.exists(window_dir)) {
+      dir.create(window_dir, recursive=T)
+    }
+
+    # save FASTA file
+    fn_out <- paste0(window_dir, window_name, ".fa")
+    seqinr::write.fasta(sequences=subfasta, names=names(subfasta), file.out=fn_out, nbchar=100)
       
     start <- start + best_wsize
     rm(subfasta, fn_out)

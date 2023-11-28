@@ -25,6 +25,9 @@ dir_iqtree2 <- "~/iqtree2"
 set_blmin <- TRUE
 set_model <- TRUE
 dna_model <- "JC"
+
+bootstrap <- 1000
+bootstrap_type <- "ufboot"
 outgroup <- "HmelRef"
 
 window_len <- 20
@@ -71,7 +74,8 @@ for (c in ls_chr) {
   input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_filtered.fa")
   temprun <- list(out=out, params=list(codedir=codedir,
                                        prefix=c, outdir=run_outdir, thread=thread, redo=redo,
-                                       iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, outgroup=outgroup,
+                                       iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, 
+                                       bootstrap=bootstrap, bootstrap_type=bootstrap_type, outgroup=outgroup,
                                        input_aln=input_aln, window_len=window_len, window_size=window_size, min_window_size=min_window_size,
                                        ic_type=ic_type
   ))
