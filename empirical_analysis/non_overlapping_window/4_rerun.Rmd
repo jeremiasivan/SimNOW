@@ -265,6 +265,7 @@ data.table::fwrite(seq_len, file=fn_atsum, quote=F, sep="\t")
 # extract top topologies
 top_tops <- seq_len %>%
   group_by(topology) %>%
+  filter(topology != "") %>%
   summarise(count = n()) %>%
   arrange(desc(count)) %>%
   mutate(cum.percentage = round(cumsum(count)/nrow(seq_len),3))

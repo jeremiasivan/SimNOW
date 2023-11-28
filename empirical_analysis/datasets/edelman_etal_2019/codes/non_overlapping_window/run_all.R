@@ -92,7 +92,8 @@ for (c in ls_chr) {
   input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat_nogaps.fa")
   temprun <- list(out=out, params=list(codedir=codedir,
                                        prefix=no_gaps_c, outdir=run_outdir, thread=thread, redo=redo,
-                                       iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, outgroup=outgroup,
+                                       iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, 
+                                       bootstrap=bootstrap, bootstrap_type=bootstrap_type, outgroup=outgroup,
                                        input_aln=input_aln, window_len=window_len, window_size=window_size_nogaps, min_window_size=min_window_size_nogaps,
                                        ic_type=ic_type                                     
   ))
