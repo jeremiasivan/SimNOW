@@ -140,11 +140,14 @@ for (c in chrs) {
 
 # add the total topology count
 df_colnames <- colnames(df_best_wsize)[2:ncol(df_best_wsize)]
+
+# convert columns in numeric
+df_best_wsize[, (df_colnames) := lapply(.SD, as.numeric), .SDcols = df_colnames]
+
 df_best_wsize <- df_best_wsize %>%
-  rowwise() %>%
-  mutate(n=sum(!!as.name(df_colnames))) %>%
+  mutate(n = rowSums(select(., all_of(df_colnames)))) %>%
   arrange(desc(n)) %>%
-  mutate(cum.percentage=round(cumsum(n)/sum(n)*100),3)
+  mutate(cum.percentage=round(cumsum(n)/sum(n)*100,3))
 
 # write the output data.table
 data.table::fwrite(df_best_wsize, file=fn_best_uqtops, quote=FALSE, sep="\t")
