@@ -62,7 +62,9 @@ f_compare_topology_weight <- function(df_input, df_uqtops, colname) {
   # add new topologies
   new_tops <- subset(df_uqtops$topology, !df_uqtops$topology %in% df_input$topology)
   for (r in new_tops) {
-    df_input <- rbind(df_input, c(r, rep(0, ncol(df_input)-1)))
+    # new entry
+    new_row <- as.data.frame(t(c(r, rep(0, ncol(df_input)-1))))
+    df_input <- rbind(df_input, new_row, use.names=FALSE)
 
     idx <- match(r, df_uqtops$topology)
     top_dist <- c(top_dist, df_uqtops$n[idx])
