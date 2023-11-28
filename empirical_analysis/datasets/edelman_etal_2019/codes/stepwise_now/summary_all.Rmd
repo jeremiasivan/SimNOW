@@ -59,6 +59,15 @@ f_compare_topology_weight <- function(df_input, df_uqtops, colname) {
     top_dist <- c(top_dist, df_uqtops$n[idx])
   }
 
+  # add new topologies
+  new_tops <- subset(df_uqtops$topology, !df_uqtops$topology %in% df_input$topology)
+  for (r in new_tops) {
+    df_input <- rbind(df_input, c(r, rep(0, ncol(df_input)-1)))
+
+    idx <- match(r, df_uqtops$topology)
+    top_dist <- c(top_dist, df_uqtops$n[idx])
+  }
+
   # combine the two data.table
   df_input[, (colname) := top_dist]
   return(df_input)
@@ -68,6 +77,7 @@ f_compare_topology_weight <- function(df_input, df_uqtops, colname) {
 ```{r summary, include=FALSE}
 allsims <- list.dirs(paste0(params$outdir,"/",params$prefix), full.names = F, recursive = F)
 chrs <- allsims[grep("^chr", allsims)]
+chrs <- stringr::str_sort(chrs, numeric=TRUE)
 
 # extract window sizes
 max_wsize <- params$initial_wsize
@@ -125,6 +135,14 @@ for (c in chrs) {
 
   df_best_wsize <- f_compare_topology_weight(df_best_wsize, df_uqtops, paste0(c, ".", best_wsize))
 }
+
+# add the total topology count
+df_colnames <- colnames(df_best_wsize)[2:ncol(df_best_wsize)]
+df_best_wsize <- df_best_wsize %>%
+  rowwise() %>%
+  mutate(n=sum(!!as.name(df_colnames))) %>%
+  arrange(desc(n)) %>%
+  mutate(cum.percentage=round(cumsum(n)/sum(n)*100),3)
 
 # write the output data.table
 data.table::fwrite(df_best_wsize, file=fn_best_uqtops, quote=FALSE, sep="\t")
