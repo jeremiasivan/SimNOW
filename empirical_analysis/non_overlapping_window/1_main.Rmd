@@ -75,13 +75,13 @@ getFactors <- function(x, min) {
 }
 ```
 
-```{r child = paste0(params$codedir,"/1_non_overlapping_window/2_run.Rmd"), include=FALSE}
+```{r child = paste0(params$codedir,"/non_overlapping_window/2_run.Rmd"), include=FALSE}
 ```
 
-```{r child = paste0(params$codedir,"/1_non_overlapping_window/3_summary.Rmd"), include=FALSE}
+```{r child = paste0(params$codedir,"/non_overlapping_window/3_summary.Rmd"), include=FALSE}
 ```
 
-```{r child = paste0(params$codedir,"/1_non_overlapping_window/4_rerun.Rmd"), include=FALSE}
+```{r child = paste0(params$codedir,"/non_overlapping_window/4_rerun.Rmd"), include=FALSE}
 ```
 
 ```{r, include=FALSE}
