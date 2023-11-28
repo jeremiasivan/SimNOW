@@ -14,6 +14,8 @@ dir_summary <- paste0(params$outdir,"/",params$prefix, "/summary/")
 if (!dir.exists(dir_summary)) {
   dir.create(dir_summary, recursive=T)
 }
+
+fn_best_uqtops <- paste0(dir_summary, "best.uqtops")
 ```
 
 ```{r functions, include=FALSE}
@@ -33,6 +35,33 @@ f_count_topology_freq <- function(window_size, list_chr, step, outdir, fn_output
     mutate(cum.percentage=cumsum(n)/sum(n)*100)
 
   data.table::fwrite(df_output, file=fn_output, quote=F, sep="\t")
+}
+
+f_compare_topology_weight <- function(df_input, df_uqtops, colname) {
+  if (nrow(df_input) == 0) {
+    # remove the last column
+    df_uqtops$cum.percentage <- NULL
+
+    # update colnames
+    colnames(df_uqtops) <- c("topology", colname)
+    return(df_uqtops)
+  }
+
+  # iterate over unique topology
+  tops_dist <- c()
+  for (r in 1:nrow(df_input)) {
+    idx <- match(df_input$topology[r], df_uqtops$topology)
+    if (is.na(idx)) {
+      top_dist <- c(top_dist, 0)
+      next
+    }
+
+    top_dist <- c(top_dist, df_uqtops$n[idx])
+  }
+
+  # combine the two data.table
+  df_input[, (colname) := top_dist]
+  return(df_input)
 }
 ```
 
@@ -58,4 +87,45 @@ for (i in 1:length(wsizes)) {
       f_count_topology_freq(wsizes[i], chrs, i-1, paste0(params$outdir,"/",params$prefix), fn_output)
   }
 }
+
+# summary for best window size
+df_best_wsize <- data.table::data.table()
+
+# iterate over chromosomes
+for (c in chrs) {
+  # open summary table
+  fn_summary <- paste0(params$outdir, "/", params$prefix, "/", c, "/", c, ".sumtable")
+  if (!file.exists(fn_summary)) {
+    cat(paste("Error:", fn_summary, "is not found. Exited"))
+    knitr::knit_exit()
+  }
+
+  # read summary table
+  df_summary <- data.table::fread(fn_summary)
+
+  # choose the best window size
+  i <- 1
+  for (j in nrow(df_summary):1) {
+    if (df_summary$diff_aic[j] < 0) {
+      i <- j
+      break
+    }
+  }
+
+  # read unique topology file
+  best_wsize <- df_summary$s_wsize[i]
+  fn_uqtops <- paste0(params$outdir, "/", params$prefix, "/", c, "/", df_summary$step[i], "/", best_wsize, "/", best_wsize, ".uqtops")
+  if (!file.exists(fn_uqtops)) {
+    cat(paste("Error:", fn_uqtops, "is not found. Exited"))
+    knitr::knit_exit()
+  }
+
+  # read summary table
+  df_uqtops <- data.table::fread(fn_uqtops)
+
+  df_best_wsize <- f_compare_topology_weight(df_best_wsize, df_uqtops, paste0(c, ".", best_wsize))
+}
+
+# write the output data.table
+data.table::fwrite(df_best_wsize, file=fn_best_uqtops, quote=FALSE, sep="\t")
 ```
