@@ -268,7 +268,7 @@ top_tops <- seq_len %>%
   filter(topology != "") %>%
   summarise(count = n()) %>%
   arrange(desc(count)) %>%
-  mutate(cum.percentage = round(cumsum(count)/nrow(seq_len),3))
+  mutate(cum.percentage = round(cumsum(count)/sum(count),3))
 data.table::fwrite(top_tops, file=fn_tops, quote=F, sep="\t")
 
 # count consecutive/contiguous windows per topology
