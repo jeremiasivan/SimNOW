@@ -154,6 +154,11 @@ f_window_trees_summary <- function(ls_statistics, fn_uqtops) {
 
   # calculate the topology distribution
   df_topology <- data.table::as.data.table(tree)
+  if (nrow(df_topology) == 0) {
+    write.table("topology    n    cum.percentage", file=fn_uqtops, quote=F, row.names=F, col.names=F)
+    return(list(aic=aic, tree=NULL))
+  }
+
   data.table::setnames(df_topology, "topology")
   sorted_topology <- df_topology %>%
     group_by(topology) %>%
