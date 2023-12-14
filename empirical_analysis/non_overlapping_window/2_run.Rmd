@@ -84,7 +84,7 @@ if (!file.exists(fn_fasta) || params$redo) {
 wsize <- params$window_size
 
 # get factors of the alignment length
-sfactors <- getFactors(s_ln, params$min_window_size)
+sfactors <- f_get_factors(s_ln, params$min_window_size)
 sfactors[!sfactors %in% wsize]
 
 indices <- seq(1, length(sfactors), length.out = params$window_len-length(wsize))

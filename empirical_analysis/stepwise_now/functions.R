@@ -1,4 +1,4 @@
-# functions for codes_empirical/steowise_now
+# functions for codes_empirical/stepwise_now
 
 # function: calculate FASTA alignment length
 f_get_alignment_length <- function(filepath) {

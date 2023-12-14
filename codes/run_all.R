@@ -77,7 +77,7 @@ make_repsim <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste0(codedir,"/1_sequence_simulation/simulation.Rmd"),
+  rmarkdown::render(input=paste0(codedir,"/1_sequence_simulation/1_main.Rmd"),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
@@ -120,7 +120,7 @@ foreach(r=repnow, .errorhandling = 'pass') %dopar% {
 stopCluster(cl)
 
 # summary
-rmarkdown::render(input=paste(codedir,"/3_all_runs_summary/summary_all.Rmd", sep=""),
+rmarkdown::render(input=paste(codedir,"/3_all_runs_summary/1_main.Rmd", sep=""),
                   output_file=paste(outdir, "/", prefix, ".html", sep=""),
                   params=list(prefix=prefix, codedir=codedir, outdir=outdir),
                   quiet=TRUE)
