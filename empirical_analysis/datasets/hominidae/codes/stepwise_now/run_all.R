@@ -10,7 +10,7 @@ outdir <- ""
 redo <- FALSE
 
 # data_preparation.Rmd
-fn_mafseq <- "~/SimNOW/empirical_analysis/datasets/ucsc_primates/files/mafseq.txt"
+fn_mafseq <- "~/SimNOW/empirical_analysis/datasets/hominidae/files/mafseq.txt"
 dir_msaview <- "~/msa_view"
 
 # stepwise_now
@@ -36,8 +36,8 @@ if (nthread / thread < 1) {
 }
 
 # data conversion from MAF -> FASTA
-rmarkdown::render(input=paste0(codedir,"/datasets/ucsc_primates/codes/data_preparation.Rmd"),
-                  output_file=paste0(outdir,"/edelman.html"),
+rmarkdown::render(input=paste0(codedir,"/datasets/hominidae/codes/data_preparation.Rmd"),
+                  output_file=paste0(outdir,"/hominidae.html"),
                   params=list(fn_mafseq=fn_mafseq, thread=nthread, outdir=outdir, redo=redo, dir_msaview=dir_msaview),
                   quiet=TRUE)
 

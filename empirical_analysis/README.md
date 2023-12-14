@@ -6,7 +6,8 @@
     - <a href="#stepnow">Stepwise non-overlapping windows</a>
     - <a href="#hmm">HMM</a>
 - <a href="#datasets">Datasets</a>
-    - <a href="#edelman">Edelman et al. (2019)</a>
+    - <a href="#heliconius">Heliconius erato</a>
+    - <a href="#hominidae">Hominidae</a>
 
 ## <a id="analyses">Analyses</a>
 
@@ -86,7 +87,7 @@ Additionally, the code will generate `prefix.sumtable` in the output folder, whi
 
 ## <a id="datasets">Datasets</a>
 
-### <a id="edelman">Genome of *erato-sara Heliconius* butterflies from <a href="https://doi.org/10.1126/science.aaw2090">Edelman et al. (2019)</a></a>
+### <a id="heliconius">Genome of *erato-sara Heliconius* butterflies from <a href="https://doi.org/10.1126/science.aaw2090">Edelman et al. (2019)</a></a>
 The dataset consists of 21 chromosomes of six *erato-sara Heliconius* species (*H. demeter, H. sara, H. telesiphe, H. hecalesia, H. himera, H. erato*) and one *H. melpomene* as outgroup.
 
 #### Data Preparation
@@ -99,21 +100,21 @@ Following the original publication, we extract FASTA alignments from HAL by foll
 6. (Additional step) Trim the leading and trailing positions of each chromosome based on the `gaps_threshold` value (see below).
 7. (Additional step) Trim all positions of each chromosome based on the `gaps_threshold` value (see below).
 
-| Parameters       | Definition                                                                                                      |
-| ---------------- | --------------------------------------------------------------------------------------------------------------- |
-| `outdir`         | Output directory                                                                                                |
-| `thread`         | Number of threads for parallelization                                                                           |
-| `redo`           | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                          |
-| `fn_hal`         | HAL file from Edelman et al. (2019), available <a href="https://doi.org/10.5061/dryad.b7bj832">here</a>         |
-| `fn_refseq`      | List of reference sequence for HAL to MAF conversion, available <a href="edelman_etal_2019/refseq.txt">here</a> |
-| `dir_hal2maf`    | Directory for `hal2maf` executable                                                                              |
-| `dir_singleCopy` | Directory for `singleCopy.py` executable                                                                        |
-| `dir_mafsort`    | Directory for `maf-sort.sh` executable                                                                          |
-| `dir_msaview`    | Directory for `msa_view` executable                                                                             |
-| `gaps_threshold` | Maximum gap proportion per site                                                                                 |
+| Parameters       | Definition                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `outdir`         | Output directory                                                                                                        |
+| `thread`         | Number of threads for parallelization                                                                                   |
+| `redo`           | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                                  |
+| `fn_hal`         | HAL file from Edelman et al. (2019), available <a href="https://doi.org/10.5061/dryad.b7bj832">here</a>                 |
+| `fn_refseq`      | List of reference sequence for HAL to MAF conversion, available <a href="datasets/heliconius_erato/refseq.txt">here</a> |
+| `dir_hal2maf`    | Directory for `hal2maf` executable                                                                                      |
+| `dir_singleCopy` | Directory for `singleCopy.py` executable                                                                                |
+| `dir_mafsort`    | Directory for `maf-sort.sh` executable                                                                                  |
+| `dir_msaview`    | Directory for `msa_view` executable                                                                                     |
+| `gaps_threshold` | Maximum gap proportion per site                                                                                         |
 
 > **Important Notes** <br>
-In `edelman_etal_2019/files/refseq.txt`, I comment out `Herato_chr17_3` as it does not contain single-copy MAF block, thus resulting in zero-length FASTA alignment.
+In `datasets/heliconius_erato/files/refseq.txt`, I comment out `Herato_chr17_3` as it does not contain single-copy MAF block, thus resulting in zero-length FASTA alignment.
 
 #### Output
 Running the code will create individual folder for each chromosome (i.e., chr1 to chr21). Each folder will contain the following subfolders:
@@ -141,8 +142,8 @@ outdir/
 ...
 ├── chr21/
 │   └── ...
-├── edelman.html
-└── edelman.log 
+├── heliconius.html
+└── heliconius.log 
 ```
 
 #### Time complexity
@@ -228,5 +229,46 @@ prefix/
     └── ...
 ```
 
+### <a id="hominidae">Genome of *Hominidae* from <a href="https://genome.ucsc.edu">UCSC Genome Browser</a></a>
+The dataset consists of 25 chromosomes of four *Hominidae* species (human, chimpanzee, orangutan, and gorilla).
+
+#### Data Preparation
+After downloading the MAF files <a href="https://hgdownload.soe.ucsc.edu/goldenPath/hg38/multiz20way/maf/">here</a>, we extract FASTA alignments for the four species using `msa_view`.
+
+| Parameters       | Definition                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `outdir`         | Output directory                                                                                                        |
+| `thread`         | Number of threads for parallelization                                                                                   |
+| `redo`           | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                                  |
+| `fn_mafseq`      | List of compressed MAF alignment for each chromosome, available <a href="datasets/hominidae/mafseq.txt">here</a>        |
+| `dir_msaview`    | Directory for `msa_view` executable                                                                                     |
+
+#### Output
+Running the code will create a new `data/` folder which contains the following subfolders:
+- `maf/`: store the MAF alignments for each chromosome
+- `fasta/`: store the FASTA alignments for each chromosome
+    - `primates/`: store the FASTA alignments for each chromosome, only for *Hominidae*
+
+```
+outdir/
+├── data/
+│   ├── maf/
+│   │   ├── chr1.maf.gz
+│   │   ├── chr1.maf
+│   │   ...
+│   │   ├── chrM.maf.gz
+│   │   └── chrM.maf
+│   └── fasta/
+│       ├── chr1.fa
+│       ...
+│       ├── chrM.fa
+│       └── primates/
+│           ├── chr1.fa
+│           ...
+│           └── chrM.fa
+├── hominidae.html
+└── hominidae.log 
+```
+
 ---
-*Last update: 23 November 2023 by Jeremias Ivan*
+*Last update: 14 December 2023 by Jeremias Ivan*

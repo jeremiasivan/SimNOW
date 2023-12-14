@@ -1,5 +1,5 @@
 ---
-title: "Data Preparation from Edelman et al. (2019)"
+title: "Data Preparation for Heliconius erato from Edelman et al. (2019)"
 params:
   # general
   thread: 1
@@ -38,7 +38,7 @@ if (!dir.exists(params$outdir)) {
 }
 
 # create log file
-fn_log <- paste0(params$outdir, "/edelman.log")
+fn_log <- paste0(params$outdir, "/heliconius.log")
 log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
 fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
 if (!file.exists(fn_log) || params$redo) {

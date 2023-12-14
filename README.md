@@ -1,6 +1,6 @@
 # SimNOW
 
-**SimNOW (Simulation Non-Overlapping Windows)** is an R pipeline to assess the accuracy of non-overlapping windows analysis in simulated phylogenetic studies. It consists of two main steps: sequence simulation and non-overlapping window analysis.
+**SimNOW (Simulation Non-Overlapping Windows)** is an R pipeline to assess the accuracy of non-overlapping windows analysis in simulated phylogenetic studies. It consists of two main steps: sequence simulation and non-overlapping window analysis. It is mainly developed and tested using MacOS and Linux, so there might be incompatibilities using Windows.
 
 ## Table of Content
 - <a href="#prereqs">Prerequisites</a>
@@ -41,7 +41,7 @@ This pipeline requires several software and R packages to run. All software have
 
     - Setting up conda environment with R
         ```
-        conda create -n simnow -c conda-forge r-base
+        conda create -n simnow
         conda activate simnow
         ```
     -  Installing R packages
@@ -56,9 +56,9 @@ This pipeline requires several software and R packages to run. All software have
 4. **Run the code file** <br>
     For running individual steps:
     ```
-    Rscript -e "rmarkdown::render('~/SimNOW/codes/1_sequence_simulation/simulation.Rmd')"
+    Rscript -e "rmarkdown::render('~/SimNOW/codes/1_sequence_simulation/1_main.Rmd')"
     Rscript -e "rmarkdown::render('~/SimNOW/codes/2_non_overlapping_window/1_main.Rmd')"
-    Rscript -e "rmarkdown::render('~/SimNOW/codes/3_all_runs_summary/summary_all.Rmd')"
+    Rscript -e "rmarkdown::render('~/SimNOW/codes/3_all_runs_summary/1_main.Rmd')"
     ```
 
     For running the whole pipeline:
@@ -84,7 +84,6 @@ In order to run non-overlapping windows on empirical datasets, please refer to <
 | ggtree     | <a href="https://bioconductor.org/packages/release/bioc/html/ggtree.html">Link</a> | <a href="https://anaconda.org/bioconda/bioconductor-ggtree">Link</a> |
 
 ### Software
-#### Edelman et al. (2019)
 - `hal2maf` from <a href="https://github.com/ComparativeGenomicsToolkit/hal">`HAL Toolkit`</a>
 - `getSingleCopy.py` from <a href="https://doi.org/10.5281/zenodo.3401692">Edelman et al. (2019)</a>
 - `maf-sort.sh` from <a href="https://github.com/UCSantaCruzComputationalGenomicsLab/last">`last`</a>
@@ -105,4 +104,4 @@ In order to run non-overlapping windows on empirical datasets, please refer to <
 6. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). **PHAST and RPHAST: phylogenetic analysis with space/time models**. *Briefings in Bioinformatics*, *12*(1), 41–51.
 
 ---
-*Last update: 22 November 2023 by Jeremias Ivan*
+*Last update: 14 December 2023 by Jeremias Ivan*

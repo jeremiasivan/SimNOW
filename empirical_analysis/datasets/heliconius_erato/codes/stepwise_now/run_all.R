@@ -11,7 +11,7 @@ redo <- FALSE
 
 # data_preparation.Rmd
 fn_hal <- ""
-fn_refseq <- paste0(codedir, "/datasets/edelman_etal_2019/files/refseq.txt")
+fn_refseq <- paste0(codedir, "/datasets/heliconius_erato/files/refseq.txt")
 
 dir_hal2maf <- "~/hal2maf"
 dir_singleCopy <- "~/getSingleCopy.py"
@@ -40,8 +40,8 @@ if (nthread / thread < 1) {
 }
 
 # data conversion from HAL -> FASTA
-rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/codes/data_preparation.Rmd"),
-                  output_file=paste0(outdir,"/edelman.html"),
+rmarkdown::render(input=paste0(codedir,"/datasets/heliconius_erato/codes/data_preparation.Rmd"),
+                  output_file=paste0(outdir,"/heliconius.html"),
                   params=list(fn_hal=fn_hal, fn_refseq=fn_refseq, thread=thread, outdir=outdir, redo=redo,
                               dir_hal2maf=dir_hal2maf, dir_singleCopy=dir_singleCopy, dir_mafsort=dir_mafsort, dir_msaview=dir_msaview),
                   quiet=TRUE)
@@ -97,8 +97,8 @@ foreach(r=runs, .errorhandling = 'pass') %dopar% {
 stopCluster(cl)
 
 # summary for all chromosomes
-rmarkdown::render(input=paste0(codedir,"/datasets/edelman_etal_2019/codes/stepwise_now/summary_all.Rmd"),
-                  output_file=paste0(outdir,"/",prefix,"/edelman_summary.html"),
+rmarkdown::render(input=paste0(codedir,"/datasets/heliconius_erato/codes/stepwise_now/summary_all.Rmd"),
+                  output_file=paste0(outdir,"/",prefix,"/heliconius_summary.html"),
                   params=list(prefix=prefix, outdir=outdir, initial_wsize=initial_wsize),
                   quiet=TRUE)
                   
