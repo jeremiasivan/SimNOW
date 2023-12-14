@@ -151,7 +151,7 @@ Number of unique trees: `r length(unique(summary$tree))`
 ```{r}
 kable(summary) %>%
   kable_styling("striped", full_width = T) %>%
-  scroll_box(width = "100%", height = ifelse(nrow(summary) > 4, "300px", NULL))
+  scroll_box(width = "100%", height = ifelse(nrow(summary) > 4, "300px", ""))
 ```
 
 #### Topologies
@@ -161,7 +161,7 @@ Number of unique topologies: `r length(unique(t_summary$topology))`
 ```{r}
 kable(t_summary) %>%
   kable_styling("striped", full_width = T) %>%
-  scroll_box(width = "100%", height = ifelse(nrow(t_summary) > 7, "300px", NULL))
+  scroll_box(width = "100%", height = ifelse(nrow(t_summary) > 7, "300px", ""))
 ```
 
 ```{r postms, include=FALSE}

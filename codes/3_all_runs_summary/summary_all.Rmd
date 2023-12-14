@@ -116,14 +116,14 @@ data.table::fwrite(simsum, file=fn_simsum, quote = F, sep = "\t")
 ```{r}
 kable(simsum) %>%
   kable_styling("striped", full_width = T) %>%
-  scroll_box(width = "100%", height = ifelse(nrow(simsum) > 7, "300px", NULL))
+  scroll_box(width = "100%", height = ifelse(nrow(simsum) > 7, "300px", ""))
 ```
 
 ### Ranked summary
 ```{r}
 kable(rank_simsum) %>%
   kable_styling("striped", full_width = T) %>%
-  scroll_box(width = "100%", height = ifelse(nrow(rank_simsum) > 7, "300px", NULL))
+  scroll_box(width = "100%", height = ifelse(nrow(rank_simsum) > 7, "300px", ""))
 ```
 
 ### Best window size
@@ -132,7 +132,7 @@ kable(best_simsum) %>%
   kable_styling("striped", full_width = T) %>%
   column_spec(idx_site, bold = grepl("site", best_simsum$measure)) %>%
   column_spec(idx_rmse, bold = grepl("rmse", best_simsum$measure)) %>%
-  scroll_box(width = "100%", height = ifelse(nrow(best_simsum) > 7, "300px", NULL))
+  scroll_box(width = "100%", height = ifelse(nrow(best_simsum) > 7, "300px", ""))
 ```
 
 ```{r allplots, include=FALSE}
