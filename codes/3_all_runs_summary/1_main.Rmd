@@ -17,8 +17,8 @@ params:
 
 ## Load required libraries and functions
 ```{r}
-source(paste0(params$codedir, "/4_all_runs_summary/functions.R"))
-source(paste0(params$codedir, "/4_all_runs_summary/functions_html.R"))
+source(paste0(params$codedir, "/3_all_runs_summary/functions.R"))
+source(paste0(params$codedir, "/3_all_runs_summary/functions_html.R"))
 
 library(data.table)
 library(kableExtra)
