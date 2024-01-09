@@ -150,7 +150,7 @@ outdir/
 Running `run_all.R` using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step is as follows:
 - Data preparation and filtering: ~1.6 hours with 50 threads
 - Non-overlapping window analysis: up to 4.4 hours for the longest chromosome (`chr10`)
-- Stepwise non-overlapping windows: `N/A`
+- Stepwise non-overlapping windows: up to 10 hours for the longest chromosome (`chr10`)
 
 #### Folder structure
 <i>Non-overlapping window</i>
@@ -271,4 +271,4 @@ outdir/
 ```
 
 ---
-*Last update: 14 December 2023 by Jeremias Ivan*
+*Last update: 09 January 2024 by Jeremias Ivan*
