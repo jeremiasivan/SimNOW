@@ -172,7 +172,7 @@ f_acc_loss <- function(df, ifc, type) {
 # function: plot window size vs ic
 # required library: ggplot2, viridis
 f_ic_wsize <- function(df, i, ifc) {
-  plot <- ggplot(df, aes(x=window_size, y=as.numeric(unlist(df[,..i])), ymin=0, ymax=100)) +
+  plot <- ggplot(df, aes(x=window_size, y=as.numeric(unlist(df[,..i])))) +
     geom_boxplot(outlier.shape = NA) +
     geom_point(shape=16, aes(colour=r, size=20)) +
     facet_wrap(.~r, scales = "free", ncol = 1) +
@@ -188,6 +188,30 @@ f_ic_wsize <- function(df, i, ifc) {
       strip.text = element_text(size = 30)
     )
   
+  return(plot)
+}
+
+f_ic_wsize_old <- function(df, i, ifc) {
+  plot <- ggplot(df, aes(x=window_size, y=as.numeric(unlist(df[,..i])), group=simulation)) +
+    geom_line(aes(size=1, alpha=0.2)) +
+    geom_point(aes(colour=window_size, size=20)) +
+    facet_wrap(.~r, scales = "free", ncol = 1) +
+    viridis::scale_color_viridis(discrete = TRUE) +
+    ggtitle(paste("Correlation between", toupper(ifc), "and Window Size")) + ylab(toupper(ifc)) + xlab("Window Size (kb)") +
+    guides(color="none", alpha="none", size="none") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size = 30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
   return(plot)
 }
 
