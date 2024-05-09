@@ -75,7 +75,7 @@ f_ic_acc <- function(df, i, ifc, type) {
   plot <- plot +
     geom_line(aes(size=1, alpha=0.2)) +
     geom_point(aes(colour=window_size, size=20)) +
-    facet_wrap(.~r, scales = "free") +
+    facet_wrap(.~r, scales = "free", ncol = 1) +
     viridis::scale_color_viridis(discrete = TRUE) + 
     labs(color="wsize (kb)") +
     guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
@@ -155,15 +155,15 @@ f_acc_loss <- function(df, ifc, type) {
   
   plot <- plot +
     geom_boxplot(outlier.shape = NA) +
-    geom_point(shape=16, aes(colour=r, size=20)) +
+    geom_point(shape=16, size=10, aes(colour=r)) +
     guides(size="none", colour="none") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
       axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
       axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-      axis.text.y=element_text(size=30),
-      axis.text.x=element_text(size=30)
+      axis.text.y=element_text(size=40),
+      axis.text.x=element_text(size=40)
     )
   
   return(plot)

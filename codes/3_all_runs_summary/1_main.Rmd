@@ -165,11 +165,11 @@ for (i in 6:ncol(simsum)-2) {
   fn_sitefig <- paste0(ifc_sitedir, params$prefix, ".", ifc, "_site.tiff")
   fn_rmsefig <- paste0(ifc_rmsedir, params$prefix, ".", ifc, "_rmse.tiff")
 
-  tiff(filename=fn_sitefig, units="px", width=2880, height=1800)
+  tiff(filename=fn_sitefig, units="px", width=1600, height=3200)
   print(f_ic_acc(simsum, i, ifc, "site"))
   dev.off()
   
-  tiff(filename=fn_rmsefig, units="px", width=2880, height=1800)
+  tiff(filename=fn_rmsefig, units="px", width=1600, height=3200)
   print(f_ic_acc(simsum, i, ifc, "rmse"))
   dev.off()
 
