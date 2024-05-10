@@ -232,7 +232,7 @@ f_rank_ic_acc <- function(df, i, ifc, type) {
   plot <- plot +
     geom_line(aes(size=1, alpha=0.2)) +
     geom_point(aes(colour=window_size, size=20)) +
-    facet_wrap(.~r, scales = "free") +
+    facet_wrap(.~r, scales = "free", ncol = 1) +
     viridis::scale_color_viridis(discrete = TRUE) +
     labs(color="wsize (kb)") +
     guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=8))) +
