@@ -1,0 +1,133 @@
+---
+title: "Summary for Hominidae Dataset from UCSC"
+params:
+  # general
+  prefix: "sim"
+  outdir: ""
+  thread: 1
+  redo: FALSE
+---
+
+```{r, include=FALSE}
+# install.packages(ape)
+# install.packages(data.table)
+# install.packages(tidyverse)
+
+# load libraries
+library(doSNOW)
+library(ggplot2)
+
+# create outdir
+dir_output_prefix <- paste0(params$outdir, "/", prefix, "/")
+dir_output_summary <- paste0(dir_output_prefix, "summary/")
+if (!dir.exists(dir_output_summary)) {
+    dir.create(dir_output_summary, recursive=T)
+}
+```
+
+```{r greatapes-alltrees}
+# extract the list of chromosomes
+ls_chr <- list.dirs(dir_output_prefix, full.names=F, recursive=F)
+
+# output files
+df_topology_count <- data.table::data.table(topology=character())
+df_topology_consecutive <- data.table::data.table(n_window=numeric())
+
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
+
+# iterate over chromosomes
+for (chr in ls_chr) {
+    # open the summary table
+    fn_summary <- paste0(params$outdir, "/", params$prefix, ".sumtable")
+    df_summary <- data.table::fread(fn_summary)
+
+    # extract the best window size
+    best_wsize_step <- df_summary$step[nrow(df_summary)]
+    best_wsize <- df_summary$s_wsize[nrow(df_summary)]
+
+    df_summary_subset <- df_summary[df_summary$diff_aic > 0,]
+    if (nrow(df_summary_subset) > 0) {
+        best_wsize_step <- df_summary_subset$step[1]-1
+        best_wsize <- df_summary_subset$l_wsize[1]
+    }
+
+    # iterate over windows
+    fn_perwindowsum <- paste0(dir_output_prefix, chr, "/", best_wsize_step, "/", best_wsize, "/", best_wsize, ".perwindowsum")
+    df_perwindowsum <- data.table::fread(fn_perwindowsum)
+
+    df_output_chr <- foreach (window=df_perwindowsum$name, .combine='rbind') {
+        # check if treefile exists
+        fn_tree <- paste0(dir_output_prefix, chr, "/", best_wsize_step, "/", best_wsize, "/filtered/", window, "/", window, ".fa.treefile")
+        if (!file.exists(fn_tree)) {
+            return(data.table::data.table(window=window, topology=NULL))
+        }
+
+        # open treefile
+        tre <- ape::read.tree(fn_tree)
+        tre$edge.length <- NULL
+        tre$node.label <- NULL
+
+        return(data.table::data.table(window=window, topology=ape::write.tree(tre)))
+    }
+
+    # count number of unique topology
+    df_topology_count_temp <- df_output_chr %>%
+        filter(!is.null(topology)) %>%
+        group_by(topology) %>%
+        summarise(!!chr:=n())
+    df_topology_count <- data.table::merge.data.table(df_topology_count, df_topology_count_temp, by="topology", all=T)
+
+    # count number of consecutive topology
+    df_topology_consecutive_temp <- df_output_chr %>%
+        group_by(topology,
+                 group_run=data.table::rleid(topology)) %>%
+        summarise(count=n()) %>%
+        group_by(count) %>%
+        summarise(!!chr:=n())
+    df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_topology_consecutive_temp, by="count", all=T)
+}
+
+stopCluster(nwcl)
+
+# transform data.table
+df_topology_count_long <- tidyr::pivot_longer(df_topology_count, cols = -topology, names_to = "chr", values_to = "count")
+df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, cols = -count, names_to = "chr", values_to = "n")
+
+# visualisation for unique topology count
+plot <- ggplot(df_topology_count_long, aes(x=topology, y=count, fill=chr)) +
+    geom_col() +
+    ggtitle("Topology Distribution across Chromosome") +
+    xlab("Count") + ylab("Topology") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=40),
+      axis.text.x=element_text(size=40)
+    )
+
+tiff(filename=paste0(dir_output_summary, "uqtops_dist.tiff"), units="px", width=2880, height=1800)
+print(plot)
+dev.off()
+
+# visualisation for consecutive windows
+plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
+    geom_col() +
+    ggtitle("Consecutive Topology Distribution across Chromosome") +
+    xlab("Count") + ylab("Number of consecutive windows") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=40),
+      axis.text.x=element_text(size=40)
+    )
+
+tiff(filename=paste0(dir_output_summary, "conwindows_dist.tiff"), units="px", width=2880, height=1800)
+print(plot)
+dev.off()
+```

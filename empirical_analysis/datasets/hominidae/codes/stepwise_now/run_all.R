@@ -90,5 +90,11 @@ foreach(r=runs, .errorhandling = 'pass') %dopar% {
 }
 
 stopCluster(cl)
-                  
+
+# summary for all chromosomes
+rmarkdown::render(input=paste0(codedir,"/datasets/hominidae/codes/stepwise_now/summary_all.Rmd"),
+                  output_file=paste0(outdir,"/",prefix,"/hominidae_summary.html"),
+                  params=list(prefix=prefix, outdir=outdir, thread=nthread, redo=redo),
+                  quiet=TRUE)
+
 #################################
