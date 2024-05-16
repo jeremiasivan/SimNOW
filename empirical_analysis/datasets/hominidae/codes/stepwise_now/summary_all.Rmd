@@ -18,7 +18,7 @@ library(doSNOW)
 library(ggplot2)
 
 # create outdir
-dir_output_prefix <- paste0(params$outdir, "/", prefix, "/")
+dir_output_prefix <- paste0(params$outdir, "/", params$prefix, "/")
 dir_output_summary <- paste0(dir_output_prefix, "summary/")
 if (!dir.exists(dir_output_summary)) {
     dir.create(dir_output_summary, recursive=T)
@@ -40,7 +40,7 @@ doSNOW::registerDoSNOW(nwcl)
 # iterate over chromosomes
 for (chr in ls_chr) {
     # open the summary table
-    fn_summary <- paste0(params$outdir, "/", params$prefix, ".sumtable")
+    fn_summary <- paste0(dir_output_prefix, chr, "/", chr, ".sumtable")
     df_summary <- data.table::fread(fn_summary)
 
     # extract the best window size
@@ -57,11 +57,11 @@ for (chr in ls_chr) {
     fn_perwindowsum <- paste0(dir_output_prefix, chr, "/", best_wsize_step, "/", best_wsize, "/", best_wsize, ".perwindowsum")
     df_perwindowsum <- data.table::fread(fn_perwindowsum)
 
-    df_output_chr <- foreach (window=df_perwindowsum$name, .combine='rbind') {
+    df_output_chr <- foreach (window=df_perwindowsum$name, .combine='rbind') %dopar% {
         # check if treefile exists
         fn_tree <- paste0(dir_output_prefix, chr, "/", best_wsize_step, "/", best_wsize, "/filtered/", window, "/", window, ".fa.treefile")
         if (!file.exists(fn_tree)) {
-            return(data.table::data.table(window=window, topology=NULL))
+            return(data.table::data.table(window=window, topology="-"))
         }
 
         # open treefile
@@ -72,10 +72,13 @@ for (chr in ls_chr) {
         return(data.table::data.table(window=window, topology=ape::write.tree(tre)))
     }
 
+    # save the output file
+    data.table::fwrite(df_output_chr, file=paste0(dir_output_prefix, chr, "/", chr, ".tretable"), sep="\t", quote=F)
+
     # count number of unique topology
     df_topology_count_temp <- df_output_chr %>%
-        filter(!is.null(topology)) %>%
         group_by(topology) %>%
+        filter(topology!="-") %>%
         summarise(!!chr:=n())
     df_topology_count <- data.table::merge.data.table(df_topology_count, df_topology_count_temp, by="topology", all=T)
 
