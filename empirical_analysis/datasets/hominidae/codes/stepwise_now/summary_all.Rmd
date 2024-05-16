@@ -11,11 +11,10 @@ params:
 ```{r, include=FALSE}
 # install.packages(ape)
 # install.packages(data.table)
-# install.packages(tidyverse)
 
 # load libraries
 library(doSNOW)
-library(ggplot2)
+library(tidyverse)
 
 # create outdir
 dir_output_prefix <- paste0(params$outdir, "/", params$prefix, "/")
@@ -80,6 +79,9 @@ for (chr in ls_chr) {
         group_by(topology) %>%
         filter(topology!="-") %>%
         summarise(!!chr:=n())
+
+    # save the output file
+    data.table::fwrite(df_topology_count_temp, file=paste0(dir_output_prefix, chr, "/", chr, ".toptable"), sep="\t", quote=F)
     df_topology_count <- data.table::merge.data.table(df_topology_count, df_topology_count_temp, by="topology", all=T)
 
     # count number of consecutive topology
@@ -89,6 +91,9 @@ for (chr in ls_chr) {
         summarise(count=n()) %>%
         group_by(count) %>%
         summarise(!!chr:=n())
+
+    # save the output file
+    data.table::fwrite(df_topology_consecutive_temp, file=paste0(dir_output_prefix, chr, "/", chr, ".contable"), sep="\t", quote=F)
     df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_topology_consecutive_temp, by="count", all=T)
 }
 
