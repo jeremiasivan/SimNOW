@@ -27,10 +27,11 @@ if (!dir.exists(dir_output_summary)) {
 ```{r greatapes-alltrees}
 # extract the list of chromosomes
 ls_chr <- list.dirs(dir_output_prefix, full.names=F, recursive=F)
+ls_chr <- ls_chr[grep("^chr", ls_chr)]
 
 # output files
 df_topology_count <- data.table::data.table(topology=character())
-df_topology_consecutive <- data.table::data.table(n_window=numeric())
+df_topology_consecutive <- data.table::data.table(count=numeric())
 
 # create doSNOW cluster
 nwcl <- makeCluster(params$thread)
