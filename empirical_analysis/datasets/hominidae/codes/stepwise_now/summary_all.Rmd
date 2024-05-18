@@ -39,6 +39,21 @@ doSNOW::registerDoSNOW(nwcl)
 
 # iterate over chromosomes
 for (chr in ls_chr) {
+    # output files
+    fn_tretable_temp <- paste0(dir_output_prefix, chr, "/", chr, ".tretable")
+    fn_toptable_temp <- paste0(dir_output_prefix, chr, "/", chr, ".toptable")
+    fn_contable_temp <- paste0(dir_output_prefix, chr, "/", chr, ".contable")
+    if (all(file.exists(fn_tretable_temp, fn_toptable_temp, fn_contable_temp)) && !params$redo) {
+        # combine output files
+        df_toptable_temp <- data.table::fread(fn_toptable_temp)
+        df_topology_count <- data.table::merge.data.table(df_topology_count, df_toptable_temp, by="topology", all=T)
+
+        df_contable_temp <- data.table::fread(fn_contable_temp)
+        df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_contable_temp, by="count", all=T)
+
+        next
+    }
+
     # open the summary table
     fn_summary <- paste0(dir_output_prefix, chr, "/", chr, ".sumtable")
     df_summary <- data.table::fread(fn_summary)
@@ -73,7 +88,7 @@ for (chr in ls_chr) {
     }
 
     # save the output file
-    data.table::fwrite(df_output_chr, file=paste0(dir_output_prefix, chr, "/", chr, ".tretable"), sep="\t", quote=F)
+    data.table::fwrite(df_output_chr, file=fn_tretable_temp, sep="\t", quote=F)
 
     # count number of unique topology
     df_topology_count_temp <- df_output_chr %>%
@@ -82,7 +97,7 @@ for (chr in ls_chr) {
         summarise(!!chr:=n())
 
     # save the output file
-    data.table::fwrite(df_topology_count_temp, file=paste0(dir_output_prefix, chr, "/", chr, ".toptable"), sep="\t", quote=F)
+    data.table::fwrite(df_topology_count_temp, file=fn_toptable_temp, sep="\t", quote=F)
     df_topology_count <- data.table::merge.data.table(df_topology_count, df_topology_count_temp, by="topology", all=T)
 
     # count number of consecutive topology
@@ -94,7 +109,7 @@ for (chr in ls_chr) {
         summarise(!!chr:=n())
 
     # save the output file
-    data.table::fwrite(df_topology_consecutive_temp, file=paste0(dir_output_prefix, chr, "/", chr, ".contable"), sep="\t", quote=F)
+    data.table::fwrite(df_topology_consecutive_temp, file=fn_contable_temp, sep="\t", quote=F)
     df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_topology_consecutive_temp, by="count", all=T)
 }
 
@@ -105,7 +120,7 @@ df_topology_count_long <- tidyr::pivot_longer(df_topology_count, cols = -topolog
 df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, cols = -count, names_to = "chr", values_to = "n")
 
 # visualisation for unique topology count
-plot <- ggplot(df_topology_count_long, aes(x=topology, y=count, fill=chr)) +
+plot <- ggplot(df_topology_count_long, aes(x=topology, y=count/sum(count), fill=chr)) +
     geom_col() +
     ggtitle("Topology Distribution across Chromosome") +
     xlab("Count") + ylab("Topology") +
@@ -114,8 +129,12 @@ plot <- ggplot(df_topology_count_long, aes(x=topology, y=count, fill=chr)) +
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
       axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
       axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-      axis.text.y=element_text(size=40),
-      axis.text.x=element_text(size=40)
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
     )
 
 tiff(filename=paste0(dir_output_summary, "uqtops_dist.tiff"), units="px", width=2880, height=1800)
@@ -132,8 +151,12 @@ plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
       axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
       axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-      axis.text.y=element_text(size=40),
-      axis.text.x=element_text(size=40)
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
     )
 
 tiff(filename=paste0(dir_output_summary, "conwindows_dist.tiff"), units="px", width=2880, height=1800)
