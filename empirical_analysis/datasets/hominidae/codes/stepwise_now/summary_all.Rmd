@@ -204,11 +204,21 @@ doSNOW::registerDoSNOW(nwcl)
 
 # iterate over chromosomes
 for (chr in ls_chr) {
+    # output files
+    fn_wintoptable_temp <- paste0(dir_output_prefix, chr, "/", chr, ".wintoptable")
+    if (file.exists(fn_wintoptable_temp) && !params$redo) {
+        # combine output files
+        df_wintoptable_temp <- data.table::fread(fn_wintoptable_temp)
+        df_topology_count <- rbind(df_topology_count, df_wintoptable_temp)
+
+        next
+    }
+
     # iterate over window sizes
     output <- foreach (step = 1:(length(wsizes)-1), .combine='c') %dopar% {
         # set up variables
-        long_wsize <- wsizes[i]
-        short_wsize <- wsizes[i+1]
+        long_wsize <- wsizes[step]
+        short_wsize <- wsizes[step+1]
 
         df_topology_count_temp <- data.table::data.table(chr=character(), wsize=numeric(), topology=character(), count=numeric(), count_percentage=numeric())
 
@@ -247,6 +257,9 @@ for (chr in ls_chr) {
 
         return(df_topology_count_temp)
     }
+
+    # save data.table
+    data.table::fwrite(output, file=fn_wintoptable_temp, sep="\t", quote=F)
 
     # update data.table
     df_topology_count <- rbind(df_topology_count, output)
