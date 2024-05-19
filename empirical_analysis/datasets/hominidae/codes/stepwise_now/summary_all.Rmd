@@ -215,7 +215,7 @@ for (chr in ls_chr) {
     }
 
     # iterate over window sizes
-    output <- foreach (step = 1:(length(wsizes)-1), .combine='c') %dopar% {
+    output <- foreach (step = 1:(length(wsizes)-1), .combine='rbind') %dopar% {
         # set up variables
         long_wsize <- wsizes[step]
         short_wsize <- wsizes[step+1]
@@ -280,7 +280,6 @@ for (top in unique(df_topology_count$topology)) {
     plot <- ggplot(df_topology_count_subset, aes(x=wsize, y=count_percentage, group=chr)) +
         geom_line(aes(size=1, alpha=0.2)) +
         geom_point(aes(colour=wsize, size=20)) +
-        facet_wrap(.~r, scales = "free", ncol = 1) +
         ggtitle(paste("Distribution of", top, "across Window Sizes")) + ylab("Count") + xlab("Window Size") +
         guides(color="none", alpha="none", size="none") +
         theme(
