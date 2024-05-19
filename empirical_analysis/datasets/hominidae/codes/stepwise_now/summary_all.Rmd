@@ -118,6 +118,7 @@ stopCluster(nwcl)
 # transform data.table
 df_topology_count_long <- tidyr::pivot_longer(df_topology_count, cols = -topology, names_to = "chr", values_to = "count")
 df_topology_count_long <- df_topology_count_long %>%
+    filter(!is.na(count)) %>%
     mutate(count_percentage=count/sum(count))
 
 df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, cols = -count, names_to = "chr", values_to = "n")
@@ -126,7 +127,7 @@ df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, col
 plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage, fill=chr)) +
     geom_col() +
     ggtitle("Topology Distribution across Chromosome") +
-    xlab("Count") + ylab("Topology") +
+    xlab("Topology") + ylab("Count") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
