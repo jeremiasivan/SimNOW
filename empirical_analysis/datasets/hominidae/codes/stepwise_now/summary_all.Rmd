@@ -32,6 +32,59 @@ fn_uqtops_dist_tiff <- paste0(dir_output_summary, "uqtops_dist.tiff")
 fn_conwindows_dist_tiff <- paste0(dir_output_summary, "conwindows_dist.tiff")
 ```
 
+```{r greatapes-functions, include=FALSE}
+f_extract_perwindow_topology <- function(fn_perwindowsum, chr, step, window_size, thread) {
+    # open file
+    df_perwindowsum <- data.table::fread(fn_perwindowsum)
+
+    # create doSNOW cluster
+    nwcl <- makeCluster(thread)
+    doSNOW::registerDoSNOW(nwcl)
+
+    # iterate over windows
+    df_output_chr <- foreach (window=df_perwindowsum$name, .combine='rbind') %dopar% {
+        # check if treefile exists
+        fn_tree <- paste0(dir_output_prefix, chr, "/", step, "/", window_size, "/filtered/", window, "/", window, ".fa.treefile")
+        if (!file.exists(fn_tree)) {
+            return(data.table::data.table(chr=chr, wsize=window_size, topology="-"))
+        }
+
+        # open treefile
+        tre <- ape::read.tree(fn_tree)
+        tre$edge.length <- NULL
+        tre$node.label <- NULL
+
+        return(data.table::data.table(chr=chr, wsize=window_size, topology=ape::write.tree(tre)))
+    }
+
+    stopCluster(nwcl)
+
+    return(df_output_chr)
+}
+
+f_plot_perwindow_topology_dist <- function(df_topology_count, topology) {
+    plot <- ggplot(df_topology_count, aes(x=as.factor(wsize), y=count_percentage, group=chr)) +
+        geom_line(aes(size=1, alpha=0.2)) +
+        geom_point(aes(colour=chr, size=20)) +
+        ggtitle(paste("Distribution of", topology, "across Window Sizes")) + ylab("Count") + xlab("Window Size") +
+        guides(alpha="none", size="none") +
+        theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=30),
+            axis.text.x=element_text(size=30),
+            strip.text = element_text(size=30),
+            legend.title=element_text(size=30),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+        )
+    
+    return(plot)
+}
+```
+
 ```{r greatapes-setup}
 # extract window sizes based on the initial size
 max_wsize <- params$initial_wsize
@@ -59,10 +112,6 @@ ls_chr <- str_sort(ls_chr, numeric=T)
 # output files
 df_topology_count <- data.table::data.table(topology=character())
 df_topology_consecutive <- data.table::data.table(count=numeric())
-
-# create doSNOW cluster
-nwcl <- makeCluster(params$thread)
-doSNOW::registerDoSNOW(nwcl)
 
 # iterate over chromosomes
 for (chr in ls_chr) {
@@ -97,22 +146,7 @@ for (chr in ls_chr) {
 
     # iterate over windows
     fn_perwindowsum <- paste0(dir_output_prefix, chr, "/", best_wsize_step, "/", best_wsize, "/", best_wsize, ".perwindowsum")
-    df_perwindowsum <- data.table::fread(fn_perwindowsum)
-
-    df_output_chr <- foreach (window=df_perwindowsum$name, .combine='rbind') %dopar% {
-        # check if treefile exists
-        fn_tree <- paste0(dir_output_prefix, chr, "/", best_wsize_step, "/", best_wsize, "/filtered/", window, "/", window, ".fa.treefile")
-        if (!file.exists(fn_tree)) {
-            return(data.table::data.table(window=window, topology="-"))
-        }
-
-        # open treefile
-        tre <- ape::read.tree(fn_tree)
-        tre$edge.length <- NULL
-        tre$node.label <- NULL
-
-        return(data.table::data.table(window=window, topology=ape::write.tree(tre)))
-    }
+    df_output_chr <- f_extract_perwindow_topology(fn_perwindowsum, chr, best_wsize_step, best_wsize, params$thread)
 
     # save the output file
     data.table::fwrite(df_output_chr, file=fn_tretable_temp, sep="\t", quote=F)
@@ -139,8 +173,6 @@ for (chr in ls_chr) {
     data.table::fwrite(df_topology_consecutive_temp, file=fn_contable_temp, sep="\t", quote=F)
     df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_topology_consecutive_temp, by="count", all=T)
 }
-
-stopCluster(nwcl)
 
 # transform data.table
 df_topology_count_long <- tidyr::pivot_longer(df_topology_count, cols = -topology, names_to = "chr", values_to = "count")
@@ -279,27 +311,95 @@ for (top in unique(df_topology_count$topology)) {
     # output file
     fn_topology_count <- paste0(dir_output_summary, "top", top_counter, "_wsize.tiff")
 
-    # create a plot
-    plot <- ggplot(df_topology_count_subset, aes(x=as.factor(wsize), y=count_percentage, group=chr)) +
-        geom_line(aes(size=1, alpha=0.2)) +
-        geom_point(aes(colour=wsize, size=20)) +
-        ggtitle(paste("Distribution of", top, "across Window Sizes")) + ylab("Count") + xlab("Window Size") +
-        guides(color="none", alpha="none", size="none") +
-        theme(
-            plot.title = element_text(hjust = 0.5, size = 50),
-            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            strip.text = element_text(size = 30),
-            legend.title=element_text(size=30),
-            legend.text=element_text(size=30),
-            legend.key.size=unit(2,"cm")
-        )
+    tiff(filename=fn_topology_count, units="px", width=2880, height=1800)
+    print(f_plot_perwindow_topology_dist(df_topology_count_subset, top))
+    dev.off()
+
+    top_counter <- top_counter + 1
+}
+```
+
+```{r greatapes-all-tree-wsize}
+# output files
+df_topology_count <- data.table::data.table(chr=character(), wsize=numeric(), topology=character(), count=numeric(), count_percentage=numeric())
+
+# iterate over chromosomes
+for (chr in ls_chr) {
+    # output data.table
+    df_topology_count_temp <- data.table::data.table(chr=character(), wsize=numeric(), topology=character(), count=numeric(), count_percentage=numeric())
+
+    # output files
+    fn_wintoptable_temp <- paste0(dir_output_prefix, chr, "/", chr, ".all.wintoptable")
+    if (file.exists(fn_wintoptable_temp) && !params$redo) {
+        # combine output files
+        df_wintoptable_temp <- data.table::fread(fn_wintoptable_temp)
+        df_topology_count <- rbind(df_topology_count, df_wintoptable_temp)
+
+        next
+    }
+
+    # iterate over window sizes
+    for (step in 1:(length(wsizes)-1)) {
+        # set up variables
+        long_wsize <- wsizes[step]
+        short_wsize <- wsizes[step+1]
+
+        # check if it is the initial step
+        if (step == 1) {
+            fn_perwindowsum <- paste0(dir_output_prefix, chr, "/", step, "/", long_wsize, "/", long_wsize, ".perwindowsum")
+            if (file.exists(fn_perwindowsum)) {
+                df_output_wsize <- f_extract_perwindow_topology(fn_perwindowsum, chr, step, long_wsize, params$thread)
+
+                # transform data.table
+                df_output_wsize <- df_output_wsize %>%
+                    filter(topology!="-") %>%
+                    group_by(topology) %>%
+                    summarise(count=n()) %>%
+                    mutate(count_percentage=count/sum(count))
+
+                # update data.table    
+                df_topology_count_temp <- rbind(df_topology_count_temp, df_output_wsize)
+            }
+        }
+
+        # work on the short window size
+        fn_perwindowsum <- paste0(dir_output_prefix, chr, "/", step, "/", short_wsize, "/", short_wsize, ".perwindowsum")
+        if (file.exists(fn_perwindowsum)) {
+            df_output_wsize <- f_extract_perwindow_topology(fn_perwindowsum, chr, step, short_wsize, params$thread)
+
+            # transform data.table
+            df_output_wsize <- df_output_wsize %>%
+                filter(topology!="-") %>%
+                group_by(topology) %>%
+                summarise(count=n()) %>%
+                mutate(count_percentage=count/sum(count))
+
+            # update data.table    
+            df_topology_count_temp <- rbind(df_topology_count_temp, df_output_wsize)
+        }
+    }
+
+    # save data.table
+    data.table::fwrite(df_topology_count_temp, file=fn_wintoptable_temp, sep="\t", quote=F)
+
+    # update data.table
+    df_topology_count <- rbind(df_topology_count, df_topology_count_temp)
+}
+
+# set column as factor
+df_topology_count$chr <- fct_inorder(df_topology_count$chr)
+
+# visualisation
+top_counter <- 1
+for (top in unique(df_topology_count$topology)) {
+    # subset the data.table
+    df_topology_count_subset <- df_topology_count[df_topology_count$topology==top,]
+
+    # output file
+    fn_topology_count <- paste0(dir_output_summary, "all.top", top_counter, "_wsize.tiff")
 
     tiff(filename=fn_topology_count, units="px", width=2880, height=1800)
-    print(plot)
+    print(f_plot_perwindow_topology_dist(df_topology_count_subset, top))
     dev.off()
 
     top_counter <- top_counter + 1
