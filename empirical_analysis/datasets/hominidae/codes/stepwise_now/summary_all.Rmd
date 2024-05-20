@@ -33,7 +33,7 @@ fn_conwindows_dist_tiff <- paste0(dir_output_summary, "conwindows_dist.tiff")
 ```
 
 ```{r greatapes-functions, include=FALSE}
-f_extract_perwindow_topology <- function(fn_perwindowsum, chr, step, window_size, thread) {
+f_extract_perwindow_topology <- function(fn_perwindowsum, dir_output_prefix, chr, step, window_size, thread) {
     # open file
     df_perwindowsum <- data.table::fread(fn_perwindowsum)
 
@@ -146,7 +146,7 @@ for (chr in ls_chr) {
 
     # iterate over windows
     fn_perwindowsum <- paste0(dir_output_prefix, chr, "/", best_wsize_step, "/", best_wsize, "/", best_wsize, ".perwindowsum")
-    df_output_chr <- f_extract_perwindow_topology(fn_perwindowsum, chr, best_wsize_step, best_wsize, params$thread)
+    df_output_chr <- f_extract_perwindow_topology(fn_perwindowsum, dir_output_prefix, chr, best_wsize_step, best_wsize, params$thread)
 
     # save the output file
     data.table::fwrite(df_output_chr, file=fn_tretable_temp, sep="\t", quote=F)
@@ -348,7 +348,7 @@ for (chr in ls_chr) {
         if (step == 1) {
             fn_perwindowsum <- paste0(dir_output_prefix, chr, "/", step, "/", long_wsize, "/", long_wsize, ".perwindowsum")
             if (file.exists(fn_perwindowsum)) {
-                df_output_wsize <- f_extract_perwindow_topology(fn_perwindowsum, chr, step, long_wsize, params$thread)
+                df_output_wsize <- f_extract_perwindow_topology(fn_perwindowsum, dir_output_prefix, chr, step, long_wsize, params$thread)
 
                 # transform data.table
                 df_output_wsize <- df_output_wsize %>%
@@ -365,7 +365,7 @@ for (chr in ls_chr) {
         # work on the short window size
         fn_perwindowsum <- paste0(dir_output_prefix, chr, "/", step, "/", short_wsize, "/", short_wsize, ".perwindowsum")
         if (file.exists(fn_perwindowsum)) {
-            df_output_wsize <- f_extract_perwindow_topology(fn_perwindowsum, chr, step, short_wsize, params$thread)
+            df_output_wsize <- f_extract_perwindow_topology(fn_perwindowsum, dir_output_prefix, chr, step, short_wsize, params$thread)
 
             # transform data.table
             df_output_wsize <- df_output_wsize %>%
