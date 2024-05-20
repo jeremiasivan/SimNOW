@@ -68,7 +68,7 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, topology) {
         geom_line(aes(size=1, alpha=0.2)) +
         geom_point(aes(colour=chr, size=20)) +
         ggtitle(paste("Distribution of", topology, "across Window Sizes")) + ylab("Count") + xlab("Window Size") +
-        guides(alpha="none", size="none") +
+        guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=5))) +
         theme(
             plot.title = element_text(hjust = 0.5, size = 50),
             plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
@@ -247,7 +247,7 @@ plot <- ggplot(df_topology_consecutive_long[df_topology_consecutive_long$n>1,], 
       legend.key.size=unit(2,"cm")
     )
 
-tiff(filename=fn_conwindows_dist_tiff_filtered, units="px", width=2880, height=1800)
+tiff(filename=fn_conwindows_dist_filtered_tiff, units="px", width=2880, height=1800)
 print(plot)
 dev.off()
 ```
