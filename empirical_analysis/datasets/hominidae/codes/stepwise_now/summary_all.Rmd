@@ -28,8 +28,9 @@ if (!dir.exists(dir_output_summary)) {
 }
 
 # output files
-fn_uqtops_dist_tiff <- paste0(dir_output_summary, "uqtops_dist.tiff")
-fn_conwindows_dist_tiff <- paste0(dir_output_summary, "conwindows_dist.tiff")
+fn_uqtops_dist_tiff <- paste0(dir_output_summary, "all.uqtops_dist.tiff")
+fn_conwindows_dist_tiff <- paste0(dir_output_summary, "all.conwindows_dist.tiff")
+fn_conwindows_dist_filtered_tiff <- paste0(dir_output_summary, "all.conwindows_dist_filtered.tiff")
 ```
 
 ```{r greatapes-functions, include=FALSE}
@@ -210,7 +211,7 @@ dev.off()
 plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
     geom_col() +
     ggtitle("Consecutive Topology Distribution across Chromosome") +
-    xlab("Count") + ylab("Number of consecutive windows") +
+    xlab("Number of consecutive windows") + ylab("Count") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
@@ -225,6 +226,28 @@ plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
     )
 
 tiff(filename=fn_conwindows_dist_tiff, units="px", width=2880, height=1800)
+print(plot)
+dev.off()
+
+# visualisation for consecutive windows with count>1
+plot <- ggplot(df_topology_consecutive_long[df_topology_consecutive_long$n>1,], aes(x=count, y=n, fill=chr)) +
+    geom_col() +
+    ggtitle("Consecutive Topology Distribution across Chromosome with Count>1") +
+    xlab("Number of consecutive windows") + ylab("Count") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+tiff(filename=fn_conwindows_dist_tiff_filtered, units="px", width=2880, height=1800)
 print(plot)
 dev.off()
 ```
@@ -304,7 +327,7 @@ stopCluster(nwcl)
 
 # visualisation
 top_counter <- 1
-for (top in unique(df_topology_count$topology)) {
+for (top in sort(unique(df_topology_count$topology))) {
     # subset the data.table
     df_topology_count_subset <- df_topology_count[df_topology_count$topology==top,]
 
@@ -391,7 +414,7 @@ df_topology_count$chr <- fct_inorder(df_topology_count$chr)
 
 # visualisation
 top_counter <- 1
-for (top in unique(df_topology_count$topology)) {
+for (top in sort(unique(df_topology_count$topology))) {
     # subset the data.table
     df_topology_count_subset <- df_topology_count[df_topology_count$topology==top,]
 
