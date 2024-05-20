@@ -54,6 +54,7 @@ if (stepthread > length(wsizes)-1) {
 # extract the list of chromosomes
 ls_chr <- list.dirs(dir_output_prefix, full.names=F, recursive=F)
 ls_chr <- ls_chr[grep("^chr", ls_chr)]
+ls_chr <- str_sort(ls_chr, numeric=T)
 
 # output files
 df_topology_count <- data.table::data.table(topology=character())
@@ -146,8 +147,10 @@ df_topology_count_long <- tidyr::pivot_longer(df_topology_count, cols = -topolog
 df_topology_count_long <- df_topology_count_long %>%
     filter(!is.na(count)) %>%
     mutate(count_percentage=count/sum(count))
+df_topology_count_long$chr <- fct_inorder(df_topology_count_long$chr)
 
 df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, cols = -count, names_to = "chr", values_to = "n")
+df_topology_consecutive_long$chr <- fct_inorder(df_topology_consecutive_long$chr)
 
 # visualisation for unique topology count
 plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage, fill=chr)) +
@@ -194,7 +197,7 @@ print(plot)
 dev.off()
 ```
 
-```{r greatapes-tree-wsize}
+```{r greatapes-highbs-tree-wsize}
 # output files
 df_topology_count <- data.table::data.table(chr=character(), wsize=numeric(), topology=character(), count=numeric(), count_percentage=numeric())
 
@@ -277,7 +280,7 @@ for (top in unique(df_topology_count$topology)) {
     fn_topology_count <- paste0(dir_output_summary, "top", top_counter, "_wsize.tiff")
 
     # create a plot
-    plot <- ggplot(df_topology_count_subset, aes(x=wsize, y=count_percentage, group=chr)) +
+    plot <- ggplot(df_topology_count_subset, aes(x=as.factor(wsize), y=count_percentage, group=chr)) +
         geom_line(aes(size=1, alpha=0.2)) +
         geom_point(aes(colour=wsize, size=20)) +
         ggtitle(paste("Distribution of", top, "across Window Sizes")) + ylab("Count") + xlab("Window Size") +
