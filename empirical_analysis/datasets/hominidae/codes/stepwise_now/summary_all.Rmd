@@ -353,7 +353,7 @@ for (chr in ls_chr) {
                 # transform data.table
                 df_output_wsize <- df_output_wsize %>%
                     filter(topology!="-") %>%
-                    group_by(topology) %>%
+                    group_by(chr,wsize,topology) %>%
                     summarise(count=n()) %>%
                     mutate(count_percentage=count/sum(count))
 
@@ -370,7 +370,7 @@ for (chr in ls_chr) {
             # transform data.table
             df_output_wsize <- df_output_wsize %>%
                 filter(topology!="-") %>%
-                group_by(topology) %>%
+                group_by(chr,wsize,topology) %>%
                 summarise(count=n()) %>%
                 mutate(count_percentage=count/sum(count))
 
