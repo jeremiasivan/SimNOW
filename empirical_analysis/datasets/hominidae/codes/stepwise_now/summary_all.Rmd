@@ -63,11 +63,16 @@ f_extract_perwindow_topology <- function(fn_perwindowsum, dir_output_prefix, chr
     return(df_output_chr)
 }
 
-f_plot_perwindow_topology_dist <- function(df_topology_count, topology) {
+f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_avg, topology) {
     plot <- ggplot(df_topology_count, aes(x=wsize, y=count_percentage, group=chr)) +
         geom_line(aes(size=1, alpha=0.2)) +
-        geom_point(aes(colour=chr, size=20)) +
-        ggtitle(paste("Distribution of", topology, "across Window Sizes")) + ylab("Count") + xlab("Window Size") +
+        geom_point(aes(colour=chr, size=20))
+
+    if (!is.null(df_topology_count_avg)) {
+        plot <- plot + geom_point(data=df_topology_count_avg, aes(x=wsize, y=count_percentage), colour="black", size=20, shape=17)
+    }
+        
+    plot <- plot + ggtitle(paste("Distribution of", topology, "across Window Sizes")) + ylab("Proportion") + xlab("Window Size") +
         guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=5))) +
         theme(
             plot.title = element_text(hjust = 0.5, size = 50),
@@ -189,7 +194,7 @@ df_topology_consecutive_long$chr <- fct_inorder(df_topology_consecutive_long$chr
 plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage, fill=chr)) +
     geom_col() +
     ggtitle("Topology Distribution across Chromosome") +
-    xlab("Topology") + ylab("Count") +
+    xlab("Topology") + ylab("Proportion") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
@@ -335,7 +340,7 @@ for (top in sort(unique(df_topology_count$topology))) {
     fn_topology_count <- paste0(dir_output_summary, "top", top_counter, "_wsize.tiff")
 
     tiff(filename=fn_topology_count, units="px", width=2880, height=1800)
-    print(f_plot_perwindow_topology_dist(df_topology_count_subset, top))
+    print(f_plot_perwindow_topology_dist(df_topology_count_subset, NULL, top))
     dev.off()
 
     top_counter <- top_counter + 1
@@ -429,17 +434,25 @@ for (chr in ls_chr) {
     df_topology_count <- rbind(df_topology_count, df_toptable_temp)
 }
 
+# new data.frame to store average proportion
+df_topology_count_avg <- df_topology_count %>%
+    group_by(wsize, topology) %>%
+    summarise(count=sum(count)) %>%
+    group_by(wsize) %>%
+    mutate(total_count=sum(count), count_percentage=count/total_count)
+
 # visualisation
 top_counter <- 1
 for (top in sort(unique(df_topology_count$topology))) {
     # subset the data.table
     df_topology_count_subset <- df_topology_count[df_topology_count$topology==top,]
+    df_topology_count_avg_subset <- df_topology_count_avg[df_topology_count_avg$topology==top,]
 
     # output file
     fn_topology_count <- paste0(dir_output_summary, "all.top", top_counter, "_wsize.tiff")
 
     tiff(filename=fn_topology_count, units="px", width=2880, height=1800)
-    print(f_plot_perwindow_topology_dist(df_topology_count_subset, top))
+    print(f_plot_perwindow_topology_dist(df_topology_count_subset, df_topology_count_avg_subset, top))
     dev.off()
 
     top_counter <- top_counter + 1
