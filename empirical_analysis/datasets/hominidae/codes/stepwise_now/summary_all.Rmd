@@ -15,6 +15,7 @@ params:
 ```{r, include=FALSE}
 # install.packages(ape)
 # install.packages(data.table)
+# install.packages(viridis)
 
 # load libraries
 library(doSNOW)
@@ -66,10 +67,13 @@ f_extract_perwindow_topology <- function(fn_perwindowsum, dir_output_prefix, chr
 f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_avg, topology) {
     plot <- ggplot(df_topology_count, aes(x=wsize, y=count_percentage, group=chr)) +
         geom_line(aes(size=1, alpha=0.2)) +
-        geom_point(aes(colour=chr, size=20))
+        geom_point(aes(colour=chr, size=20)) +
+        viridis::scale_color_viridis(discrete = TRUE) + 
+        labs(colour="Chromosome")
 
     if (!is.null(df_topology_count_avg)) {
-        plot <- plot + geom_point(data=df_topology_count_avg, aes(x=wsize, y=count_percentage), colour="black", size=10, shape=18)
+        plot <- plot + geom_point(data=df_topology_count_avg, aes(x=wsize, y=count_percentage, size=20), colour="red", shape=18) +
+            geom_line(data=df_topology_count_avg, aes(x=wsize, y=count_percentage, size=1, alpha=0.2), colour="red")
     }
         
     plot <- plot + ggtitle(paste("Distribution of", topology, "across Window Sizes")) + ylab("Proportion") + xlab("Window Size") +
