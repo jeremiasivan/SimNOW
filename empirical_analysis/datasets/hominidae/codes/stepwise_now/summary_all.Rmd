@@ -95,24 +95,6 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
 }
 ```
 
-```{r greatapes-setup}
-# extract window sizes based on the initial size
-max_wsize <- params$initial_wsize
-wsizes <- max_wsize
-while (max_wsize %% 2 == 0) {
-  wsizes <- c(wsizes, max_wsize / 2)
-  max_wsize <- max_wsize / 2
-}
-wsizes <- wsizes[wsizes >= params$min_wsize]
-wsizes <- sort(wsizes, decreasing=T)
-
-# set number of thread based on the number of window sizes
-stepthread <- params$thread
-if (stepthread > length(wsizes)-1) {
-  stepthread <- length(wsizes)-1
-}
-```
-
 ```{r greatapes-alltrees}
 # extract the list of chromosomes
 ls_chr <- list.dirs(dir_output_prefix, full.names=F, recursive=F)
@@ -265,10 +247,6 @@ dev.off()
 # output files
 df_topology_count <- data.table::data.table(chr=character(), wsize=numeric(), topology=character(), count=numeric(), count_percentage=numeric())
 
-# create doSNOW cluster
-nwcl <- makeCluster(stepthread)
-doSNOW::registerDoSNOW(nwcl)
-
 # iterate over chromosomes
 for (chr in ls_chr) {
     # output files
@@ -281,11 +259,26 @@ for (chr in ls_chr) {
         next
     }
 
+    # open the summary table
+    fn_summary <- paste0(dir_output_prefix, chr, "/", chr, ".sumtable")
+    df_summary <- data.table::fread(fn_summary)
+
+    # extract steps with specified range of window sizes
+    df_summary_subset <- df_summary[df_summary$l_wsize<=params$initial_wsize]
+    df_summary_subset <- df_summary_subset[df_summary_subset$s_wsize>=params$min_wsize]
+
+    # set up number of threads
+    stepthread <- ifelse(nrow(df_summary_subset) < params$thread, nrow(df_summary_subset), params$thread)
+
+    # create doSNOW cluster
+    nwcl <- makeCluster(stepthread)
+    doSNOW::registerDoSNOW(nwcl)
+
     # iterate over window sizes
-    output <- foreach (step = 1:(length(wsizes)-1), .combine='rbind') %dopar% {
+    output <- foreach (step = 1:nrow(df_summary_subset), .combine='rbind') %dopar% {
         # set up variables
-        long_wsize <- wsizes[step]
-        short_wsize <- wsizes[step+1]
+        long_wsize <- df_summary_subset$l_wsize[step]
+        short_wsize <- df_summary_subset$s_wsize[step]
 
         df_topology_count_temp <- data.table::data.table(chr=character(), wsize=numeric(), topology=character(), count=numeric(), count_percentage=numeric())
 
@@ -378,11 +371,19 @@ for (chr in ls_chr) {
         next
     }
 
+    # open the summary table
+    fn_summary <- paste0(dir_output_prefix, chr, "/", chr, ".sumtable")
+    df_summary <- data.table::fread(fn_summary)
+
+    # extract steps with specified range of window sizes
+    df_summary_subset <- df_summary[df_summary$l_wsize<=params$initial_wsize]
+    df_summary_subset <- df_summary_subset[df_summary_subset$s_wsize>=params$min_wsize]
+
     # iterate over window sizes
-    for (step in 1:(length(wsizes)-1)) {
+    for (step in 1:nrow(df_summary_subset)) {
         # set up variables
-        long_wsize <- wsizes[step]
-        short_wsize <- wsizes[step+1]
+        long_wsize <- df_summary_subset$l_wsize[step]
+        short_wsize <- df_summary_subset$s_wsize[step]
 
         # check if it is the initial step
         if (step == 1) {

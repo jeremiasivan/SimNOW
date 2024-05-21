@@ -94,7 +94,8 @@ stopCluster(cl)
 # summary for all chromosomes
 rmarkdown::render(input=paste0(codedir,"/datasets/hominidae/codes/stepwise_now/summary_all.Rmd"),
                   output_file=paste0(outdir,"/",prefix,"/hominidae_summary.html"),
-                  params=list(prefix=prefix, outdir=outdir, thread=nthread, redo=redo),
+                  params=list(prefix=prefix, outdir=outdir, thread=nthread, redo=redo,
+                              initial_wsize=initial_wsize, min_wsize=min_wsize),
                   quiet=TRUE)
 
 #################################
