@@ -318,14 +318,14 @@ for (chr in ls_chr) {
         return(df_topology_count_temp)
     }
 
+    stopCluster(nwcl)
+
     # save data.table
     data.table::fwrite(output, file=fn_wintoptable_temp, sep="\t", quote=F)
 
     # update data.table
     df_topology_count <- rbind(df_topology_count, output)
 }
-
-stopCluster(nwcl)
 
 # new data.frame to store average proportion
 df_topology_count_avg <- df_topology_count %>%
