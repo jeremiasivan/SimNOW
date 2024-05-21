@@ -72,8 +72,8 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
         labs(colour="Chromosome")
 
     if (!is.null(df_topology_count_avg)) {
-        plot <- plot + geom_point(data=df_topology_count_avg, aes(x=wsize, y=count_percentage, size=20), colour="red", shape=18) +
-            geom_line(data=df_topology_count_avg, aes(x=wsize, y=count_percentage, size=1, alpha=0.2), colour="red")
+        plot <- plot + geom_point(data=df_topology_count_avg, aes(x=wsize, y=count_percentage), colour="red", size=12, shape=18) +
+            geom_line(data=df_topology_count_avg, aes(x=wsize, y=count_percentage), colour="red", size=4)
     }
         
     plot <- plot + ggtitle(paste("Distribution of", topology, "across Window Sizes")) + ylab("Proportion") + xlab("Window Size") +
@@ -334,17 +334,25 @@ for (chr in ls_chr) {
 
 stopCluster(nwcl)
 
+# new data.frame to store average proportion
+df_topology_count_avg <- df_topology_count %>%
+    group_by(wsize, topology) %>%
+    summarise(count=sum(count)) %>%
+    group_by(wsize) %>%
+    mutate(total_count=sum(count), count_percentage=count/total_count)
+
 # visualisation
 top_counter <- 1
 for (top in sort(unique(df_topology_count$topology))) {
     # subset the data.table
     df_topology_count_subset <- df_topology_count[df_topology_count$topology==top,]
+    df_topology_count_avg_subset <- df_topology_count_avg[df_topology_count_avg$topology==top,]
 
     # output file
     fn_topology_count <- paste0(dir_output_summary, "top", top_counter, "_wsize.tiff")
 
     tiff(filename=fn_topology_count, units="px", width=2880, height=1800)
-    print(f_plot_perwindow_topology_dist(df_topology_count_subset, NULL, top))
+    print(f_plot_perwindow_topology_dist(df_topology_count_subset, df_topology_count_avg_subset, top))
     dev.off()
 
     top_counter <- top_counter + 1
