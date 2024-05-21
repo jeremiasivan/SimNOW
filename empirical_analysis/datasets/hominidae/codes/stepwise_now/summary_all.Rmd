@@ -449,8 +449,18 @@ for (chr in ls_chr) {
 
 # check if the best window size has all topologies
 ls_topologies <- unique(df_topology_count$topology)
-ls_wsize <- unique(df_topology_count$wsize)
 for (chr in ls_chr) {
+    # open the summary table
+    fn_summary <- paste0(dir_output_prefix, chr, "/", chr, ".sumtable")
+    df_summary <- data.table::fread(fn_summary)
+
+    # extract steps with specified range of window sizes
+    df_summary_subset <- df_summary[df_summary$l_wsize<=params$initial_wsize]
+    df_summary_subset <- df_summary_subset[df_summary_subset$s_wsize>=params$min_wsize]
+
+    # extract window sizes
+    ls_wsize <- unique(c(df_summary_subset$l_wsize, df_summary_subset$s_wsize))
+
     for (wsize in ls_wsize) {
         for (top in ls_topologies) {
             count_temp <- df_topology_count$count[df_topology_count$wsize==wsize & df_topology_count$chr==chr & df_topology_count$topology==top]
