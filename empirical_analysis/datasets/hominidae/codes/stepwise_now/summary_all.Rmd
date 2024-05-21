@@ -459,7 +459,7 @@ for (chr in ls_chr) {
     df_summary_subset <- df_summary_subset[df_summary_subset$s_wsize>=params$min_wsize]
 
     # extract window sizes
-    ls_wsize <- unique(c(df_summary_subset$l_wsize, df_summary_subset$s_wsize))
+    ls_wsize <- c("best", unique(c(df_summary_subset$l_wsize, df_summary_subset$s_wsize)))
 
     for (wsize in ls_wsize) {
         for (top in ls_topologies) {
