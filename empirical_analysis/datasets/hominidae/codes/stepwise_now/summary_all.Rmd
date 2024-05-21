@@ -449,13 +449,16 @@ for (chr in ls_chr) {
 
 # check if the best window size has all topologies
 ls_topologies <- unique(df_topology_count$topology)
+ls_wsize <- unique(df_topology_count$wsize)
 for (chr in ls_chr) {
-    for (top in ls_topologies) {
-        row_temp <- df_topology_count[df_topology_count$wsize=="best" & df_topology_count$chr==chr & df_topology_count$topology==top]
+    for (wsize in ls_wsize) {
+        for (top in ls_topologies) {
+            count_temp <- df_topology_count$count[df_topology_count$wsize==wsize & df_topology_count$chr==chr & df_topology_count$topology==top]
 
-        if (nrow(row_temp) == 0) {
-            df_topology_count <- rbind(df_topology_count,
-                                       data.table::data.table(chr=chr, wsize="best", topology=top, count=0, count_percentage=0))
+            if (length(count_temp) == 0) {
+                df_topology_count <- rbind(df_topology_count,
+                                           data.table::data.table(chr=chr, wsize=wsize, topology=top, count=0, count_percentage=0))
+            }
         }
     }
 }
