@@ -29,6 +29,7 @@ if (!dir.exists(dir_output_summary)) {
 }
 
 # output files
+fn_uqtops_wsize <- paste0(dir_output_summary, "all.top_wsize.tsv")
 fn_uqtops_dist_tiff <- paste0(dir_output_summary, "all.uqtops_dist.tiff")
 fn_conwindows_dist_tiff <- paste0(dir_output_summary, "all.conwindows_dist.tiff")
 fn_conwindows_dist_filtered_tiff <- paste0(dir_output_summary, "all.conwindows_dist_filtered.tiff")
@@ -479,6 +480,8 @@ df_topology_count_avg <- df_topology_count %>%
     summarise(count=sum(count)) %>%
     group_by(wsize) %>%
     mutate(total_count=sum(count), count_percentage=count/total_count)
+
+data.table::fwrite(df_topology_count_avg, file=fn_uqtops_wsize, sep="\t", quote=F)
 
 # visualisation
 top_counter <- 1
