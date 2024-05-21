@@ -69,7 +69,7 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
         geom_point(aes(colour=chr, size=20))
 
     if (!is.null(df_topology_count_avg)) {
-        plot <- plot + geom_point(data=df_topology_count_avg, aes(x=wsize, y=count_percentage), colour="black", size=15, shape=8)
+        plot <- plot + geom_point(data=df_topology_count_avg, aes(x=wsize, y=count_percentage), colour="black", size=10, shape=18)
     }
         
     plot <- plot + ggtitle(paste("Distribution of", topology, "across Window Sizes")) + ylab("Proportion") + xlab("Window Size") +
