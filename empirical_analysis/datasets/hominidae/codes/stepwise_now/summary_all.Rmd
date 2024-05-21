@@ -245,7 +245,7 @@ dev.off()
 
 ```{r greatapes-highbs-tree-wsize}
 # output files
-df_topology_count <- data.table::data.table(chr=character(), wsize=numeric(), topology=character(), count=numeric(), count_percentage=numeric())
+df_topology_count <- data.table::data.table(chr=factor(), wsize=factor(), topology=character(), count=numeric(), count_percentage=numeric())
 
 # iterate over chromosomes
 for (chr in ls_chr) {
@@ -445,6 +445,19 @@ for (chr in ls_chr) {
 
     # update data.table
     df_topology_count <- rbind(df_topology_count, df_toptable_temp)
+}
+
+# check if the best window size has all topologies
+ls_topologies <- unique(df_topology_count$topology)
+for (chr in ls_chr) {
+    for (top in ls_topologies) {
+        row_temp <- df_topology_count[df_topology_count$wsize=="best" & df_topology_count$chr==chr & df_topology_count$topology==top]
+
+        if (nrow(row_temp) == 0) {
+            df_topology_count <- rbind(df_topology_count,
+                                       data.table::data.table(chr=chr, wsize="best", topology=top, count=0, count_percentage=0))
+        }
+    }
 }
 
 # new data.frame to store average proportion
