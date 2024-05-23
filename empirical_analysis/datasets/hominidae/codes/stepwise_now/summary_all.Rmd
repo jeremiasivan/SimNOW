@@ -338,9 +338,33 @@ for (chr in ls_chr) {
 }
 
 # open the topology distribution for the best window sizes for each chromosome
-df_topology_count_long_wsize <- df_topology_count_long %>%
-    mutate(wsize="best")
-df_topology_count <- rbind(df_topology_count, df_topology_count_long_wsize)
+for (chr in ls_chr) {
+    # open the summary table
+    fn_summary <- paste0(dir_output_prefix, chr, "/", chr, ".sumtable")
+    df_summary <- data.table::fread(fn_summary)
+
+    # extract the best window size
+    best_wsize_step <- df_summary$step[nrow(df_summary)]
+    best_wsize <- df_summary$s_wsize[nrow(df_summary)]
+
+    df_summary_subset <- df_summary[df_summary$diff_aic > 0,]
+    if (nrow(df_summary_subset) > 0) {
+        best_wsize_step <- df_summary_subset$step[1]-1
+        best_wsize <- df_summary_subset$l_wsize[1]
+    }
+
+    # iterate over windows
+    fn_uqtops <- paste0(dir_output_prefix, chr, "/", best_wsize_step, "/", best_wsize, "/", best_wsize, ".uqtops")
+    df_uqtops <- data.table::fread(fn_uqtops)
+
+    # transform data.table
+    df_uqtops_transform <- df_uqtops %>%
+        select(topology,n) %>%
+        mutate(wsize="best", count_percentage=n/sum(n))
+
+    # update data.table
+    df_topology_count <- rbind(df_topology_count, df_uqtops_transform)
+}
 
 # check if the best window size has all topologies
 ls_topologies <- unique(df_topology_count$topology)
