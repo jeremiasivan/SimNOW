@@ -30,7 +30,7 @@ if (!dir.exists(dir_output_summary)) {
 
 # output files
 fn_tops_wsize <- paste0(dir_output_summary, "all.tops_wsize.tsv")
-fn_tops_best_wsize <- paste0(dir_output_summary, "all.best.tops_wsize.tsv")
+fn_tops_best_chr <- paste0(dir_output_summary, "all.best.tops_chr.tsv")
 
 fn_uqtops_dist_tiff <- paste0(dir_output_summary, "all.best.tops_dist.tiff")
 fn_conwindows_dist_tiff <- paste0(dir_output_summary, "all.best.conwins_dist.tiff")
@@ -182,6 +182,7 @@ df_topology_count_long <- df_topology_count_long %>%
     filter(!is.na(count)) %>%
     mutate(count_percentage=count/sum(count))
 df_topology_count_long$chr <- fct_inorder(df_topology_count_long$chr)
+data.table::fwrite(df_topology_count_long, file=fn_tops_best_chr, sep="\t", quote=F)
 
 df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, cols = -count, names_to = "chr", values_to = "n")
 df_topology_consecutive_long$chr <- fct_inorder(df_topology_consecutive_long$chr)
