@@ -29,10 +29,19 @@ if (!dir.exists(dir_output_summary)) {
 }
 
 # output files
-fn_uqtops_wsize <- paste0(dir_output_summary, "all.top_wsize.tsv")
-fn_uqtops_dist_tiff <- paste0(dir_output_summary, "all.uqtops_dist.tiff")
-fn_conwindows_dist_tiff <- paste0(dir_output_summary, "all.conwindows_dist.tiff")
-fn_conwindows_dist_filtered_tiff <- paste0(dir_output_summary, "all.conwindows_dist_filtered.tiff")
+fn_tops_wsize <- paste0(dir_output_summary, "all.tops_wsize.tsv")
+fn_tops_best_wsize <- paste0(dir_output_summary, "all.best.tops_wsize.tsv")
+
+fn_uqtops_dist_tiff <- paste0(dir_output_summary, "all.best.tops_dist.tiff")
+fn_conwindows_dist_tiff <- paste0(dir_output_summary, "all.best.conwins_dist.tiff")
+fn_conwindows_dist_filtered_tiff <- paste0(dir_output_summary, "all.best.conwins_dist_filtered.tiff")
+
+suffix_all_best_wintable <- ".all.best.wintable"
+suffix_all_best_toptable <- ".all.best.toptable"
+suffix_all_best_contable <- ".all.best.contable"
+
+suffix_wsize_toptable <- ".wsize_toptable"
+suffix_all_wsize_toptable <- ".all.wsize_toptable"
 ```
 
 ```{r greatapes-functions, include=FALSE}
@@ -56,7 +65,7 @@ f_extract_perwindow_topology <- function(fn_perwindowsum, dir_output_prefix, chr
         tre <- ape::read.tree(fn_tree)
         tre$edge.length <- NULL
         tre$node.label <- NULL
-
+        
         return(data.table::data.table(chr=chr, wsize=window_size, topology=ape::write.tree(tre)))
     }
 
@@ -109,10 +118,10 @@ df_topology_consecutive <- data.table::data.table(count=numeric())
 # iterate over chromosomes
 for (chr in ls_chr) {
     # output files
-    fn_tretable_temp <- paste0(dir_output_prefix, chr, "/", chr, ".tretable")
-    fn_toptable_temp <- paste0(dir_output_prefix, chr, "/", chr, ".toptable")
-    fn_contable_temp <- paste0(dir_output_prefix, chr, "/", chr, ".contable")
-    if (all(file.exists(fn_tretable_temp, fn_toptable_temp, fn_contable_temp)) && !params$redo) {
+    fn_wintable_temp <- paste0(dir_output_prefix, chr, "/", chr, suffix_all_best_wintable)
+    fn_toptable_temp <- paste0(dir_output_prefix, chr, "/", chr, suffix_all_best_toptable)
+    fn_contable_temp <- paste0(dir_output_prefix, chr, "/", chr, suffix_all_best_contable)
+    if (all(file.exists(fn_wintable_temp, fn_toptable_temp, fn_contable_temp)) && !params$redo) {
         # combine output files
         df_toptable_temp <- data.table::fread(fn_toptable_temp)
         df_topology_count <- data.table::merge.data.table(df_topology_count, df_toptable_temp, by="topology", all=T)
@@ -142,7 +151,7 @@ for (chr in ls_chr) {
     df_output_chr <- f_extract_perwindow_topology(fn_perwindowsum, dir_output_prefix, chr, best_wsize_step, best_wsize, params$thread)
 
     # save the output file
-    data.table::fwrite(df_output_chr, file=fn_tretable_temp, sep="\t", quote=F)
+    data.table::fwrite(df_output_chr, file=fn_wintable_temp, sep="\t", quote=F)
 
     # count number of unique topology
     df_topology_count_temp <- df_output_chr %>%
@@ -251,11 +260,11 @@ df_topology_count <- data.table::data.table(chr=factor(), wsize=factor(), topolo
 # iterate over chromosomes
 for (chr in ls_chr) {
     # output files
-    fn_wintoptable_temp <- paste0(dir_output_prefix, chr, "/", chr, ".wintoptable")
-    if (file.exists(fn_wintoptable_temp) && !params$redo) {
+    fn_wsize_toptable_temp <- paste0(dir_output_prefix, chr, "/", chr, suffix_wsize_toptable)
+    if (file.exists(fn_wsize_toptable_temp) && !params$redo) {
         # combine output files
-        df_wintoptable_temp <- data.table::fread(fn_wintoptable_temp)
-        df_topology_count <- rbind(df_topology_count, df_wintoptable_temp)
+        df_wsize_toptable_temp <- data.table::fread(fn_wsize_toptable_temp)
+        df_topology_count <- rbind(df_topology_count, df_wsize_toptable_temp)
 
         next
     }
@@ -281,7 +290,7 @@ for (chr in ls_chr) {
         long_wsize <- df_summary_subset$l_wsize[step]
         short_wsize <- df_summary_subset$s_wsize[step]
 
-        df_topology_count_temp <- data.table::data.table(chr=character(), wsize=numeric(), topology=character(), count=numeric(), count_percentage=numeric())
+        df_topology_count_temp <- data.table::data.table(chr=factor(), wsize=factor(), topology=character(), count=numeric(), count_percentage=numeric())
 
         # check if it is the initial step
         if (step == 1) {
@@ -322,10 +331,41 @@ for (chr in ls_chr) {
     stopCluster(nwcl)
 
     # save data.table
-    data.table::fwrite(output, file=fn_wintoptable_temp, sep="\t", quote=F)
+    data.table::fwrite(output, file=fn_wsize_toptable_temp, sep="\t", quote=F)
 
     # update data.table
     df_topology_count <- rbind(df_topology_count, output)
+}
+
+# open the topology distribution for the best window sizes for each chromosome
+df_topology_count_long_wsize <- df_topology_count_long %>%
+    mutate(wsize="best")
+df_topology_count <- rbind(df_topology_count, df_topology_count_long_wsize)
+
+# check if the best window size has all topologies
+ls_topologies <- unique(df_topology_count$topology)
+for (chr in ls_chr) {
+    # open the summary table
+    fn_summary <- paste0(dir_output_prefix, chr, "/", chr, ".sumtable")
+    df_summary <- data.table::fread(fn_summary)
+
+    # extract steps with specified range of window sizes
+    df_summary_subset <- df_summary[df_summary$l_wsize<=params$initial_wsize]
+    df_summary_subset <- df_summary_subset[df_summary_subset$s_wsize>=params$min_wsize]
+
+    # extract window sizes
+    ls_wsize <- c("best", unique(c(df_summary_subset$l_wsize, df_summary_subset$s_wsize)))
+
+    for (wsize in ls_wsize) {
+        for (top in ls_topologies) {
+            count_temp <- df_topology_count$count[df_topology_count$wsize==wsize & df_topology_count$chr==chr & df_topology_count$topology==top]
+
+            if (length(count_temp) == 0) {
+                df_topology_count <- rbind(df_topology_count,
+                                           data.table::data.table(chr=chr, wsize=wsize, topology=top, count=0, count_percentage=0))
+            }
+        }
+    }
 }
 
 # new data.frame to store average proportion
@@ -363,11 +403,11 @@ for (chr in ls_chr) {
     df_topology_count_temp <- data.table::data.table(chr=factor(), wsize=factor(), topology=character(), count=numeric(), count_percentage=numeric())
 
     # output files
-    fn_wintoptable_temp <- paste0(dir_output_prefix, chr, "/", chr, ".all.wintoptable")
-    if (file.exists(fn_wintoptable_temp) && !params$redo) {
+    fn_wsize_toptable_temp <- paste0(dir_output_prefix, chr, "/", chr, suffix_all_wsize_toptable)
+    if (file.exists(fn_wsize_toptable_temp) && !params$redo) {
         # combine output files
-        df_wintoptable_temp <- data.table::fread(fn_wintoptable_temp)
-        df_topology_count <- rbind(df_topology_count, df_wintoptable_temp)
+        df_wsize_toptable_temp <- data.table::fread(fn_wsize_toptable_temp)
+        df_topology_count <- rbind(df_topology_count, df_wsize_toptable_temp)
 
         next
     }
@@ -422,7 +462,7 @@ for (chr in ls_chr) {
     }
 
     # save data.table
-    data.table::fwrite(df_topology_count_temp, file=fn_wintoptable_temp, sep="\t", quote=F)
+    data.table::fwrite(df_topology_count_temp, file=fn_wsize_toptable_temp, sep="\t", quote=F)
 
     # update data.table
     df_topology_count <- rbind(df_topology_count, df_topology_count_temp)
@@ -431,7 +471,7 @@ for (chr in ls_chr) {
 # open the topology distribution for the best window sizes for each chromosome
 for (chr in ls_chr) {
     # input file
-    fn_toptable_temp <- paste0(dir_output_prefix, chr, "/", chr, ".toptable")
+    fn_toptable_temp <- paste0(dir_output_prefix, chr, "/", chr, suffix_all_best_toptable)
     if (!file.exists(fn_toptable_temp)) {
         next
     }
@@ -481,7 +521,7 @@ df_topology_count_avg <- df_topology_count %>%
     group_by(wsize) %>%
     mutate(total_count=sum(count), count_percentage=count/total_count)
 
-data.table::fwrite(df_topology_count_avg, file=fn_uqtops_wsize, sep="\t", quote=F)
+data.table::fwrite(df_topology_count_avg, file=fn_tops_wsize, sep="\t", quote=F)
 
 # visualisation
 top_counter <- 1
