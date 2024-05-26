@@ -83,14 +83,14 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
     df_topology_count_avg_wsize <- df_topology_count_avg[df_topology_count_avg$wsize!="best",]
 
     plot <- ggplot(df_topology_count_wsize, aes(x=wsize, y=count_percentage, group=chr)) +
-        geom_line(aes(size=1, alpha=0.2)) +
-        geom_point(aes(colour=chr, size=20)) +
+        geom_line(aes(alpha=0.2), size=6) +
+        geom_point(aes(colour=chr), size=15) +
         viridis::scale_color_viridis(discrete = TRUE) + 
         labs(colour="Chromosome")
 
     if (!is.null(df_topology_count_avg_wsize)) {
-        plot <- plot + geom_point(data=df_topology_count_avg_wsize, aes(x=wsize, y=count_percentage), colour="red", size=12, shape=18) +
-            geom_line(data=df_topology_count_avg_wsize, aes(x=wsize, y=count_percentage), colour="red", size=4)
+        plot <- plot + geom_point(data=df_topology_count_avg_wsize, aes(x=wsize, y=count_percentage), colour="red", size=15, shape=18) +
+            geom_line(data=df_topology_count_avg_wsize, aes(x=wsize, y=count_percentage), colour="red", size=6)
     }
         
     plot <- plot + ggtitle(paste("Distribution of", topology, "across Window Sizes")) + ylab("Proportion") + xlab("Window Size") +
@@ -100,9 +100,9 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
             plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
             axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
             axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            strip.text = element_text(size=30),
+            axis.text.y=element_text(size=40),
+            axis.text.x=element_text(size=40),
+            strip.text=element_text(size=40),
             legend.title=element_text(size=30),
             legend.text=element_text(size=30),
             legend.key.size=unit(2,"cm")
@@ -114,7 +114,7 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
 f_plot_bestwindow_topology_dist <- function(df_topology_count) {
     plot <- ggplot(df_topology_count, aes(x=topology, y=count_percentage)) +
         geom_boxplot(outlier.shape = NA) +
-        geom_point(aes(colour=chr, size=20)) +
+        geom_point(aes(colour=chr), size=15) +
         ggtitle("Topology Distribution for Best Window Sizes across Chromosomes") +
         xlab("Topology") + ylab("Proportion") + labs(colour="Chromosome") +
         guides(size="none", colour=guide_legend(override.aes=list(size=5))) +
@@ -123,9 +123,9 @@ f_plot_bestwindow_topology_dist <- function(df_topology_count) {
             plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
             axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
             axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-            axis.text.y=element_text(size=30),
-            axis.text.x=element_text(size=30),
-            strip.text = element_text(size=30),
+            axis.text.y=element_text(size=40),
+            axis.text.x=element_text(size=40),
+            strip.text = element_text(size=40),
             legend.title=element_text(size=30),
             legend.text=element_text(size=30),
             legend.key.size=unit(2,"cm")
