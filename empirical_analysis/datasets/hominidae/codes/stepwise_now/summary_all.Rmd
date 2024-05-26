@@ -83,7 +83,7 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
     df_topology_count_avg_wsize <- df_topology_count_avg[df_topology_count_avg$wsize!="best",]
 
     plot <- ggplot(df_topology_count_wsize, aes(x=wsize, y=count_percentage, group=chr)) +
-        geom_line(aes(alpha=0.2), size=6) +
+        geom_line(aes(alpha=0.2), size=4) +
         geom_point(aes(colour=chr), size=15) +
         viridis::scale_color_viridis(discrete = TRUE) + 
         labs(colour="Chromosome")
@@ -113,8 +113,9 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
 
 f_plot_bestwindow_topology_dist <- function(df_topology_count) {
     plot <- ggplot(df_topology_count, aes(x=topology, y=count_percentage)) +
-        geom_boxplot(outlier.shape = NA) +
+        geom_boxplot(lwd=3, outlier.shape = NA) +
         geom_point(aes(colour=chr), size=15) +
+        viridis::scale_color_viridis(discrete = TRUE) +
         ggtitle("Topology Distribution for Best Window Sizes across Chromosomes") +
         xlab("Topology") + ylab("Proportion") + labs(colour="Chromosome") +
         guides(size="none", colour=guide_legend(override.aes=list(size=5))) +
