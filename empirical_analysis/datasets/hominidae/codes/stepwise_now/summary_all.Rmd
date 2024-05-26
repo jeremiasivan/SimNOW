@@ -368,7 +368,8 @@ for (chr in ls_chr) {
     # transform data.table
     df_uqtops_transform <- df_uqtops %>%
         select(topology,n) %>%
-        mutate(chr=chr, wsize="best", count_percentage=n/sum(n))
+        mutate(chr=chr, wsize="best", count_percentage=n/sum(n)) %>%
+        rename(count=n)
 
     # update data.table
     df_topology_count <- rbind(df_topology_count, df_uqtops_transform)
