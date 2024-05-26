@@ -32,6 +32,9 @@ if (!dir.exists(dir_output_summary)) {
 fn_tops_wsize <- paste0(dir_output_summary, "all.tops_wsize.tsv")
 fn_tops_best_chr <- paste0(dir_output_summary, "all.best.tops_chr.tsv")
 
+fn_tops_best_chr_tiff <- paste0(dir_output_summary, ".best.tops_chr.tiff")
+fn_tops_all_best_chr_tiff <- paste0(dir_output_summary, "all.best.tops_chr.tiff")
+
 fn_uqtops_dist_tiff <- paste0(dir_output_summary, "all.best.tops_dist.tiff")
 fn_conwindows_dist_tiff <- paste0(dir_output_summary, "all.best.conwins_dist.tiff")
 fn_conwindows_dist_filtered_tiff <- paste0(dir_output_summary, "all.best.conwins_dist_filtered.tiff")
@@ -75,15 +78,19 @@ f_extract_perwindow_topology <- function(fn_perwindowsum, dir_output_prefix, chr
 }
 
 f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_avg, topology) {
-    plot <- ggplot(df_topology_count, aes(x=wsize, y=count_percentage, group=chr)) +
+    # create a plot of all window sizes
+    df_topology_count_wsize <- df_topology_count[df_topology_count$wsize!="best"]
+    df_topology_count_avg_wsize <- df_topology_count_avg[df_topology_count_avg$wsize!="best"]
+
+    plot <- ggplot(df_topology_count_wsize, aes(x=wsize, y=count_percentage, group=chr)) +
         geom_line(aes(size=1, alpha=0.2)) +
         geom_point(aes(colour=chr, size=20)) +
         viridis::scale_color_viridis(discrete = TRUE) + 
         labs(colour="Chromosome")
 
-    if (!is.null(df_topology_count_avg)) {
-        plot <- plot + geom_point(data=df_topology_count_avg, aes(x=wsize, y=count_percentage), colour="red", size=12, shape=18) +
-            geom_line(data=df_topology_count_avg, aes(x=wsize, y=count_percentage), colour="red", size=4)
+    if (!is.null(df_topology_count_avg_wsize)) {
+        plot <- plot + geom_point(data=df_topology_count_avg_wsize, aes(x=wsize, y=count_percentage), colour="red", size=12, shape=18) +
+            geom_line(data=df_topology_count_avg_wsize, aes(x=wsize, y=count_percentage), colour="red", size=4)
     }
         
     plot <- plot + ggtitle(paste("Distribution of", topology, "across Window Sizes")) + ylab("Proportion") + xlab("Window Size") +
@@ -400,7 +407,7 @@ df_topology_count_avg <- df_topology_count %>%
     group_by(wsize) %>%
     mutate(total_count=sum(count), count_percentage=count/total_count)
 
-# visualisation
+# visualisation for all window sizes
 top_counter <- 1
 for (top in sort(unique(df_topology_count$topology))) {
     # subset the data.table
@@ -416,6 +423,31 @@ for (top in sort(unique(df_topology_count$topology))) {
 
     top_counter <- top_counter + 1
 }
+
+# visualisation for best window sizes
+df_topology_count_subset <- df_topology_count[df_topology_count$wsize=="best",]
+
+plot <- ggplot(df_topology_count_subset, aes(x=topology, y=count_percentage)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(shape=16, aes(colour=chr)) +
+    ggtitle("Topology Distribution for Best Window Sizes across Chromosomes") +
+    xlab("Topology") + ylab("Proportion") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+tiff(filename=fn_tops_best_chr_tiff, units="px", width=2880, height=1800)
+print(plot)
+dev.off()
 ```
 
 ```{r greatapes-all-tree-wsize}
@@ -548,7 +580,7 @@ df_topology_count_avg <- df_topology_count %>%
 
 data.table::fwrite(df_topology_count_avg, file=fn_tops_wsize, sep="\t", quote=F)
 
-# visualisation
+# visualisation for all window sizes
 top_counter <- 1
 for (top in sort(unique(df_topology_count$topology))) {
     # subset the data.table
@@ -564,4 +596,29 @@ for (top in sort(unique(df_topology_count$topology))) {
 
     top_counter <- top_counter + 1
 }
+
+# visualisation for best window sizes
+df_topology_count_subset <- df_topology_count[df_topology_count$wsize=="best",]
+
+plot <- ggplot(df_topology_count_subset, aes(x=topology, y=count_percentage)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(shape=16, aes(colour=chr)) +
+    ggtitle("Topology Distribution for Best Window Sizes across Chromosomes") +
+    xlab("Topology") + ylab("Proportion") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+tiff(filename=fn_tops_all_best_chr_tiff, units="px", width=2880, height=1800)
+print(plot)
+dev.off()
 ```
