@@ -82,7 +82,7 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
     df_topology_count_wsize <- df_topology_count[df_topology_count$wsize!="best",]
     df_topology_count_avg_wsize <- df_topology_count_avg[df_topology_count_avg$wsize!="best",]
 
-    plot <- ggplot(df_topology_count_wsize, aes(x=wsize, y=count_percentage, group=chr)) +
+    plot <- ggplot(df_topology_count_wsize, aes(x=fct_rev(wsize), y=count_percentage, group=chr)) +
         geom_line(aes(alpha=0.2), size=4) +
         geom_point(aes(colour=chr), size=15) +
         viridis::scale_color_viridis(discrete = TRUE) + 
@@ -144,7 +144,7 @@ ls_chr <- str_sort(ls_chr, numeric=T)
 
 # output files
 df_topology_count <- data.table::data.table(topology=character())
-df_topology_consecutive <- data.table::data.table(count=numeric())
+df_topology_consecutive <- data.table::data.table(topology=character(), count=numeric())
 
 # iterate over chromosomes
 for (chr in ls_chr) {
@@ -158,7 +158,7 @@ for (chr in ls_chr) {
         df_topology_count <- data.table::merge.data.table(df_topology_count, df_toptable_temp, by="topology", all=T)
 
         df_contable_temp <- data.table::fread(fn_contable_temp)
-        df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_contable_temp, by="count", all=T)
+        df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_contable_temp, by=c("topology","count"), all=T)
 
         next
     }
@@ -199,23 +199,23 @@ for (chr in ls_chr) {
         group_by(topology,
                  group_run=data.table::rleid(topology)) %>%
         summarise(count=n()) %>%
-        group_by(count) %>%
+        group_by(topology,count) %>%
         summarise(!!chr:=n())
 
     # save the output file
     data.table::fwrite(df_topology_consecutive_temp, file=fn_contable_temp, sep="\t", quote=F)
-    df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_topology_consecutive_temp, by="count", all=T)
+    df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_topology_consecutive_temp, by=c("topology","count"), all=T)
 }
 
 # transform data.table
-df_topology_count_long <- tidyr::pivot_longer(df_topology_count, cols = -topology, names_to = "chr", values_to = "count")
+df_topology_count_long <- tidyr::pivot_longer(df_topology_count, cols = starts_with("chr"), names_to = "chr", values_to = "count")
 df_topology_count_long <- df_topology_count_long %>%
     filter(!is.na(count)) %>%
     mutate(count_percentage=count/sum(count))
 df_topology_count_long$chr <- fct_inorder(df_topology_count_long$chr)
 data.table::fwrite(df_topology_count_long, file=fn_tops_best_chr, sep="\t", quote=F)
 
-df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, cols = -count, names_to = "chr", values_to = "n")
+df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, cols = starts_with("chr"), names_to = "chr", values_to = "n")
 df_topology_consecutive_long$chr <- fct_inorder(df_topology_consecutive_long$chr)
 
 # visualisation for unique topology count
@@ -236,7 +236,7 @@ plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage, fill=
       legend.key.size=unit(2,"cm")
     )
 
-tiff(filename=fn_uqtops_dist_tiff, units="px", width=2880, height=1800)
+tiff(filename=fn_uqtops_dist_tiff, units="px", width=1600, height=2800)
 print(plot)
 dev.off()
 
@@ -244,6 +244,8 @@ dev.off()
 plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
     geom_col() +
     ggtitle("Consecutive Topology Distribution across Chromosome") +
+    facet_wrap(.~topology, scales="free", ncol=1) +
+    scale_x_log10() + scale_y_log10() +
     xlab("Number of consecutive windows") + ylab("Count") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
@@ -258,7 +260,7 @@ plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
       legend.key.size=unit(2,"cm")
     )
 
-tiff(filename=fn_conwindows_dist_tiff, units="px", width=2880, height=1800)
+tiff(filename=fn_conwindows_dist_tiff, units="px", width=1600, height=2800)
 print(plot)
 dev.off()
 
@@ -266,6 +268,8 @@ dev.off()
 plot <- ggplot(df_topology_consecutive_long[df_topology_consecutive_long$n>1,], aes(x=count, y=n, fill=chr)) +
     geom_col() +
     ggtitle("Consecutive Topology Distribution across Chromosome with Count>1") +
+    facet_wrap(.~topology, scales="free", ncol=1) +
+    scale_x_log10() + scale_y_log10() +
     xlab("Number of consecutive windows") + ylab("Count") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
@@ -601,6 +605,17 @@ for (top in sort(unique(df_topology_count$topology))) {
 
     tiff(filename=fn_topology_count, units="px", width=2880, height=1800)
     print(f_plot_perwindow_topology_dist(df_topology_count_subset, df_topology_count_avg_subset, top))
+    dev.off()
+
+    # combine autosomes into one color
+    df_topology_count_subset <- df_topology_count_subset %>%
+        mutate(chr=ifelse(chr %in% c("chrX","chrY","chrM"),chr,"autosomes"))
+    
+    # output file
+    fn_topology_count <- paste0(dir_output_summary, "all.top", top_counter, "_wsize_v2.tiff")
+
+    tiff(filename=fn_topology_count, units="px", width=2880, height=1800)
+    print(f_plot_perwindow_topology_dist(df_topology_count_subset, NULL, top))
     dev.off()
 
     top_counter <- top_counter + 1
