@@ -80,7 +80,7 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
     # create a plot of all window sizes
     df_topology_count_wsize <- df_topology_count[df_topology_count$wsize!="best",]
 
-    plot <- ggplot(df_topology_count_wsize, aes(x=fct_rev(wsize), y=count_percentage, group=chr, xmin=0, xmax=1)) +
+    plot <- ggplot(df_topology_count_wsize, aes(x=fct_rev(wsize), y=count_percentage, group=chr, ymin=0, ymax=1)) +
         geom_line(aes(alpha=0.2), size=4) +
         geom_point(aes(colour=chr), size=15) +
         viridis::scale_color_viridis(discrete = TRUE) + 
@@ -223,8 +223,9 @@ df_topology_consecutive_long$chr <- fct_inorder(df_topology_consecutive_long$chr
 # visualisation for unique topology count
 plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage, fill=chr)) +
     geom_col() +
+    viridis::scale_color_viridis(discrete = TRUE) +
     ggtitle("Topology Distribution across Chromosome") +
-    xlab("Topology") + ylab("Proportion") +
+    xlab("Topology") + ylab("Proportion") + labs(fill="Chromosome") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
@@ -245,10 +246,11 @@ dev.off()
 # visualisation for consecutive windows
 plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
     geom_col() +
+    viridis::scale_color_viridis(discrete = TRUE) +
     ggtitle("Consecutive Topology Distribution across Chromosome") +
     facet_wrap(.~topology, scales="free", ncol=1) +
     scale_x_log10() + scale_y_log10() +
-    xlab("Number of consecutive windows") + ylab("Count") +
+    xlab("Number of consecutive windows") + ylab("Count") + labs(fill="Chromosome") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
