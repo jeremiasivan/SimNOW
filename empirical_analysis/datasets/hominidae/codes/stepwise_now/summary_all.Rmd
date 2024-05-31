@@ -84,7 +84,7 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
         geom_line(aes(alpha=0.2), size=4) +
         geom_point(aes(colour=chr), size=15) +
         viridis::scale_color_viridis(discrete = TRUE) + 
-        labs(colour="Chromosome")
+        labs(colour="Chromosomes")
 
     if (!is.null(df_topology_count_avg)) {
         df_topology_count_avg_wsize <- df_topology_count_avg[df_topology_count_avg$wsize!="best",]
@@ -117,7 +117,7 @@ f_plot_bestwindow_topology_dist <- function(df_topology_count) {
         geom_point(aes(colour=chr), size=15) +
         viridis::scale_color_viridis(discrete = TRUE) +
         ggtitle("Topology Distribution for Best Window Sizes across Chromosomes") +
-        xlab("Topology") + ylab("Proportion") + labs(colour="Chromosome") +
+        xlab("Topology") + ylab("Proportion") + labs(colour="Chromosomes") +
         guides(size="none", colour=guide_legend(override.aes=list(size=5))) +
         theme(
             plot.title = element_text(hjust = 0.5, size = 50),
@@ -223,9 +223,9 @@ df_topology_consecutive_long$chr <- fct_inorder(df_topology_consecutive_long$chr
 # visualisation for unique topology count
 plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage, fill=chr)) +
     geom_col() +
-    viridis::scale_color_viridis(discrete = TRUE) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
     ggtitle("Topology Distribution across Chromosome") +
-    xlab("Topology") + ylab("Proportion") + labs(fill="Chromosome") +
+    xlab("Topology") + ylab("Proportion") + labs(fill="Chromosomes") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
@@ -246,11 +246,11 @@ dev.off()
 # visualisation for consecutive windows
 plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
     geom_col() +
-    viridis::scale_color_viridis(discrete = TRUE) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
     ggtitle("Consecutive Topology Distribution across Chromosome") +
     facet_wrap(.~topology, scales="free", ncol=1) +
     scale_x_log10() + scale_y_log10() +
-    xlab("Number of consecutive windows") + ylab("Count") + labs(fill="Chromosome") +
+    xlab("Number of consecutive windows") + ylab("Count") + labs(fill="Chromosomes") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
