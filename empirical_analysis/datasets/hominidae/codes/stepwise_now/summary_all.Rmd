@@ -80,7 +80,7 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
     # create a plot of all window sizes
     df_topology_count_wsize <- df_topology_count[df_topology_count$wsize!="best",]
 
-    plot <- ggplot(df_topology_count_wsize, aes(x=fct_rev(wsize), y=count_percentage, group=chr)) +
+    plot <- ggplot(df_topology_count_wsize, aes(x=fct_rev(wsize), y=count_percentage, group=chr, xmin=0, xmax=1)) +
         geom_line(aes(alpha=0.2), size=4) +
         geom_point(aes(colour=chr), size=15) +
         viridis::scale_color_viridis(discrete = TRUE) + 
@@ -238,7 +238,7 @@ plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage, fill=
       legend.key.size=unit(2,"cm")
     )
 
-tiff(filename=fn_uqtops_dist_tiff, units="px", width=1600, height=2800)
+tiff(filename=fn_uqtops_dist_tiff, units="px", width=2880, height=1800)
 print(plot)
 dev.off()
 
