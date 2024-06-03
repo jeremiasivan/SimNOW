@@ -643,6 +643,9 @@ for (interval in ls_window_spacing) {
         # set up output directory
         dir_filter_toptable_temp <- paste0(dir_output_prefix, chr, "/filtered/")
 
+        # set up temporary data.table
+        df_topology_chr <- data.table::data.table(window=factor(), topology=character())
+
         # output file
         fn_filter_toptable_temp <- paste0(dir_filter_toptable_temp, chr, ".", interval, suffix_best_filter_toptable)
         if (file.exists(fn_filter_toptable_temp) && !params$redo) {
@@ -674,52 +677,81 @@ for (interval in ls_window_spacing) {
 
         # extract informative windows
         ls_idx <- sort(which(df_perwindowsum$is_informative))
+        ls_idx_filtered <- c()
 
         # store the first entry
-        ls_idx_filtered <- ls_idx[1]
-
-        # iterate over indices
-        for (idx in ls_idx[-1]) {
-            if (idx >= ls_idx_filtered[length(ls_idx_filtered)]+interval) {
-                ls_idx_filtered <- c(ls_idx_filtered, idx)
-            }
-        }
-
-        # set up number of threads
-        stepthread <- ifelse(length(ls_idx_filtered) < params$thread, length(ls_idx_filtered), params$thread)
-
-        # create doSNOW cluster
-        nwcl <- makeCluster(stepthread)
-        doSNOW::registerDoSNOW(nwcl)
-
-        # iterate over updated filtered windows
-        df_output_temp <- foreach (idx = ls_idx_filtered, .combine='rbind') %dopar% {
+        for (idx in ls_idx) {
+            # extract window name
             window <- df_perwindowsum$name[idx]
 
             # check if treefile exists
             fn_tree <- paste0(dir_best_wsize, "filtered/", window, "/", window, ".fa.treefile")
+            if (file.exist(fn_tree)) {
+                # open treefile
+                tre <- ape::read.tree(fn_tree)
+                tre$edge.length <- NULL
+                
+                # extract branch length
+                bl <- subset(tre$node.label, tre$node.label != "")
 
-            # open treefile
-            tre <- ape::read.tree(fn_tree)
-            tre$edge.length <- NULL
-            tre$node.label <- NULL
-            
-            return(data.table::data.table(window=window, topology=ape::write.tree(tre)))
+                if (!is.null(bl) && mean(as.numeric(bl)) >= 95) {
+                    tre$node.label <- NULL
+                    df_topology_chr <- rbind(df_topology_chr,
+                                             data.table::data.table(window=window, topology=ape::write.tree(tre)))
+
+                    ls_idx_filtered <- idx
+                    break
+                }
+            }
+        }
+
+        # exit the loop if length is zero
+        if (length(ls_idx_filtered) == 0) {
+            next
+        }
+
+        # iterate over updated filtered windows
+        for (idx in ls_idx[ls_idx>ls_idx_filtered[1]]) {
+            if (idx < ls_idx_filtered[length(ls_idx_filtered)]+interval) {
+                next
+            }
+
+            # extract window name
+            window <- df_perwindowsum$name[idx]
+
+            # check if treefile exists
+            fn_tree <- paste0(dir_best_wsize, "filtered/", window, "/", window, ".fa.treefile")
+            if (file.exist(fn_tree)) {
+                # open treefile
+                tre <- ape::read.tree(fn_tree)
+                tre$edge.length <- NULL
+                
+                # extract branch length
+                bl <- subset(tre$node.label, tre$node.label != "")
+
+                if (!is.null(bl) && mean(as.numeric(bl)) >= 95) {
+                    tre$node.label <- NULL
+                    df_topology_chr <- rbind(df_topology_chr,
+                                             data.table::data.table(window=window, topology=ape::write.tree(tre)))
+
+                    ls_idx_filtered <- c(ls_idx_filtered, idx)
+                }
+            }   
         }
 
         stopCluster(nwcl)
 
         # transform data.table
-        df_output_temp <- df_output_temp %>%
+        df_topology_chr <- df_topology_chr %>%
             group_by(topology) %>%
             summarise(count=n()) %>%
             mutate(interval=interval, chr=chr, count_percentage=count/sum(count))
 
         # save data.table
-        data.table::fwrite(df_output_temp, file=fn_filter_toptable_temp, sep="\t", quote=F)
+        data.table::fwrite(df_topology_chr, file=fn_filter_toptable_temp, sep="\t", quote=F)
 
         # update data.table
-        df_topology_temp <- rbind(df_topology_temp, df_output_temp)
+        df_topology_temp <- rbind(df_topology_temp, df_topology_chr)
     }
 
     # update data.table
