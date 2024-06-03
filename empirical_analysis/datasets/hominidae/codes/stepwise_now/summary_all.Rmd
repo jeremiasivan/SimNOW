@@ -248,7 +248,7 @@ plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
     geom_col() +
     viridis::scale_fill_viridis(discrete = TRUE) +
     ggtitle("Consecutive Topology Distribution across Chromosome") +
-    facet_wrap(.~topology, scales="free", ncol=1) +
+    facet_wrap(.~topology, ncol=1) +
     scale_x_log10() + scale_y_log10() +
     xlab("Number of consecutive windows") + ylab("Count") + labs(fill="Chromosomes") +
     theme(
@@ -428,6 +428,18 @@ for (top in sort(unique(df_topology_count$topology))) {
 
     tiff(filename=fn_topology_count, units="px", width=2880, height=1800)
     print(f_plot_perwindow_topology_dist(df_topology_count_subset, df_topology_count_avg_subset, top))
+    dev.off()
+
+    # combine autosomes into one color
+    df_topology_count_subset <- df_topology_count_subset %>%
+        mutate(chr=if_else(chr %in% c("chrX","chrY","chrM"),chr,"autosomes")) %>%
+        mutate(chr=fct_inorder(chr))
+    
+    # output file
+    fn_topology_count <- paste0(dir_output_summary, "top", top_counter, "_wsize_v2.tiff")
+
+    tiff(filename=fn_topology_count, units="px", width=2880, height=1800)
+    print(f_plot_perwindow_topology_dist(df_topology_count_subset, NULL, top))
     dev.off()
 
     top_counter <- top_counter + 1
