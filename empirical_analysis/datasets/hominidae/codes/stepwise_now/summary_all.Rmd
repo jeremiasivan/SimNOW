@@ -44,6 +44,8 @@ suffix_all_best_contable <- ".all.best.contable"
 
 suffix_wsize_toptable <- ".wsize_toptable"
 suffix_all_wsize_toptable <- ".all.wsize_toptable"
+
+suffix_best_filter_toptable <- ".best.filter_toptable"
 ```
 
 ```{r greatapes-functions, include=FALSE}
@@ -622,4 +624,126 @@ plot <- f_plot_bestwindow_topology_dist(df_topology_count_subset)
 tiff(filename=fn_tops_all_best_chr_tiff, units="px", width=2880, height=1800)
 print(plot)
 dev.off()
+```
+
+```{r greatapes-filterwindow}
+# set up list of window spacing
+ls_window_spacing <- c(1,2,5,10,20,50,100,200,500,1000)
+
+# set up output data.table
+df_topology <- data.table::data.table(interval=numeric(), chr=factor(), topology=character(), count=numeric(), count_percentage=numeric())
+
+# iterate over window spacing
+for (interval in ls_window_spacing) {
+    # set up temporary data.table
+    df_topology_temp <- data.table::data.table(interval=numeric(), chr=factor(), topology=character(), count=numeric(), count_percentage=numeric())
+
+    # iterate over chromosomes
+    for (chr in ls_chr) {
+        # open the summary table
+        fn_summary <- paste0(dir_output_prefix, chr, "/", chr, ".sumtable")
+        df_summary <- data.table::fread(fn_summary)
+
+        # extract the best window size
+        best_wsize_step <- df_summary$step[nrow(df_summary)]
+        best_wsize <- df_summary$s_wsize[nrow(df_summary)]
+
+        df_summary_subset <- df_summary[df_summary$diff_aic > 0,]
+        if (nrow(df_summary_subset) > 0) {
+            best_wsize_step <- df_summary_subset$step[1]-1
+            best_wsize <- df_summary_subset$l_wsize[1]
+        }
+
+        # open perwindowsum file
+        dir_best_wsize <- paste0(dir_output_prefix, chr, "/", best_wsize_step, "/", best_wsize, "/")
+        fn_perwindowsum <-  paste0(dir_best_wsize, best_wsize, ".perwindowsum")
+        df_perwindowsum <- data.table::fread(fn_perwindowsum)
+
+        # extract informative windows
+        ls_idx <- sort(which(df_perwindowsum$is_informative))
+
+        # store the first entry
+        ls_idx_filtered <- ls_idx[1]
+
+        # iterate over indices
+        for (idx in ls_idx[-1]) {
+            if (idx >= ls_idx_filtered[length(ls_idx_filtered)]+interval) {
+                ls_idx_filtered <- c(ls_idx_filtered, idx)
+            }
+        }
+
+        # set up number of threads
+        stepthread <- ifelse(length(ls_idx_filtered) < params$thread, length(ls_idx_filtered), params$thread)
+
+        # create doSNOW cluster
+        nwcl <- makeCluster(stepthread)
+        doSNOW::registerDoSNOW(nwcl)
+
+        # iterate over updated filtered windows
+        df_output_temp <- foreach (idx = ls_idx_filtered, .combine='rbind') %dopar% {
+            window <- df_perwindowsum$name[idx]
+
+            # check if treefile exists
+            fn_tree <- paste0(dir_best_wsize, "filtered/", window, "/", window, ".fa.treefile")
+
+            # open treefile
+            tre <- ape::read.tree(fn_tree)
+            tre$edge.length <- NULL
+            tre$node.label <- NULL
+            
+            return(data.table::data.table(window=window, topology=ape::write.tree(tre)))
+        }
+
+        stopCluster(nwcl)
+
+        # transform data.table
+        df_output_temp <- df_output_temp %>%
+            group_by(topology) %>%
+            summarise(count=n()) %>%
+            mutate(interval=interval, chr=chr, count_percentage=count/sum(count))
+
+        # update data.table
+        df_topology_temp <- rbind(df_topology_temp, df_output_temp)
+    }
+
+    # update data.table
+    df_topology <- rbind(df_topology, df_topology_temp)
+}
+
+# visualisation for all window sizes
+top_counter <- 1
+for (top in sort(unique(df_topology$topology))) {
+    # subset the data.table
+    df_topology_subset <- df_topology[df_topology$topology==top,]
+
+    # output file
+    fn_topology_tiff <- paste0(dir_output_summary, "best.top", top_counter, "_wsize_filtered.tiff")
+
+    # ggplot2
+    plot <- ggplot(df_topology_subset, aes(x=interval, y=count_percentage, group=chr, ymin=0, ymax=1)) +
+        geom_line(aes(alpha=0.2), size=4) +
+        geom_point(aes(colour=chr), size=15) +
+        viridis::scale_color_viridis(discrete = TRUE) + 
+        labs(colour="Chromosomes") +
+        ggtitle(paste("Distribution of Filtered", topology, "across Window Sizes")) + ylab("Proportion") + xlab("Window Size") +
+        guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=5))) +
+        theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=40),
+            axis.text.x=element_text(size=40),
+            strip.text=element_text(size=40),
+            legend.title=element_text(size=30),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+        )
+
+    tiff(filename=fn_topology_tiff, units="px", width=2880, height=1800)
+    print(plot)
+    dev.off()
+
+    top_counter <- top_counter + 1
+}
 ```
