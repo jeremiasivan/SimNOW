@@ -640,6 +640,19 @@ for (interval in ls_window_spacing) {
 
     # iterate over chromosomes
     for (chr in ls_chr) {
+        # set up output directory
+        dir_filter_toptable_temp <- paste0(dir_output_prefix, chr, "/filtered/")
+
+        # output file
+        fn_filter_toptable_temp <- paste0(dir_filter_toptable_temp, chr, ".", interval, suffix_best_filter_toptable)
+        if (file.exists(fn_filter_toptable_temp) && !params$redo) {
+            # combine output files
+            df_filter_toptable_temp <- data.table::fread(fn_filter_toptable_temp)
+            df_topology_temp <- rbind(df_topology_temp, df_filter_toptable_temp)
+
+            next
+        }
+
         # open the summary table
         fn_summary <- paste0(dir_output_prefix, chr, "/", chr, ".sumtable")
         df_summary <- data.table::fread(fn_summary)
@@ -701,6 +714,9 @@ for (interval in ls_window_spacing) {
             group_by(topology) %>%
             summarise(count=n()) %>%
             mutate(interval=interval, chr=chr, count_percentage=count/sum(count))
+
+        # save data.table
+        data.table::fwrite(df_output_temp, file=fn_filter_toptable_temp, sep="\t", quote=F)
 
         # update data.table
         df_topology_temp <- rbind(df_topology_temp, df_output_temp)
