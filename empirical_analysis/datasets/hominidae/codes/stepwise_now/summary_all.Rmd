@@ -638,10 +638,20 @@ for (interval in ls_window_spacing) {
     # set up temporary data.table
     df_topology_temp <- data.table::data.table(interval=numeric(), chr=factor(), topology=character(), count=numeric(), count_percentage=numeric())
 
+    # update the number of chromosomes
+    chrthread <- ifelse(length(ls_chr) < params$thread, length(ls_chr), params$thread)
+
+    # create doSNOW cluster
+    nwcl <- makeCluster(chrthread)
+    doSNOW::registerDoSNOW(nwcl)
+
     # iterate over chromosomes
-    for (chr in ls_chr) {
+    df_topology_temp <- foreach (chr=ls_chr, .combine='rbind') %dopar% {
         # set up output directory
         dir_filter_toptable_temp <- paste0(dir_output_prefix, chr, "/filtered/")
+        if (!dir.exists(dir_filter_toptable_temp)) {
+            dir.create(dir_filter_toptable_temp, recursive=T)
+        }
 
         # set up temporary data.table
         df_topology_chr <- data.table::data.table(window=factor(), topology=character())
@@ -650,10 +660,8 @@ for (interval in ls_window_spacing) {
         fn_filter_toptable_temp <- paste0(dir_filter_toptable_temp, chr, ".", interval, suffix_best_filter_toptable)
         if (file.exists(fn_filter_toptable_temp) && !params$redo) {
             # combine output files
-            df_filter_toptable_temp <- data.table::fread(fn_filter_toptable_temp)
-            df_topology_temp <- rbind(df_topology_temp, df_filter_toptable_temp)
-
-            next
+            df_topology_chr <- data.table::fread(fn_filter_toptable_temp)
+            return(df_topology_chr)
         }
 
         # open the summary table
@@ -686,7 +694,7 @@ for (interval in ls_window_spacing) {
 
             # check if treefile exists
             fn_tree <- paste0(dir_best_wsize, "filtered/", window, "/", window, ".fa.treefile")
-            if (file.exist(fn_tree)) {
+            if (file.exists(fn_tree)) {
                 # open treefile
                 tre <- ape::read.tree(fn_tree)
                 tre$edge.length <- NULL
@@ -707,7 +715,7 @@ for (interval in ls_window_spacing) {
 
         # exit the loop if length is zero
         if (length(ls_idx_filtered) == 0) {
-            next
+            return(NULL)
         }
 
         # iterate over updated filtered windows
@@ -721,7 +729,7 @@ for (interval in ls_window_spacing) {
 
             # check if treefile exists
             fn_tree <- paste0(dir_best_wsize, "filtered/", window, "/", window, ".fa.treefile")
-            if (file.exist(fn_tree)) {
+            if (file.exists(fn_tree)) {
                 # open treefile
                 tre <- ape::read.tree(fn_tree)
                 tre$edge.length <- NULL
@@ -739,8 +747,6 @@ for (interval in ls_window_spacing) {
             }   
         }
 
-        stopCluster(nwcl)
-
         # transform data.table
         df_topology_chr <- df_topology_chr %>%
             group_by(topology) %>%
@@ -750,9 +756,11 @@ for (interval in ls_window_spacing) {
         # save data.table
         data.table::fwrite(df_topology_chr, file=fn_filter_toptable_temp, sep="\t", quote=F)
 
-        # update data.table
-        df_topology_temp <- rbind(df_topology_temp, df_topology_chr)
+        # return data.table
+        return(df_topology_chr)
     }
+
+    stopCluster(nwcl)
 
     # update data.table
     df_topology <- rbind(df_topology, df_topology_temp)
