@@ -782,6 +782,17 @@ for (top in sort(unique(df_topology$topology))) {
     df_topology_subset <- df_topology[df_topology$topology==top,]
     df_topology_avg_subset <- df_topology_avg[df_topology_avg$topology==top,]
 
+    # check for absent chromosome
+    for (chr in ls_chr) {
+        if (!chr %in% df_topology_subset$chr) {
+            df_topology_subset <- rbind(df_topology_subset, data.table::data.table(interval=unique(df_topology_subset$interval),
+                                                                                   chr=rep(chr,length(ls_window_spacing)),
+                                                                                   topology=rep(top,length(ls_window_spacing)),
+                                                                                   count=rep(0,length(ls_window_spacing)),
+                                                                                   count_percentage=rep(0,length(ls_window_spacing))))
+        } 
+    }
+
     # output file
     fn_topology_tiff <- paste0(dir_output_summary, "best.top", top_counter, "_wsize_filtered.tiff")
 
