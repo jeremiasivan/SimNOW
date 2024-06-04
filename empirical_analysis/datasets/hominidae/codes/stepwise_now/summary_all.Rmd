@@ -628,10 +628,10 @@ dev.off()
 
 ```{r greatapes-filterwindow}
 # set up list of window spacing
-ls_window_spacing <- c(1,2,5,10,20,50,100,200,500,1000)
+ls_window_spacing <- c(1,2,5,10,20,50,100,200,500,1000,2000,5000,10000)
 
 # set up output data.table
-df_topology <- data.table::data.table(interval=numeric(), chr=factor(), topology=character(), count=numeric(), count_percentage=numeric())
+df_topology <- data.table::data.table(interval=factor(), chr=factor(), topology=character(), count=numeric(), count_percentage=numeric())
 
 # iterate over window spacing
 for (interval in ls_window_spacing) {
@@ -647,6 +647,8 @@ for (interval in ls_window_spacing) {
 
     # iterate over chromosomes
     df_topology_temp <- foreach (chr=ls_chr, .combine='rbind') %dopar% {
+        require(dplyr)
+
         # set up output directory
         dir_filter_toptable_temp <- paste0(dir_output_prefix, chr, "/filtered/")
         if (!dir.exists(dir_filter_toptable_temp)) {
@@ -766,22 +768,31 @@ for (interval in ls_window_spacing) {
     df_topology <- rbind(df_topology, df_topology_temp)
 }
 
+# new data.frame to store average proportion
+df_topology_avg <- df_topology %>%
+    group_by(interval, topology) %>%
+    summarise(count=sum(count)) %>%
+    group_by(interval) %>%
+    mutate(total_count=sum(count), count_percentage=count/total_count)
+
 # visualisation for all window sizes
 top_counter <- 1
 for (top in sort(unique(df_topology$topology))) {
     # subset the data.table
     df_topology_subset <- df_topology[df_topology$topology==top,]
+    df_topology_avg_subset <- df_topology_avg[df_topology_avg$topology==top,]
 
     # output file
     fn_topology_tiff <- paste0(dir_output_summary, "best.top", top_counter, "_wsize_filtered.tiff")
 
     # ggplot2
     plot <- ggplot(df_topology_subset, aes(x=interval, y=count_percentage, group=chr, ymin=0, ymax=1)) +
-        geom_line(aes(alpha=0.2), size=4) +
         geom_point(aes(colour=chr), size=15) +
+        geom_point(data=df_topology_avg_subset, aes(x=interval, y=count_percentage), colour="red", size=15, shape=18) +
+        geom_boxplot(lwd=3, outlier.shape=NA, aes(alpha=0.2)) +
         viridis::scale_color_viridis(discrete = TRUE) + 
         labs(colour="Chromosomes") +
-        ggtitle(paste("Distribution of Filtered", topology, "across Window Sizes")) + ylab("Proportion") + xlab("Window Size") +
+        ggtitle(paste("Distribution of Filtered", top, "across Window Intervals")) + ylab("Proportion") + xlab("Window Interval") +
         guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=5))) +
         theme(
             plot.title = element_text(hjust = 0.5, size = 50),
