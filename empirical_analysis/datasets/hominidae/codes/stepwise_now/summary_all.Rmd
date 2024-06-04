@@ -784,13 +784,18 @@ for (top in sort(unique(df_topology$topology))) {
 
     # check for absent chromosome
     for (chr in ls_chr) {
-        if (!chr %in% df_topology_subset$chr) {
-            df_topology_subset <- rbind(df_topology_subset, data.table::data.table(interval=unique(df_topology_subset$interval),
-                                                                                   chr=rep(chr,length(ls_window_spacing)),
-                                                                                   topology=rep(top,length(ls_window_spacing)),
-                                                                                   count=rep(0,length(ls_window_spacing)),
-                                                                                   count_percentage=rep(0,length(ls_window_spacing))))
-        } 
+        # check for absent interval
+        for (interval in ls_window_spacing) {
+            count_temp <- df_topology_subset$count[df_topology_subset$interval==interval & df_topology_subset$chr==chr]
+
+            if (length(count_temp) == 0) {
+                df_topology_subset <- rbind(df_topology_subset, data.table::data.table(interval=interval,
+                                                                                       chr=chr,
+                                                                                       topology=top,
+                                                                                       count=0,
+                                                                                       count_percentage=0))
+            }
+        }
     }
 
     # output file
