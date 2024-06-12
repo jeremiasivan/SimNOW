@@ -6,8 +6,8 @@
     - <a href="#stepnow">Stepwise non-overlapping windows</a>
     - <a href="#hmm">HMM</a>
 - <a href="#datasets">Datasets</a>
-    - <a href="#heliconius">Heliconius erato</a>
-    - <a href="#hominidae">Hominidae</a>
+    - <a href="#heliconius">Erato-sara Heliconius butterflies</a>
+    - <a href="#hominidae">Great apes</a>
 
 ## <a id="analyses">Analyses</a>
 
@@ -124,6 +124,8 @@ Running the code will create individual folder for each chromosome (i.e., chr1 t
 - `fasta/`: store FASTA alignment per MAF block
     - `concatenation/`: store raw and filtered concatenated FASTA alignments
 
+If you run either non-overlapping window or stepwise non-overlapping window analysis from `run_all.R`, the code will create `summary/` folder in the `outdir/prefix/` which stores summary files and figures used in the publication. 
+
 ```
 outdir/
 ├── chr1/
@@ -229,7 +231,7 @@ prefix/
     └── ...
 ```
 
-### <a id="hominidae">Genome of *Hominidae* from <a href="https://genome.ucsc.edu">UCSC Genome Browser</a></a>
+### <a id="hominidae">Genome of *Hominidae* (great apes) from <a href="https://genome.ucsc.edu">UCSC Genome Browser</a></a>
 The dataset consists of 25 chromosomes of four *Hominidae* species (human, chimpanzee, orangutan, and gorilla).
 
 #### Data Preparation
@@ -248,6 +250,8 @@ Running the code will create a new `data/` folder which contains the following s
 - `maf/`: store the MAF alignments for each chromosome
 - `fasta/`: store the FASTA alignments for each chromosome
     - `primates/`: store the FASTA alignments for each chromosome, only for *Hominidae*
+
+If you run the stepwise non-overlapping window analysis from `run_all.R`, the code will create `summary/` folder in the `outdir/prefix/` which stores summary files and figures used in the publication. 
 
 ```
 outdir/
@@ -271,4 +275,4 @@ outdir/
 ```
 
 ---
-*Last update: 09 January 2024 by Jeremias Ivan*
+*Last update: 12 June 2024 by Jeremias Ivan*
