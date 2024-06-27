@@ -247,26 +247,25 @@ dev.off()
 
 # visualisation for consecutive windows
 plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
-    geom_col() +
+    geom_histogram() +
     viridis::scale_fill_viridis(discrete = TRUE) +
     ggtitle("Consecutive Topology Distribution across Chromosome") +
-    facet_wrap(.~topology, ncol=1) +
-    scale_x_log10() + scale_y_log10() +
+    facet_grid(topology~chr, ncol=8) +
     xlab("Number of consecutive windows") + ylab("Count") + labs(fill="Chromosomes") +
     theme(
-      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.title = element_text(hjust=0.5, size=25),
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-      axis.text.y=element_text(size=30),
-      axis.text.x=element_text(size=30),
-      strip.text = element_text(size=30),
-      legend.title=element_text(size=30),
-      legend.text=element_text(size=30),
-      legend.key.size=unit(2,"cm")
+      axis.title.x=element_text(size=20, margin = margin(t=10, r=0, b=0, l=0)),
+      axis.title.y=element_text(size=20, margin = margin(t=0, r=10, b=0, l=0)),
+      axis.text.y=element_text(size=15),
+      axis.text.x=element_text(size=15),
+      strip.text = element_text(size=15),
+      legend.title=element_text(size=15),
+      legend.text=element_text(size=15),
+      legend.key.size=unit(1,"cm")
     )
 
-tiff(filename=fn_conwindows_dist_tiff, units="px", width=1600, height=2800)
+tiff(filename=fn_conwindows_dist_tiff, units="px", width=6400, height=1400)
 print(plot)
 dev.off()
 ```
