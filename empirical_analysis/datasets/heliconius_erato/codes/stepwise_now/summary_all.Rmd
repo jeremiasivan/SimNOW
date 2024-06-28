@@ -1,82 +1,41 @@
 ---
 title: "Summary of Multiple Non-overlapping Windows Analyses"
 params:
+  # general
+  codedir: "~/SimNOW/empirical_analysis"
   prefix: "sim"
   outdir: "~/simulation"
 
   initial_wsize: 64000
 ---
-```{r setup, include=FALSE}
+```{r heliconius-setup, include=FALSE}
+# load libraries
 library(data.table)
-library(dplyr)
+library(tidyr)
 
-dir_summary <- paste0(params$outdir,"/",params$prefix, "/summary/")
+# load functions
+source(paste0(params$codedir,"/datasets/heliconius_erato/codes/functions.R"), local=TRUE)
+source(paste0(params$codedir,"/datasets/hominidae/codes/functions.R"), local=TRUE)
+
+# output directory
+dir_prefix <- paste0(params$outdir, "/", params$prefix)
+dir_summary <- paste0(dir_prefix, "/summary/")
 if (!dir.exists(dir_summary)) {
   dir.create(dir_summary, recursive=T)
 }
 
+# output files
 fn_best_uqtops <- paste0(dir_summary, "best.uqtops")
+
+fn_uqtops_dist_tiff <- paste0(dir_summary, "all.best.tops_dist.tiff")
+fn_conwindows_dist_tiff <- paste0(dir_summary, "all.best.conwins_dist.tiff")
+
+suffix_all_best_wintable <- ".all.best.wintable"
+suffix_all_best_toptable <- ".all.best.toptable"
+suffix_all_best_contable <- ".all.best.contable"
 ```
 
-```{r functions, include=FALSE}
-f_count_topology_freq <- function(window_size, list_chr, step, outdir, fn_output) {
-  df_output <- data.table::data.table(topology=character(), n=numeric(), cum.percentage=numeric())
-
-  for (c in list_chr) {
-    df_uqtops <- data.table::fread(paste0(outdir, "/", c, "/", step, "/", window_size, "/", window_size, ".uqtops"))
-    df_output <- rbind(df_output, df_uqtops)
-  }
-
-  df_output <- df_output %>%
-    select(topology, n) %>%
-    group_by(topology) %>%
-    summarise_all(sum) %>%
-    arrange(desc(n)) %>%
-    mutate(cum.percentage=cumsum(n)/sum(n)*100)
-
-  data.table::fwrite(df_output, file=fn_output, quote=F, sep="\t")
-}
-
-f_compare_topology_weight <- function(df_input, df_uqtops, colname) {
-  if (nrow(df_input) == 0) {
-    # remove the last column
-    df_uqtops$cum.percentage <- NULL
-
-    # update colnames
-    colnames(df_uqtops) <- c("topology", colname)
-    return(df_uqtops)
-  }
-
-  # iterate over unique topology
-  top_dist <- c()
-  for (r in 1:nrow(df_input)) {
-    idx <- match(df_input$topology[r], df_uqtops$topology)
-    if (is.na(idx)) {
-      top_dist <- c(top_dist, 0)
-      next
-    }
-
-    top_dist <- c(top_dist, df_uqtops$n[idx])
-  }
-
-  # add new topologies
-  new_tops <- subset(df_uqtops$topology, !df_uqtops$topology %in% df_input$topology)
-  for (r in new_tops) {
-    # new entry
-    new_row <- as.data.frame(t(c(r, rep(0, ncol(df_input)-1))))
-    df_input <- rbind(df_input, new_row, use.names=FALSE)
-
-    idx <- match(r, df_uqtops$topology)
-    top_dist <- c(top_dist, df_uqtops$n[idx])
-  }
-
-  # combine the two data.table
-  df_input[, (colname) := top_dist]
-  return(df_input)
-}
-```
-
-```{r summary, include=FALSE}
+```{r heliconius-summary, include=FALSE}
 allsims <- list.dirs(paste0(params$outdir,"/",params$prefix), full.names = F, recursive = F)
 chrs <- allsims[grep("^chr", allsims)]
 chrs <- stringr::str_sort(chrs, numeric=TRUE)
@@ -151,4 +110,134 @@ df_best_wsize <- df_best_wsize %>%
 
 # write the output data.table
 data.table::fwrite(df_best_wsize, file=fn_best_uqtops, quote=FALSE, sep="\t")
+```
+
+```{r heliconius-alltrees}
+# extract the list of chromosomes
+ls_chr <- str_sort(chrs, numeric=T)
+
+# output files
+df_topology_count <- data.table::data.table(topology=character())
+df_topology_consecutive <- data.table::data.table(topology=character(), count=numeric())
+
+# iterate over chromosomes
+for (chr in ls_chr) {
+    # output files
+    fn_wintable_temp <- paste0(dir_prefix, chr, "/", chr, suffix_all_best_wintable)
+    fn_toptable_temp <- paste0(dir_prefix, chr, "/", chr, suffix_all_best_toptable)
+    fn_contable_temp <- paste0(dir_prefix, chr, "/", chr, suffix_all_best_contable)
+    if (all(file.exists(fn_wintable_temp, fn_toptable_temp, fn_contable_temp)) && !params$redo) {
+        # combine output files
+        df_toptable_temp <- data.table::fread(fn_toptable_temp)
+        df_topology_count <- data.table::merge.data.table(df_topology_count, df_toptable_temp, by="topology", all=T)
+
+        df_contable_temp <- data.table::fread(fn_contable_temp)
+        df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_contable_temp, by=c("topology","count"), all=T)
+
+        next
+    }
+
+    # open the summary table
+    fn_summary <- paste0(dir_prefix, chr, "/", chr, ".sumtable")
+    df_summary <- data.table::fread(fn_summary)
+
+    # extract the best window size
+    best_wsize_step <- df_summary$step[nrow(df_summary)]
+    best_wsize <- df_summary$s_wsize[nrow(df_summary)]
+
+    df_summary_subset <- df_summary[df_summary$diff_aic > 0,]
+    if (nrow(df_summary_subset) > 0) {
+        best_wsize_step <- df_summary_subset$step[1]-1
+        best_wsize <- df_summary_subset$l_wsize[1]
+    }
+
+    # iterate over windows
+    fn_perwindowsum <- paste0(dir_prefix, chr, "/", best_wsize_step, "/", best_wsize, "/", best_wsize, ".perwindowsum")
+    df_output_chr <- f_extract_perwindow_topology(fn_perwindowsum, dir_prefix, chr, best_wsize_step, best_wsize, params$thread)
+
+    # save the output file
+    data.table::fwrite(df_output_chr, file=fn_wintable_temp, sep="\t", quote=F)
+
+    # count number of unique topology
+    df_topology_count_temp <- df_output_chr %>%
+        group_by(topology) %>%
+        filter(topology!="-") %>%
+        summarise(!!chr:=n())
+
+    # save the output file
+    data.table::fwrite(df_topology_count_temp, file=fn_toptable_temp, sep="\t", quote=F)
+    df_topology_count <- data.table::merge.data.table(df_topology_count, df_topology_count_temp, by="topology", all=T)
+
+    # count number of consecutive topology
+    df_topology_consecutive_temp <- df_output_chr %>%
+        group_by(topology,
+                 group_run=data.table::rleid(topology)) %>%
+        summarise(count=n()) %>%
+        group_by(topology,count) %>%
+        summarise(!!chr:=n())
+
+    # save the output file
+    data.table::fwrite(df_topology_consecutive_temp, file=fn_contable_temp, sep="\t", quote=F)
+    df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_topology_consecutive_temp, by=c("topology","count"), all=T)
+}
+
+# transform data.table
+df_topology_count_long <- tidyr::pivot_longer(df_topology_count, cols = starts_with("chr"), names_to = "chr", values_to = "count")
+df_topology_count_long <- df_topology_count_long %>%
+    filter(!is.na(count)) %>%
+    mutate(count_percentage=count/sum(count))
+df_topology_count_long$chr <- fct_inorder(df_topology_count_long$chr)
+data.table::fwrite(df_topology_count_long, file=fn_tops_best_chr, sep="\t", quote=F)
+
+df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, cols = starts_with("chr"), names_to = "chr", values_to = "n")
+df_topology_consecutive_long <- df_topology_consecutive_long %>%
+    filter(!is.na(topology) & topology!="-")
+df_topology_consecutive_long$chr <- fct_inorder(df_topology_consecutive_long$chr)
+
+# visualisation for unique topology count
+plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage, fill=chr)) +
+    geom_col() +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    ggtitle("Topology Distribution across Chromosome") +
+    xlab("Topology") + ylab("Proportion") + labs(fill="Chromosomes") +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+tiff(filename=fn_uqtops_dist_tiff, units="px", width=2880, height=1800)
+print(plot)
+dev.off()
+
+# visualisation for consecutive windows
+plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
+    geom_col() +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    ggtitle("Consecutive Topology Distribution across Chromosome") +
+    facet_grid(chr~topology, scales="free_y") +
+    xlab("Number of consecutive windows") + ylab("Count") + labs(fill="Chromosomes") +
+    theme(
+      plot.title = element_text(hjust=0.5, size=50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size=40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size=40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text = element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+tiff(filename=fn_conwindows_dist_tiff, units="px", width=2100, height=8000)
+print(plot)
+dev.off()
 ```
