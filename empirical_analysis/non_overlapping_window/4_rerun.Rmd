@@ -205,10 +205,6 @@ if (!dir.exists(temp_outdir)) {
 fn_atsum <- paste0(temp_outdir, params$prefix, ".atsum")
 fn_cnsum <- paste0(temp_outdir, params$prefix, ".cnsum")
 fn_tops <- paste0(temp_outdir, params$prefix, ".topsum")
-if (all(file.exists(fn_atsum, fn_cnsum, fn_tops)) && !params$redo) {
-  log4r::info(fn_logger, paste0("File found: ", best_wsize, "bp window summary files."))
-  knitr::knit_exit()
-}
 
 # initiate variables
 seq_len <- c()
@@ -227,7 +223,7 @@ for (window in dirs) {
   # open treefile
   treefile <- paste0(fastadir, window, "/", window, ".fa.treefile")
   if (!file.exists(treefile)) {
-    seq_len <- rbind(seq_len, c(window, start+1, stop, length, ""))
+    seq_len <- rbind(seq_len, c(window, start+1, stop, length, "", FALSE))
 
     start <- start+best_wsize
     next
@@ -245,25 +241,26 @@ for (window in dirs) {
 
     if (!is.null(bl) && mean(as.numeric(bl)) >= min_branch_support) {
       tl$node.label <- NULL
-      seq_len <- rbind(seq_len, c(window, start+1, stop, length, ape::write.tree(tl)))
+      seq_len <- rbind(seq_len, c(window, start+1, stop, length, ape::write.tree(tl), TRUE))
     } else {
-      seq_len <- rbind(seq_len, c(window, start+1, stop, length, ""))
+      seq_len <- rbind(seq_len, c(window, start+1, stop, length, ape::write.tree(tl), FALSE))
     }
 
     start <- start+best_wsize
     next
   }
 
-  seq_len <- rbind(seq_len, c(window, start+1, stop, length, ape::write.tree(tl)))
+  seq_len <- rbind(seq_len, c(window, start+1, stop, length, ape::write.tree(tl), FALSE))
   start <- start+best_wsize
 }
 
 seq_len <- data.table::as.data.table(seq_len)
-data.table::setnames(seq_len, c("source", "start", "stop", "length", "topology"))
+data.table::setnames(seq_len, c("source", "start", "stop", "length", "topology", "high_bs"))
 data.table::fwrite(seq_len, file=fn_atsum, quote=F, sep="\t")
 
 # extract top topologies
 top_tops <- seq_len %>%
+  filter(high_bs) %>%
   group_by(topology) %>%
   filter(topology != "") %>%
   summarise(count = n()) %>%
@@ -273,8 +270,9 @@ data.table::fwrite(top_tops, file=fn_tops, quote=F, sep="\t")
 
 # count consecutive/contiguous windows per topology
 count_contiguous <- seq_len %>%
+  filter(high_bs) %>%
   group_by(topology,
-            group_run = data.table::rleid(topology)) %>%
+           group_run = data.table::rleid(topology)) %>%
   summarise(count = n()) %>%
   arrange(group_run)
 count_contiguous$group_run <- NULL

@@ -127,7 +127,7 @@ stopCluster(cl)
 # summary for all chromosomes
 rmarkdown::render(input=paste0(codedir,"/datasets/heliconius_erato/codes/non_overlapping_window/summary_all.Rmd"),
                   output_file=paste0(outdir,"/",prefix,"/heliconius_summary.html"),
-                  params=list(prefix=prefix, outdir=outdir, ic_type=ic_type, colour_scheme=colour_scheme),
+                  params=list(codedir=codedir, prefix=prefix, outdir=outdir, ic_type=ic_type, colour_scheme=colour_scheme),
                   quiet=TRUE)
 
 #################################
