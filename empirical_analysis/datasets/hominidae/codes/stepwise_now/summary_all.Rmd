@@ -139,6 +139,7 @@ df_topology_consecutive_long$chr <- fct_inorder(df_topology_consecutive_long$chr
 
 # save updated topology distribution
 df_tops_merged <- df_topology_consecutive_long %>%
+    mutate(n=ifelse(is.na(n),0,n)) %>%
     group_by(topology) %>%
     summarise(count=sum(n), count_percentage=count/sum(count))
 data.table::fwrite(df_tops_merged, file=fn_tops_merged, sep="\t", quote=F)
