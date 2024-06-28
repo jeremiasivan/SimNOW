@@ -41,6 +41,7 @@ fn_tops_all_best_chr_tiff <- paste0(dir_output_summary, "all.best.tops_chr.tiff"
 
 fn_uqtops_dist_tiff <- paste0(dir_output_summary, "all.best.tops_dist.tiff")
 fn_conwindows_dist_tiff <- paste0(dir_output_summary, "all.best.conwins_dist.tiff")
+fn_tops_merged <- paste0(dir_output_summary, "all.best.tops_merged.tsv")
 
 suffix_all_best_wintable <- ".all.best.wintable"
 suffix_all_best_toptable <- ".all.best.toptable"
@@ -135,6 +136,12 @@ df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, col
 df_topology_consecutive_long <- df_topology_consecutive_long %>%
     filter(!is.na(topology) & topology!="-")
 df_topology_consecutive_long$chr <- fct_inorder(df_topology_consecutive_long$chr)
+
+# save updated topology distribution
+df_tops_merged <- df_topology_consecutive_long %>%
+    group_by(topology) %>%
+    summarise(count=sum(n), count_percentage=count/sum(count))
+data.table::fwrite(df_tops_merged, file=fn_tops_merged, sep="\t", quote=F)
 
 # visualisation for unique topology count
 plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage, fill=chr)) +
