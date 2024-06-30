@@ -28,7 +28,8 @@ if (!dir.exists(dir_summary)) {
 fn_best_uqtops <- paste0(dir_summary, "best.uqtops")
 
 fn_uqtops_dist_tiff <- paste0(dir_summary, "all.best.tops_dist.tiff")
-fn_conwindows_dist_tiff <- paste0(dir_summary, "all.best.conwins_dist.tiff")
+fn_conwindows_tiff <- paste0(dir_summary, "all.best.conwins.tiff")
+fn_conwindows_chr_tiff <- paste0(dir_summary, "all.best.conwins_chr.tiff")
 
 suffix_all_best_wintable <- ".all.best.wintable"
 suffix_all_best_toptable <- ".all.best.toptable"
@@ -222,22 +223,47 @@ plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
     geom_col() +
     viridis::scale_fill_viridis(discrete = TRUE) +
     ggtitle("Consecutive Topology Distribution across Chromosome") +
-    facet_grid(chr~topology, scales="free_y") +
+    facet_wrap(.~topology, scales="free", ncol=1) +
     xlab("Number of consecutive windows") + ylab("Count") + labs(fill="Chromosomes") +
     theme(
-      plot.title = element_text(hjust=0.5, size=50),
-      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-      axis.title.x=element_text(size=40, margin = margin(t=20, r=0, b=0, l=0)),
-      axis.title.y=element_text(size=40, margin = margin(t=0, r=20, b=0, l=0)),
+      plot.title=element_text(hjust=0.5, size=50),
+      plot.margin=margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size=40, margin=margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size=40, margin=margin(t=0, r=20, b=0, l=0)),
       axis.text.y=element_text(size=30),
       axis.text.x=element_text(size=30),
-      strip.text = element_text(size=30),
+      strip.text=element_text(size=30),
       legend.title=element_text(size=30),
       legend.text=element_text(size=30),
       legend.key.size=unit(2,"cm")
     )
 
-tiff(filename=fn_conwindows_dist_tiff, units="px", width=2100, height=8000)
+tiff(filename=fn_conwindows_tiff, units="px", width=1600, height=2800)
+print(plot)
+dev.off()
+
+# visualisation for consecutive windows per chromosome
+plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
+    geom_col() +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    ggtitle("Consecutive Topology Distribution across Chromosome") +
+    facet_grid(chr~topology, scales="free") +
+    xlab("Number of consecutive windows") + ylab("Count") + labs(fill="Chromosomes") +
+    theme(
+      plot.title=element_text(hjust=0.5, size=50),
+      plot.margin=margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x=element_text(size=40, margin=margin(t=20, r=0, b=0, l=0)),
+      axis.title.y=element_text(size=40, margin=margin(t=0, r=20, b=0, l=0)),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text=element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm"),
+      panel.spacing.y=unit(1.5,"lines")
+    )
+
+tiff(filename=fn_conwindows_chr_tiff, units="px", width=2100, height=8000)
 print(plot)
 dev.off()
 ```
