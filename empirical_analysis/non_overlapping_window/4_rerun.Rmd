@@ -243,6 +243,7 @@ for (window in dirs) {
       tl$node.label <- NULL
       seq_len <- rbind(seq_len, c(window, start+1, stop, length, ape::write.tree(tl), TRUE))
     } else {
+      tl$node.label <- NULL
       seq_len <- rbind(seq_len, c(window, start+1, stop, length, ape::write.tree(tl), FALSE))
     }
 
@@ -250,6 +251,7 @@ for (window in dirs) {
     next
   }
 
+  tl$node.label <- NULL
   seq_len <- rbind(seq_len, c(window, start+1, stop, length, ape::write.tree(tl), FALSE))
   start <- start+best_wsize
 }
