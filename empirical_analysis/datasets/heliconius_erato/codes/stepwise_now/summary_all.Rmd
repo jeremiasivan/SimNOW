@@ -23,8 +23,8 @@ source(paste0(params$codedir,"/datasets/heliconius_erato/codes/functions.R"), lo
 source(paste0(params$codedir,"/datasets/hominidae/codes/functions.R"), local=TRUE)
 
 # output directory
-dir_prefix <- paste0(params$outdir, "/", params$prefix)
-dir_summary <- paste0(dir_prefix, "/summary/")
+dir_prefix <- paste0(params$outdir, "/", params$prefix, "/")
+dir_summary <- paste0(dir_prefix, "summary/")
 if (!dir.exists(dir_summary)) {
   dir.create(dir_summary, recursive=T)
 }
@@ -32,7 +32,6 @@ if (!dir.exists(dir_summary)) {
 # output files
 fn_best_uqtops <- paste0(dir_summary, "best.uqtops")
 
-fn_tops_best_chr <- paste0(dir_summary, "all.best.tops_chr.tsv")
 fn_uqtops_dist_tiff <- paste0(dir_summary, "all.best.tops_dist.tiff")
 fn_conwindows_tiff <- paste0(dir_summary, "all.best.conwins.tiff")
 fn_conwindows_chr_tiff <- paste0(dir_summary, "all.best.conwins_chr.tiff")
@@ -189,20 +188,22 @@ for (chr in ls_chr) {
 }
 
 # filter out topologies
-ls_topology <- unique(df_topology_count_long$topology)
+ls_uq_tops <- unique(df_topology_count$topology)
+df_topology <- data.table(topology=ls_uq_tops, colour=NA, tree=NA)
+
 if (length(params$colour_scheme) != 0) {
-  ls_topology <- c()
+  df_topology <- data.table(topology=character(), colour=character(), tree=character())
   df_colour_scheme <- fread(params$colour_scheme)
 
   # iterate over topologies
   for (j in 1:nrow(df_colour_scheme)) {
-    for (top in unique(df_topology_count_long$topology)) {
+    for (top in ls_uq_tops) {
       # extract topologies
       top1 <- ape::read.tree(text=df_colour_scheme$topology[j])
       top2 <- ape::read.tree(text=top)
 
       if (ape::all.equal.phylo(top1, top2)) {
-        ls_topology <- c(ls_topology, top)
+        df_topology <- rbind(df_topology, data.table(topology=top, colour=df_colour_scheme$code[j], tree=df_colour_scheme$code[j]))
         break
       }
     }
@@ -212,22 +213,27 @@ if (length(params$colour_scheme) != 0) {
 # transform data.table
 df_topology_count_long <- tidyr::pivot_longer(df_topology_count, cols = starts_with("chr"), names_to = "chr", values_to = "count")
 df_topology_count_long <- df_topology_count_long %>%
-    filter(!is.na(count) & topology%in%ls_topology) %>%
-    mutate(count_percentage=count/sum(count))
-df_topology_count_long$chr <- fct_inorder(df_topology_count_long$chr)
-data.table::fwrite(df_topology_count_long, file=fn_tops_best_chr, sep="\t", quote=F)
+    filter(!is.na(count) & topology%in%df_topology$topology) %>%
+    mutate(count_percentage=count/sum(count), chr=fct_inorder(chr)) %>%
+    left_join(df_topology, by="topology")
 
 df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, cols = starts_with("chr"), names_to = "chr", values_to = "n")
 df_topology_consecutive_long <- df_topology_consecutive_long %>%
-    filter(topology%in%ls_topology) %>%
-    mutate(chr=fct_inorder(chr))
+    filter(topology%in%df_topology$topology) %>%
+    mutate(chr=fct_inorder(chr)) %>%
+    left_join(df_topology, by="topology")
 
 # visualisation for unique topology count
-plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage, fill=chr)) +
-    geom_col() +
-    viridis::scale_fill_viridis(discrete = TRUE) +
+plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage))
+if (all(is.na(df_topology_count_long$colour))) {
+  plot <- plot + geom_col(aes(fill=chr)) + viridis::scale_fill_viridis(discrete = TRUE)
+} else {
+  plot <- plot + geom_col(aes(fill=colour)) + scale_fill_identity()
+}
+
+plot <- plot +
     ggtitle("Topology Distribution across Chromosome") +
-    xlab("Topology") + ylab("Proportion") + labs(fill="Chromosomes") +
+    xlab("Topology") + ylab("Proportion") +
     theme(
       plot.title = element_text(hjust = 0.5, size = 50),
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
@@ -246,12 +252,17 @@ print(plot)
 dev.off()
 
 # visualisation for consecutive windows
-plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
-    geom_col() +
-    viridis::scale_fill_viridis(discrete = TRUE) +
+plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n))
+if (all(is.na(df_topology_consecutive_long$colour))) {
+  plot <- plot + geom_col(aes(fill=chr)) + viridis::scale_fill_viridis(discrete = TRUE)
+} else {
+  plot <- plot + geom_col(aes(fill=colour)) + scale_fill_identity()
+}
+
+plot <- plot +
     ggtitle("Consecutive Topology Distribution across Chromosome") +
     facet_wrap(.~topology, scales="free", ncol=1) +
-    xlab("Number of consecutive windows") + ylab("Count") + labs(fill="Chromosomes") +
+    xlab("Number of consecutive windows") + ylab("Count") +
     theme(
       plot.title=element_text(hjust=0.5, size=50),
       plot.margin=margin(1.25, 1.25, 1.25, 1.25, "cm"),
@@ -270,12 +281,10 @@ print(plot)
 dev.off()
 
 # visualisation for consecutive windows per chromosome
-plot <- ggplot(df_topology_consecutive_long, aes(x=count, y=n, fill=chr)) +
-    geom_col() +
-    viridis::scale_fill_viridis(discrete = TRUE) +
+plot <- plot +
     ggtitle("Consecutive Topology Distribution across Chromosome") +
     facet_grid(chr~topology, scales="free") +
-    xlab("Number of consecutive windows") + ylab("Count") + labs(fill="Chromosomes") +
+    xlab("Number of consecutive windows") + ylab("Count") +
     theme(
       plot.title=element_text(hjust=0.5, size=50),
       plot.margin=margin(1.25, 1.25, 1.25, 1.25, "cm"),
