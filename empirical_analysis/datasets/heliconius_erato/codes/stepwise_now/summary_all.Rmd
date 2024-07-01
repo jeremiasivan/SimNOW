@@ -228,7 +228,7 @@ df_topology_consecutive_long <- df_topology_consecutive_long %>%
     mutate(tree=fct_inorder(tree))
 
 # visualisation for unique topology count
-plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage))
+plot <- ggplot(df_topology_count_long, aes(x=tree, y=count_percentage))
 if (all(is.na(df_topology_count_long$colour))) {
   plot <- plot + geom_col(aes(fill=chr)) + viridis::scale_fill_viridis(discrete = TRUE)
 } else {
@@ -265,7 +265,7 @@ if (all(is.na(df_topology_consecutive_long$colour))) {
 
 plot <- plot +
     ggtitle("Consecutive Topology Distribution across Chromosome") +
-    facet_wrap(.~topology, scales="free", ncol=1) +
+    facet_wrap(.~tree, scales="free", ncol=1) +
     xlab("Number of consecutive windows") + ylab("Count") +
     theme(
       plot.title=element_text(hjust=0.5, size=50),
@@ -287,7 +287,7 @@ dev.off()
 # visualisation for consecutive windows per chromosome
 plot <- plot +
     ggtitle("Consecutive Topology Distribution across Chromosome") +
-    facet_grid(chr~topology, scales="free") +
+    facet_grid(chr~tree, scales="free") +
     xlab("Number of consecutive windows") + ylab("Count") +
     theme(
       plot.title=element_text(hjust=0.5, size=50),
