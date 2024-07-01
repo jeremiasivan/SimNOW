@@ -189,7 +189,7 @@ for (chr in ls_chr) {
 
 # filter out topologies
 ls_uq_tops <- unique(df_topology_count$topology)
-df_topology <- data.table(topology=ls_uq_tops, colour=NA, tree=NA)
+df_topology <- data.table(topology=ls_uq_tops, colour=NA, tree=ls_uq_tops)
 
 if (length(params$colour_scheme) != 0) {
   df_topology <- data.table(topology=character(), colour=character(), tree=character())
@@ -203,7 +203,7 @@ if (length(params$colour_scheme) != 0) {
       top2 <- ape::read.tree(text=top)
 
       if (ape::all.equal.phylo(top1, top2)) {
-        df_topology <- rbind(df_topology, data.table(topology=top, colour=df_colour_scheme$code[j], tree=df_colour_scheme$code[j]))
+        df_topology <- rbind(df_topology, data.table(topology=top, colour=df_colour_scheme$code[j], tree=df_colour_scheme$tree[j]))
         break
       }
     }
@@ -215,13 +215,17 @@ df_topology_count_long <- tidyr::pivot_longer(df_topology_count, cols = starts_w
 df_topology_count_long <- df_topology_count_long %>%
     filter(!is.na(count) & topology%in%df_topology$topology) %>%
     mutate(count_percentage=count/sum(count), chr=fct_inorder(chr)) %>%
-    left_join(df_topology, by="topology")
+    left_join(df_topology, by="topology") %>%
+    arrange(readr::parse_number(tree)) %>%
+    mutate(tree=fct_inorder(tree))
 
 df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, cols = starts_with("chr"), names_to = "chr", values_to = "n")
 df_topology_consecutive_long <- df_topology_consecutive_long %>%
     filter(topology%in%df_topology$topology) %>%
     mutate(chr=fct_inorder(chr)) %>%
-    left_join(df_topology, by="topology")
+    left_join(df_topology, by="topology") %>%
+    arrange(readr::parse_number(tree)) %>%
+    mutate(tree=fct_inorder(tree))
 
 # visualisation for unique topology count
 plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage))
