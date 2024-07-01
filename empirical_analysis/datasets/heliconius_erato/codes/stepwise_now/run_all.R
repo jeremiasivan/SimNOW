@@ -33,6 +33,10 @@ outgroup <- "HmelRef"
 initial_wsize <- 64000
 min_wsize <- 0
 min_informative_sites <- 4
+
+# summary
+colour_scheme <- paste0(codedir, "/datasets/heliconius_erato/files/colour_scheme.txt")
+
 #################################
 
 if (nthread / thread < 1) {
@@ -99,7 +103,7 @@ stopCluster(cl)
 # summary for all chromosomes
 rmarkdown::render(input=paste0(codedir,"/datasets/heliconius_erato/codes/stepwise_now/summary_all.Rmd"),
                   output_file=paste0(outdir,"/",prefix,"/heliconius_summary.html"),
-                  params=list(codedir=codedir, prefix=prefix, outdir=outdir, initial_wsize=initial_wsize),
+                  params=list(codedir=codedir, prefix=prefix, thread=thread, outdir=outdir, initial_wsize=initial_wsize, colour_scheme=colour_scheme),
                   quiet=TRUE)
                   
 #################################

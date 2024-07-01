@@ -4,14 +4,19 @@ params:
   # general
   codedir: "~/SimNOW/empirical_analysis"
   prefix: "sim"
+  thread: 10
   outdir: "~/simulation"
 
   initial_wsize: 64000
+  colour_scheme: ""
 ---
 ```{r heliconius-setup, include=FALSE}
+# install.packages('ape')
+
 # load libraries
 library(data.table)
-library(tidyr)
+library(doSNOW)
+library(tidyverse)
 
 # load functions
 source(paste0(params$codedir,"/datasets/heliconius_erato/codes/functions.R"), local=TRUE)
@@ -27,6 +32,7 @@ if (!dir.exists(dir_summary)) {
 # output files
 fn_best_uqtops <- paste0(dir_summary, "best.uqtops")
 
+fn_tops_best_chr <- paste0(dir_summary, "all.best.tops_chr.tsv")
 fn_uqtops_dist_tiff <- paste0(dir_summary, "all.best.tops_dist.tiff")
 fn_conwindows_tiff <- paste0(dir_summary, "all.best.conwins.tiff")
 fn_conwindows_chr_tiff <- paste0(dir_summary, "all.best.conwins_chr.tiff")
@@ -182,18 +188,39 @@ for (chr in ls_chr) {
     df_topology_consecutive <- data.table::merge.data.table(df_topology_consecutive, df_topology_consecutive_temp, by=c("topology","count"), all=T)
 }
 
+# filter out topologies
+ls_topology <- unique(df_topology_count_long$topology)
+if (length(params$colour_scheme) != 0) {
+  ls_topology <- c()
+  df_colour_scheme <- fread(params$colour_scheme)
+
+  # iterate over topologies
+  for (j in 1:nrow(df_colour_scheme)) {
+    for (top in unique(df_topology_count_long$topology)) {
+      # extract topologies
+      top1 <- ape::read.tree(text=df_colour_scheme$topology[j])
+      top2 <- ape::read.tree(text=top)
+
+      if (ape::all.equal.phylo(top1, top2)) {
+        ls_topology <- c(ls_topology, top)
+        break
+      }
+    }
+  }
+}
+
 # transform data.table
 df_topology_count_long <- tidyr::pivot_longer(df_topology_count, cols = starts_with("chr"), names_to = "chr", values_to = "count")
 df_topology_count_long <- df_topology_count_long %>%
-    filter(!is.na(count)) %>%
+    filter(!is.na(count) & topology%in%ls_topology) %>%
     mutate(count_percentage=count/sum(count))
 df_topology_count_long$chr <- fct_inorder(df_topology_count_long$chr)
 data.table::fwrite(df_topology_count_long, file=fn_tops_best_chr, sep="\t", quote=F)
 
 df_topology_consecutive_long <- tidyr::pivot_longer(df_topology_consecutive, cols = starts_with("chr"), names_to = "chr", values_to = "n")
 df_topology_consecutive_long <- df_topology_consecutive_long %>%
-    filter(!is.na(topology) & topology!="-")
-df_topology_consecutive_long$chr <- fct_inorder(df_topology_consecutive_long$chr)
+    filter(topology%in%ls_topology) %>%
+    mutate(chr=fct_inorder(chr))
 
 # visualisation for unique topology count
 plot <- ggplot(df_topology_count_long, aes(x=topology, y=count_percentage, fill=chr)) +
