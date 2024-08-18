@@ -411,8 +411,8 @@ for (top in sort(unique(df_topology_count$topology))) {
 
     # combine autosomes into one color
     df_topology_count_subset <- df_topology_count_subset %>%
-        mutate(chr=if_else(chr %in% c("chrX","chrY","chrM"),chr,"autosomes")) %>%
-        mutate(chr=fct_inorder(chr))
+        mutate(chr_type=if_else(chr %in% c("chrX","chrY","chrM"),chr,"autosomes")) %>%
+        mutate(chr_type=fct_inorder(chr_type))
     
     # output file
     fn_topology_count <- paste0(dir_output_summary, "top", top_counter, "_wsize_v2.tiff")

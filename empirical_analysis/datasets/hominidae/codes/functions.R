@@ -35,7 +35,7 @@ f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_
 
     plot <- ggplot(df_topology_count_wsize, aes(x=fct_rev(wsize), y=count_percentage, group=chr, ymin=0, ymax=1)) +
         geom_line(aes(alpha=0.2), size=4) +
-        geom_point(aes(colour=chr), size=15) +
+        geom_point(aes(colour=ifelse(is.null(chr_type),chr,chr_type)), size=15) +
         viridis::scale_color_viridis(discrete = TRUE) + 
         labs(colour="Chromosomes")
 
