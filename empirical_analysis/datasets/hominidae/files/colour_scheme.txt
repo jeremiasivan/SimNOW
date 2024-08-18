@@ -1,0 +1,4 @@
+topology    code
+(hg38,gorGor3,(panTro4,ponAbe2)); #d72e2c
+(hg38,(gorGor3,ponAbe2),panTro4); #2574a7
+(hg38,(gorGor3,panTro4),ponAbe2); #b7d596
