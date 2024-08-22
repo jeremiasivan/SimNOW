@@ -138,13 +138,13 @@ if (length(params$colour_scheme) != 0) {
 
     # iterate over topologies
     for (j in 1:nrow(df_colour_scheme)) {
-        for (top in ls_uq_tops) {
+        for (top in ls_uqtops) {
             # extract topologies
             top1 <- ape::read.tree(text=df_colour_scheme$topology[j])
             top2 <- ape::read.tree(text=top)
 
             if (ape::all.equal.phylo(top1, top2)) {
-                df_topology_colour <- rbind(df_topology_colour, data.table(topology=top, colour=df_colour_scheme$code[j]))
+                df_topology_colour <- rbind(df_topology_colour, data.table::data.table(topology=top, colour=df_colour_scheme$code[j]))
                 break
             }
         }
@@ -580,8 +580,8 @@ for (top in sort(unique(df_topology_count$topology))) {
 
     # combine autosomes into one color
     df_topology_count_subset <- df_topology_count_subset %>%
-        mutate(chr=if_else(chr %in% c("chrX","chrY","chrM"),chr,"autosomes")) %>%
-        mutate(chr=fct_inorder(chr))
+        mutate(chr_type=if_else(chr %in% c("chrX","chrY","chrM"),chr,"autosomes")) %>%
+        mutate(chr_type=fct_inorder(chr_type))
     
     # output file
     fn_topology_count <- paste0(dir_output_summary, "all.top", top_counter, "_wsize_v2.tiff")
@@ -608,13 +608,10 @@ dev.off()
 ls_window_spacing <- c(1,2,5,10,20,50,100,200,500,1000,2000,5000,10000)
 
 # set up output data.table
-df_topology <- data.table::data.table(interval=factor(), chr=factor(), topology=character(), count=numeric(), count_percentage=numeric(), count_highbs=numeric(), count_percentage_highbs=numeric())
+df_topology <- data.table::data.table(interval=factor(), chr=factor(), topology=character(), type=character(), count=numeric(), count_percentage=numeric())
 
 # iterate over window spacing
 for (interval in ls_window_spacing) {
-    # set up temporary data.table
-    df_topology_temp <- data.table::data.table(interval=numeric(), chr=factor(), topology=character(), count=numeric(), count_percentage=numeric(), count_highbs=numeric(), count_percentage_highbs=numeric())
-
     # update the number of chromosomes
     chrthread <- ifelse(length(ls_chr) < params$thread, length(ls_chr), params$thread)
 
@@ -754,7 +751,9 @@ for (interval in ls_window_spacing) {
         df_topology_chr <- df_topology_chr %>%
             group_by(topology, type) %>%
             summarise(count=n()) %>%
-            mutate(interval=interval, chr=chr, count_percentage=count/sum(count))
+            mutate(interval=interval, chr=chr) %>%
+            group_by(type) %>%
+            mutate(count_percentage=count/sum(count))
 
         # save data.table
         data.table::fwrite(df_topology_chr, file=fn_filter_toptable_temp, sep="\t", quote=F)
@@ -805,10 +804,10 @@ for (top in sort(unique(df_topology$topology))) {
     fn_topology_tiff <- paste0(dir_output_summary, "best.top", top_counter, "_wsize_filtered.tiff")
 
     # ggplot2
-    plot <- ggplot(df_topology_subset[df_topology_subset$type=="highbs"], aes(x=interval, y=count_percentage, ymin=0, ymax=1)) +
+    plot <- ggplot(df_topology_subset[df_topology_subset$type=="highbs",], aes(x=interval, y=count_percentage, ymin=0, ymax=1)) +
         geom_point(aes(colour=chr), size=15) +
         geom_boxplot(aes(group=interval, alpha=0.2), lwd=3, outlier.shape=NA) +
-        geom_point(data=df_topology_avg_subset, aes(x=interval, y=count_percentage), colour="red", size=15, shape=18) +
+        geom_point(data=df_topology_avg_subset[df_topology_avg_subset$type=="highbs",], aes(x=interval, y=count_percentage), colour="red", size=15, shape=18) +
         viridis::scale_color_viridis(discrete = TRUE) + 
         labs(colour="Chromosomes") +
         ggtitle(paste("Distribution of Filtered", top, "across Window Intervals for High BS Trees")) + ylab("Proportion") + xlab("Window Interval") +
@@ -834,10 +833,10 @@ for (top in sort(unique(df_topology$topology))) {
     fn_topology_tiff <- paste0(dir_output_summary, "all.best.top", top_counter, "_wsize_filtered.tiff")
 
     # ggplot2
-    plot <- ggplot(df_topology_subset[df_topology_subset$type=="all"], aes(x=interval, y=count_percentage, ymin=0, ymax=1)) +
+    plot <- ggplot(df_topology_subset[df_topology_subset$type=="all",], aes(x=interval, y=count_percentage, ymin=0, ymax=1)) +
         geom_point(aes(colour=chr), size=15) +
         geom_boxplot(aes(group=interval, alpha=0.2), lwd=3, outlier.shape=NA) +
-        geom_point(data=df_topology_avg_subset, aes(x=interval, y=count_percentage), colour="red", size=15, shape=18) +
+        geom_point(data=df_topology_avg_subset[df_topology_avg_subset$type=="all",], aes(x=interval, y=count_percentage), colour="red", size=15, shape=18) +
         viridis::scale_color_viridis(discrete = TRUE) + 
         labs(colour="Chromosomes") +
         ggtitle(paste("Distribution of Filtered", top, "across Window Intervals for All Trees")) + ylab("Proportion") + xlab("Window Interval") +
