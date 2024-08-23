@@ -168,7 +168,9 @@ df_topology_consecutive_long$chr <- fct_inorder(df_topology_consecutive_long$chr
 df_tops_merged <- df_topology_consecutive_long %>%
     mutate(n=ifelse(is.na(n),0,n)) %>%
     group_by(topology) %>%
-    summarise(count=sum(n), count_percentage=count/sum(count))
+    summarise(count=sum(n)) %>%
+    group_by(topology) %>%
+    mutate(count_percentage=count/sum(count))
 data.table::fwrite(df_tops_merged, file=fn_tops_merged, sep="\t", quote=F)
 
 # all plots
@@ -683,7 +685,7 @@ for (interval in ls_window_spacing) {
                         init_tree$node.label <- NULL
                     }
 
-                    df_topology_chr <- rbind(df_topology_chr, data.table::data.table(window=window, type="highbs", topology=ape::write.tree(init_tree)))
+                    df_topology_chr <- rbind(df_topology_chr, data.table::data.table(window=window, type="all", topology=ape::write.tree(init_tree)))
                 }
                 
 
@@ -692,7 +694,7 @@ for (interval in ls_window_spacing) {
 
                 if (!is.null(bl) && mean(as.numeric(bl)) >= 95) {
                     tre$node.label <- NULL
-                    df_topology_chr <- rbind(df_topology_chr, data.table::data.table(window=window, type="all", topology=ape::write.tree(tre)))
+                    df_topology_chr <- rbind(df_topology_chr, data.table::data.table(window=window, type="highbs", topology=ape::write.tree(tre)))
 
                     idx_filtered <- idx
                     break
@@ -729,7 +731,7 @@ for (interval in ls_window_spacing) {
                         init_tree$node.label <- NULL
                     }
 
-                    df_topology_chr <- rbind(df_topology_chr, data.table::data.table(window=window, type="highbs", topology=ape::write.tree(init_tree)))
+                    df_topology_chr <- rbind(df_topology_chr, data.table::data.table(window=window, type="all", topology=ape::write.tree(init_tree)))
                 }
 
                 # update list of topology without bootstrap
@@ -739,7 +741,7 @@ for (interval in ls_window_spacing) {
 
                     if (!is.null(bl) && mean(as.numeric(bl)) >= 95) {
                         tre$node.label <- NULL
-                        df_topology_chr <- rbind(df_topology_chr, data.table::data.table(window=window, type="all", topology=ape::write.tree(tre)))
+                        df_topology_chr <- rbind(df_topology_chr, data.table::data.table(window=window, type="highbs", topology=ape::write.tree(tre)))
 
                         idx_filtered <- idx
                     }
