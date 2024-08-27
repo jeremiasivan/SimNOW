@@ -15,6 +15,7 @@ f_acc_wsize <- function(df, type) {
   }
 
   plot <- plot +
+    geom_line(aes(group=simulation), alpha=0.1, size=2) +
     geom_boxplot(outlier.shape = NA) +
     geom_point(shape=16, aes(colour=r, size=20)) +
     facet_wrap(.~r, scales = "free", ncol = 1) +
@@ -173,6 +174,7 @@ f_acc_loss <- function(df, ifc, type) {
 # required library: ggplot2, viridis
 f_ic_wsize <- function(df, i, ifc) {
   plot <- ggplot(df, aes(x=window_size, y=as.numeric(unlist(df[,..i])))) +
+    geom_line(aes(group=simulation), alpha=0.1, size=2) +
     geom_boxplot(outlier.shape = NA) +
     geom_point(shape=16, aes(colour=r, size=20)) +
     facet_wrap(.~r, scales = "free", ncol = 1) +
