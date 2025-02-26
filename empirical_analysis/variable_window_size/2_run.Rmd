@@ -103,8 +103,9 @@ while (is_repeat) {
       window_two <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_2")
 
       # extract the alignment
-      f_perwindow_run(dir_output, seq, window_one, 1, ceiling(prop*ln_seq))
-      f_perwindow_run(dir_output, seq, window_two, ceiling(prop*ln_seq)+1, ln_seq)
+      midpoint <- ceiling(prop*ln_seq)
+      f_perwindow_run(dir_output, seq, window_one, 1, midpoint)
+      f_perwindow_run(dir_output, seq, window_two, midpoint+1, ln_seq)
 
       # run IQ-TREE2
       fn_fasta_one <- paste0(dir_output, window_one, ".fa")
@@ -125,13 +126,13 @@ while (is_repeat) {
 
       # update data.frame
       df_prop <- rbind(df_prop, data.table::data.table(prop=prop, window_one=window_one, window_two=window_two,
-                                                                  length_one=length(1:ceiling(prop*ln_seq)), length_two=length(ceiling(prop*ln_seq)+1:ln_seq),
+                                                                  length_one=length(1:midpoint), length_two=length(midpoint+1:ln_seq),
                                                                   aic_one=aic_one, aic_two=aic_two))
     }
 
     # save data.frame
     fn_output <- paste0(dir_output, "aic_table.tsv")
-    data.table::fwrite(df_prop, file=fn_output, quote=F, row.names=F, col.names=F, sep="\t")
+    data.table::fwrite(df_prop, file=fn_output, quote=F, row.names=F, col.names=T, sep="\t")
 
     # extract the best AIC score
     fn_output_min_aic <- fn_output %>% mutate(sum_aic=aic_one+aic_two) %>% filter(sum_aic==min(sum_aic))
@@ -148,5 +149,5 @@ while (is_repeat) {
 
 stopCluster(nwcl)
 
-data.table::fwrite(ls_df_output[[length(ls_df_output)]], file=fn_division_summary, quote=F, row.names=F, col.names=F, sep="\t")
+data.table::fwrite(ls_df_output[[length(ls_df_output)]], file=fn_division_summary, quote=F, row.names=F, col.names=T, sep="\t")
 ```
