@@ -46,6 +46,7 @@ for (window in ls_windows) {
 
   # update data.table
   df_output <- rbind(df_output, data.table::data.table(window=window, length=length(s[[1]]), aic=aic, is_divided=TRUE, notes=""))
+  rm(s)
 }
 
 # update data.table
@@ -66,6 +67,8 @@ while (is_repeat) {
   }
   
   for (i in 1:nrow(df_current)) {
+    log4r::info(fn_logger, paste0("Analysing ", df_current$window[i], "..."))
+
     if (!df_current$is_divided[i]) {
       df_output <- rbind(df_output, data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE))
       next
@@ -87,6 +90,8 @@ while (is_repeat) {
     # extract AIC
     df_prop <- data.table::data.table(prop=character(), window_one=character(), window_two=character(), length_one=numeric(), length_two=numeric(), aic_one=numeric(), aic_two=numeric())
     for (prop in params$division_prop) {
+      log4r::info(fn_logger, paste0("- Prop: ", prop))
+
       window_one <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_1")
       window_two <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_2")
 
