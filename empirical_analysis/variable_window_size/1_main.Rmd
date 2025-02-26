@@ -38,6 +38,7 @@ params:
 # install.packages("log4r")
 
 library(dplyr)
+library(doSNOW)
 
 # store initial system time
 sys_tic <- Sys.time()

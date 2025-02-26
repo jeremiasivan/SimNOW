@@ -57,6 +57,10 @@ ls_df_output <- list(df_output)
 is_repeat <- TRUE
 workdir <- paste0(params$outdir_stepwise_now_filtered, "/")
 
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
+
 # iterate over windows
 while (is_repeat) {
   df_output <- data.table::data.table(window=character(), length=numeric(), aic=numeric(), is_divided=logical(), notes=character())
@@ -66,18 +70,17 @@ while (is_repeat) {
     break
   }
   
-  for (i in 1:nrow(df_current)) {
+  df_output <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
     log4r::info(fn_logger, paste0("Analysing ", df_current$window[i], "..."))
 
     if (!df_current$is_divided[i]) {
-      df_output <- rbind(df_output, data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE))
-      next
+      return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE))
     }
 
     # input files
     fn_fasta <- paste0(workdir, df_current$window[i], ".fa")
 
-    $ output directory
+    # output directory
     dir_output <- paste0(outdir_division, df_current$window[i], "/")
     if (!dir.exists(dir_output)) {
       dir.create(dir_output, recursive=T)
@@ -129,15 +132,17 @@ while (is_repeat) {
     # extract the best AIC score
     fn_output_min_aic <- fn_output %>% mutate(sum_aic=aic_one+aic_two) %>% filter(sum_aic==min(sum_aic))
     if (fn_output_min_aic$sum_aic[1] < df_current$aic[i]) {
-      df_output <- rbind(df_output, data.table::data.table(window=fn_output_min_aic$window_one[1], length=fn_output_min_aic$length_one[1], aic=fn_output_min_aic$aic_one[1], is_divided=TRUE))
-      df_output <- rbind(df_output, data.table::data.table(window=fn_output_min_aic$window_two[1], length=fn_output_min_aic$length_two[1], aic=fn_output_min_aic$aic_two[1], is_divided=TRUE))
+      return(rbind(data.table::data.table(window=fn_output_min_aic$window_one[1], length=fn_output_min_aic$length_one[1], aic=fn_output_min_aic$aic_one[1], is_divided=TRUE),
+                   data.table::data.table(window=fn_output_min_aic$window_two[1], length=fn_output_min_aic$length_two[1], aic=fn_output_min_aic$aic_two[1], is_divided=TRUE)))
     } else {
-      df_output <- rbind(df_output, data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE))
+      return(df_output, data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE))
     }
   }
 
   ls_df_output <- c(ls_df_output, list(df_output))
 }
+
+stopCluster(nwcl)
 
 data.table::fwrite(ls_df_output[[length(ls_df_output)]], file=fn_division_summary, quote=F, row.names=F, col.names=F, sep="\t")
 ```
