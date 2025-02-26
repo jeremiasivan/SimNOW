@@ -1,0 +1,138 @@
+---
+title: "Variable Window Size for Stepwise NOW"
+---
+
+```{r dacsetup, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####     Divide and Conquer     ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+outdir_division <- paste0(getwd(), "/division/")
+outdir_conquer <- paste0(getwd(), "/conquer/")
+outdir_final <- paste0(getwd(), "/final/")
+
+# output files
+fn_division_summary <- paste0(outdir_division, "summary_aic.tsv")
+```
+
+```{r, include=FALSE}
+options(scipen=999)
+
+# extract list of windows
+ls_windows <- list.dirs(params$outdir_stepwise_now_filtered, recursive=F, full.names=F)
+ls_windows_iter <- gsub("window_", "", ls_windows)
+
+# select the first and last windows
+first_window <- as.numeric(ls_windows_iter[1])
+last_window <- as.numeric(ls_windows_iter[length(ls_windows_iter)])
+zerowidth <- length(unlist(strsplit(ls_windows_iter[1], split="")))
+
+# save the AIC per window
+df_output <- data.table::data.table(window=character(), length=numeric(), aic=numeric(), is_divided=logical(), notes=character())
+for (window in ls_windows) {
+  # input files
+  fn_fasta <- paste0(params$outdir_stepwise_now_filtered, "/", window, "/", window, ".fa")
+  fn_iqtree <- paste0(fn_fasta, ".iqtree")
+  fn_treefile <- paste0(fn_fasta, ".treefile")
+
+  # calculate AIC
+  out <- f_window_tree_statistics(fn_iqtree, fn_treefile, NULL, NULL)
+  aic <- (2 * out$freeparams) - (2 * out$logl)
+
+  # read FASTA
+  s <- seqinr::read.fasta(fn_fasta, whole.header = T)
+
+  # update data.table
+  df_output <- rbind(df_output, data.table::data.table(window=window, length=length(s[[1]]), aic=aic, is_divided=TRUE, notes=""))
+}
+
+# update data.table
+ls_df_output <- list(df_output)
+```
+
+```{r division}
+is_repeat <- TRUE
+workdir <- paste0(params$outdir_stepwise_now_filtered, "/")
+
+# iterate over windows
+while (is_repeat) {
+  df_output <- data.table::data.table(window=character(), length=numeric(), aic=numeric(), is_divided=logical(), notes=character())
+  df_current <- ls_df_output[[length(ls_df_output)]]
+
+  if (!all(df_current$is_divided)) {
+    break
+  }
+  
+  for (i in 1:nrow(df_current)) {
+    if (!df_current$is_divided[i]) {
+      df_output <- rbind(df_output, data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE))
+      next
+    }
+
+    # input files
+    fn_fasta <- paste0(workdir, df_current$window[i], ".fa")
+
+    $ output directory
+    dir_output <- paste0(outdir_division, df_current$window[i], "/")
+    if (!dir.exists(dir_output)) {
+      dir.create(dir_output, recursive=T)
+    }
+
+    # read FASTA
+    seq <- seqinr::read.fasta(fn_fasta, whole.header = T)
+    ln_seq <- length(seq[[1]])
+
+    # extract AIC
+    df_prop <- data.table::data.table(prop=character(), window_one=character(), window_two=character(), length_one=numeric(), length_two=numeric(), aic_one=numeric(), aic_two=numeric())
+    for (prop in params$division_prop) {
+      window_one <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_1")
+      window_two <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_2")
+
+      # extract the alignment
+      f_perwindow_run(dir_output, seq, window_one, 1, ceiling(prop*ln_seq))
+      f_perwindow_run(dir_output, seq, window_two, ceiling(prop*ln_seq)+1, ln_seq)
+
+      # run IQ-TREE2
+      fn_fasta_one <- paste0(dir_output, window_one, ".fa")
+      fn_fasta_two <- paste0(dir_output, window_two, ".fa")
+      f_iqtree2_single(fn_fasta_one, NULL, ln_seq, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+      f_iqtree2_single(fn_fasta_two, NULL, ln_seq, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+
+      # extract AIC
+      fn_iqtree_one <- paste0(fn_fasta_one, ".iqtree)
+      fn_treefile_one <- paste0(fn_fasta_one, ".treefile)
+      out_one <- f_window_tree_statistics(fn_iqtree_one, fn_treefile_one, NULL, NULL)
+      aic_one <- (2 * out_one$freeparams) - (2 * out_one$logl)
+
+      fn_iqtree_two <- paste0(fn_fasta_two, ".iqtree)
+      fn_treefile_two <- paste0(fn_fasta_two, ".treefile)
+      out_two <- f_window_tree_statistics(fn_iqtree_two, fn_treefile_two, NULL, NULL)
+      aic_two <- (2 * out_two$freeparams) - (2 * out_two$logl)
+
+      # update data.frame
+      df_prop <- rbind(df_prop, data.table::data.table(prop=prop, window_one=window_one, window_two=window_two,
+                                                                  length_one=length(1:ceiling(prop*ln_seq)), length_two=length(ceiling(prop*ln_seq)+1:ln_seq),
+                                                                  aic_one=aic_one, aic_two=aic_two))
+    }
+
+    # save data.frame
+    fn_output <- paste0(dir_output, "aic_table.tsv")
+    data.table::fwrite(df_prop, file=fn_output, quote=F, row.names=F, col.names=F, sep="\t")
+
+    # extract the best AIC score
+    fn_output_min_aic <- fn_output %>% mutate(sum_aic=aic_one+aic_two) %>% filter(sum_aic==min(sum_aic))
+    if (fn_output_min_aic$sum_aic[1] < df_current$aic[i]) {
+      df_output <- rbind(df_output, data.table::data.table(window=fn_output_min_aic$window_one[1], length=fn_output_min_aic$length_one[1], aic=fn_output_min_aic$aic_one[1], is_divided=TRUE))
+      df_output <- rbind(df_output, data.table::data.table(window=fn_output_min_aic$window_two[1], length=fn_output_min_aic$length_two[1], aic=fn_output_min_aic$aic_two[1], is_divided=TRUE))
+    } else {
+      df_output <- rbind(df_output, data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE))
+    }
+  }
+
+  ls_df_output <- c(ls_df_output, list(df_output))
+}
+
+data.table::fwrite(ls_df_output[[length(ls_df_output)]], file=fn_division_summary, quote=F, row.names=F, col.names=F, sep="\t")
+```

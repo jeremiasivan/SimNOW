@@ -1,0 +1,80 @@
+---
+title: "Stepwise NOW with Variable Window Sizes for Empirical Datasets"
+author: "Jeremias Ivan"
+date: "`r format(Sys.time(), '%d %B %Y, %H:%M%p')`"
+
+output:
+  html_document:
+    code_folding: show
+    toc: true
+    toc_float: true
+    
+params:
+  # general
+  codedir: "~/SimNOW/empirical_analysis"
+  prefix: "sim"
+  outdir: "~/simulation"
+  thread: 1
+  redo: FALSE
+  
+  # IQ-Tree2
+  iqtree2dir: "~/iqtree2"
+  set_blmin: FALSE
+  set_model: FALSE
+  dna_model: ""
+
+  bootstrap: 1000
+  bootstrap_type: ""
+  outgroup: ""
+  
+  # NOW analysis
+  outdir_stepwise_now_filtered: ""
+  division_prop: !r c(0.25, 0.5, 0.75)
+
+---
+
+```{r, include=FALSE}
+# install.packages("data.table")
+# install.packages("log4r")
+
+library(dplyr)
+
+# store initial system time
+sys_tic <- Sys.time()
+
+# load libraries
+source(paste0(params$codedir, "/stepwise_now/functions.R"), local=TRUE)
+source(paste0(params$codedir, "/variable_window_size/functions.R"), local=TRUE)
+
+# create outdir
+currentdir <- paste0(params$outdir, "/", params$prefix)
+if (!dir.exists(currentdir)) {
+  dir.create(currentdir, recursive = T)
+}
+
+# create log file
+fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".log")
+log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
+fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
+if (params$redo) {
+  unlink(fn_log)
+}
+
+if (!file.exists(fn_log)) {
+  write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
+}
+
+knitr::opts_knit$set(root.dir = currentdir)
+```
+
+```{r child = paste0(params$codedir,"/variable_window_size/2_run.Rmd")}
+```
+
+```{r, include=FALSE}
+# store final system time
+sys_toc <- Sys.time()
+
+# write the system time in log file
+write.table(c("", paste0("Total elapsed time: ", round(as.numeric(difftime(sys_toc, sys_tic, units = "mins")), 3), " mins")),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+```
