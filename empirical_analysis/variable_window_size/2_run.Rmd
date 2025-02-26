@@ -67,10 +67,10 @@ doSNOW::registerDoSNOW(nwcl)
 
 # iterate over windows
 while (is_repeat) {
-  df_output <- data.table::data.table(window=character(), length=numeric(), aic=numeric(), is_divided=logical(), notes=character())
   df_current <- ls_df_output[[length(ls_df_output)]]
 
   if (!all(df_current$is_divided)) {
+    is_repeat <- FALSE
     break
   }
   
@@ -82,7 +82,7 @@ while (is_repeat) {
     }
 
     # input files
-    fn_fasta <- paste0(workdir, df_current$window[i], ".fa")
+    fn_fasta <- paste0(workdir, df_current$window[i], "/", df_current$window[i], ".fa")
 
     # output directory
     dir_output <- paste0(outdir_division, df_current$window[i], "/")
