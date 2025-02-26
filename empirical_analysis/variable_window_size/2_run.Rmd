@@ -113,13 +113,13 @@ while (is_repeat) {
       f_iqtree2_single(fn_fasta_two, NULL, ln_seq, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
 
       # extract AIC
-      fn_iqtree_one <- paste0(fn_fasta_one, ".iqtree)
-      fn_treefile_one <- paste0(fn_fasta_one, ".treefile)
+      fn_iqtree_one <- paste0(fn_fasta_one, ".iqtree")
+      fn_treefile_one <- paste0(fn_fasta_one, ".treefile")
       out_one <- f_window_tree_statistics(fn_iqtree_one, fn_treefile_one, NULL, NULL)
       aic_one <- (2 * out_one$freeparams) - (2 * out_one$logl)
 
-      fn_iqtree_two <- paste0(fn_fasta_two, ".iqtree)
-      fn_treefile_two <- paste0(fn_fasta_two, ".treefile)
+      fn_iqtree_two <- paste0(fn_fasta_two, ".iqtree")
+      fn_treefile_two <- paste0(fn_fasta_two, ".treefile")
       out_two <- f_window_tree_statistics(fn_iqtree_two, fn_treefile_two, NULL, NULL)
       aic_two <- (2 * out_two$freeparams) - (2 * out_two$logl)
 
