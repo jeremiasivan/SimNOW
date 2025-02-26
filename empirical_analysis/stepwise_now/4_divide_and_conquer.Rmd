@@ -1,0 +1,38 @@
+---
+title: "Stepwise NOW for Empirical Dataset"
+---
+
+
+```{r dacsetup, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####     Divide and Conquer     ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+# output file
+fn_summary <- paste0(getwd(), "/", params$prefix, ".sumtable")
+```
+
+```{r, include=FALSE}
+options(scipen=999)
+
+# extract the best window size
+fn_summary <- paste0(getwd(), "/", params$prefix, ".sumtable")
+df_summary <- data.table::fread(fn_summary)
+
+# choose the best window size
+i <- 1
+for (j in nrow(df_summary):1) {
+  if (df_summary$diff_aic[j] < 0) {
+    i <- df_summary$step[j]
+    break
+  }
+}
+
+# add example pairs for the best window size
+fn_output <- paste0(getwd(), "/", i, "/", i, ".aic.sum")
+
+# input directory
+dir_long_filtered <- paste0(getwd(), "/", i, "/", wsizes[i], "/filtered/")
+```
