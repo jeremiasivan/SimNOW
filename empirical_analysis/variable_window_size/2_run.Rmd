@@ -116,11 +116,19 @@ while (is_repeat) {
       # extract AIC
       fn_iqtree_one <- paste0(fn_fasta_one, ".iqtree")
       fn_treefile_one <- paste0(fn_fasta_one, ".treefile")
+      if (!file.exists(fn_iqtree_one)) {
+        next
+      }
+
       out_one <- f_window_tree_statistics(fn_iqtree_one, fn_treefile_one, NULL, NULL)
       aic_one <- (2 * out_one$freeparams) - (2 * out_one$logl)
 
       fn_iqtree_two <- paste0(fn_fasta_two, ".iqtree")
       fn_treefile_two <- paste0(fn_fasta_two, ".treefile")
+      if (!file.exists(fn_iqtree_two)) {
+        next
+      }
+
       out_two <- f_window_tree_statistics(fn_iqtree_two, fn_treefile_two, NULL, NULL)
       aic_two <- (2 * out_two$freeparams) - (2 * out_two$logl)
 
@@ -135,10 +143,14 @@ while (is_repeat) {
     data.table::fwrite(df_prop, file=fn_output, quote=F, row.names=F, col.names=T, sep="\t")
 
     # extract the best AIC score
-    fn_output_min_aic <- fn_output %>% mutate(sum_aic=aic_one+aic_two) %>% filter(sum_aic==min(sum_aic))
-    if (fn_output_min_aic$sum_aic[1] < df_current$aic[i]) {
-      return(rbind(data.table::data.table(window=fn_output_min_aic$window_one[1], length=fn_output_min_aic$length_one[1], aic=fn_output_min_aic$aic_one[1], is_divided=TRUE, notes=""),
-                   data.table::data.table(window=fn_output_min_aic$window_two[1], length=fn_output_min_aic$length_two[1], aic=fn_output_min_aic$aic_two[1], is_divided=TRUE, notes="")))
+    if (nrow(df_prop) == 0) {
+      return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE, notes=""))
+    }
+
+    df_output_min_aic <- df_prop %>% mutate(sum_aic=aic_one+aic_two) %>% filter(sum_aic==min(sum_aic))
+    if (df_output_min_aic$sum_aic[1] < df_current$aic[i]) {
+      return(rbind(data.table::data.table(window=df_output_min_aic$window_one[1], length=df_output_min_aic$length_one[1], aic=df_output_min_aic$aic_one[1], is_divided=TRUE, notes=""),
+                   data.table::data.table(window=df_output_min_aic$window_two[1], length=df_output_min_aic$length_two[1], aic=df_output_min_aic$aic_two[1], is_divided=TRUE, notes="")))
     } else {
       return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE, notes=""))
     }
