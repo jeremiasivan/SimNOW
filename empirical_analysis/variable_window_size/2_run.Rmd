@@ -68,7 +68,7 @@ doSNOW::registerDoSNOW(nwcl)
 
 # iterate over windows
 while (is_repeat == TRUE) {
-  df_current <- ls_df_output[[length(ls_df_output)]]
+  df_current <- as.data.frame(ls_df_output[[length(ls_df_output)]])
 
   if (all(df_current$is_divided == FALSE)) {
     is_repeat <- FALSE
@@ -147,7 +147,7 @@ while (is_repeat == TRUE) {
 
         # update data.frame
         df_prop <- rbind(df_prop, data.table::data.table(prop=prop, window_one=window_one, window_two=window_two,
-                                                                    length_one=length(1:midpoint), length_two=length(midpoint+1:ln_seq),
+                                                                    length_one=length(1:midpoint), length_two=ln-seq-length(1:midpoint),
                                                                     aic_one=aic_one, aic_two=aic_two))
       }
 
@@ -176,5 +176,5 @@ while (is_repeat == TRUE) {
 
 stopCluster(nwcl)
 
-data.table::fwrite(ls_df_output[[length(ls_df_output)]], file=fn_division_summary, quote=F, row.names=F, col.names=T, sep="\t")
+data.table::fwrite(as.data.frame(df_current), file=fn_division_summary, quote=F, row.names=F, col.names=T, sep="\t")
 ```
