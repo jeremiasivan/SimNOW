@@ -66,15 +66,17 @@ nwcl <- makeCluster(params$thread)
 doSNOW::registerDoSNOW(nwcl)
 
 # iterate over windows
-while (is_repeat) {
+while (is_repeat == TRUE) {
   df_current <- ls_df_output[[length(ls_df_output)]]
 
-  if (!all(df_current$is_divided)) {
+  if (all(df_current$is_divided == FALSE)) {
     is_repeat <- FALSE
     break
   }
   
   df_output <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
+    require(dplyr)
+
     log4r::info(fn_logger, paste0("Analysing ", df_current$window[i], "..."))
     df_prop <- data.table::data.table(prop=character(), window_one=character(), window_two=character(), length_one=numeric(), length_two=numeric(), aic_one=numeric(), aic_two=numeric())
 
@@ -94,7 +96,7 @@ while (is_repeat) {
     # output file
     fn_output <- paste0(dir_output, "aic_table.tsv")
     if (file.exists(fn_output) && !params$redo) {
-      df_prop <- read.table::fread(fn_output)
+      df_prop <- data.table::fread(fn_output)
 
     } else {
       # read FASTA
