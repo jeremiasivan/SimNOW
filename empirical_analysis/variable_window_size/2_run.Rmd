@@ -110,6 +110,10 @@ while (is_repeat == TRUE) {
     if (file.exists(fn_output) && !params$redo) {
       df_prop <- data.table::fread(fn_output)
 
+      if (nrow(df_prop) == 0) {
+        return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE, notes=""))
+      }
+
     } else {
       # read FASTA
       seq <- seqinr::read.fasta(fn_fasta, whole.header = T)
