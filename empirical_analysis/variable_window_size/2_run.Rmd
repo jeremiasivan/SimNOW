@@ -61,7 +61,7 @@ if (file.exists(fn_df_current) && !params$redo) {
   }
 
   stopCluster(nwcl)
-  data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
+  data.table::fwrite(as.data.frame(df_current), file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
 }
 ```
 
@@ -177,7 +177,7 @@ while (is_repeat == TRUE) {
   # update variables
   workdir <- outdir_division
   iterator <- iterator + 2
-  df_current <- df_output
+  df_current <- as.data.frame(df_output)
 
   # save output file
   fn_df_current <- paste0(prefix_division_summary, formatC(iterator/2, width=2, format="d", flag="0"), ".tsv")
