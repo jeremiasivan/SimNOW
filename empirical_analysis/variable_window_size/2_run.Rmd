@@ -59,6 +59,7 @@ ls_df_output <- list(df_output)
 
 ```{r division}
 is_repeat <- TRUE
+iterator <- 0
 workdir <- paste0(params$outdir_stepwise_now_filtered, "/")
 
 # create doSNOW cluster
@@ -85,7 +86,13 @@ while (is_repeat == TRUE) {
     }
 
     # input files
-    fn_fasta <- paste0(workdir, df_current$window[i], "/", df_current$window[i], ".fa")
+    window_fdname <- df_current$window[i]
+    if (iterator != 0) {
+      window_fdname <- unlist(strsplit(window_fdname, split="_"))[1:iterator]
+      window_fdname <- paste(window_fdname, collapse="_")
+    }
+    
+    fn_fasta <- paste0(workdir, window_fdname, "/", df_current$window[i], ".fa")
 
     # output directory
     dir_output <- paste0(outdir_division, df_current$window[i], "/")
@@ -163,6 +170,8 @@ while (is_repeat == TRUE) {
   }
 
   ls_df_output <- c(ls_df_output, list(df_output))
+  workdir <- outdir_division
+  iterator <- iterator + 2
 }
 
 stopCluster(nwcl)
