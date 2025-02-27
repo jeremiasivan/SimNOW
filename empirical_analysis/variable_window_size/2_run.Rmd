@@ -76,6 +76,7 @@ while (is_repeat) {
   
   df_output <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
     log4r::info(fn_logger, paste0("Analysing ", df_current$window[i], "..."))
+    df_prop <- data.table::data.table(prop=character(), window_one=character(), window_two=character(), length_one=numeric(), length_two=numeric(), aic_one=numeric(), aic_two=numeric())
 
     if (!df_current$is_divided[i]) {
       return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE))
@@ -90,57 +91,60 @@ while (is_repeat) {
       dir.create(dir_output, recursive=T)
     }
 
-    # read FASTA
-    seq <- seqinr::read.fasta(fn_fasta, whole.header = T)
-    ln_seq <- length(seq[[1]])
+    # output file
+    fn_output <- paste0(dir_output, "aic_table.tsv")
+    if (file.exists(fn_output) && !params$redo) {
+      df_prop <- read.table::fread(fn_output)
 
-    # extract AIC
-    df_prop <- data.table::data.table(prop=character(), window_one=character(), window_two=character(), length_one=numeric(), length_two=numeric(), aic_one=numeric(), aic_two=numeric())
-    for (prop in params$division_prop) {
-      log4r::info(fn_logger, paste0("- Prop: ", prop))
-
-      window_one <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_1")
-      window_two <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_2")
-
-      # extract the alignment
-      midpoint <- ceiling(prop*ln_seq)
-      f_perwindow_run(dir_output, seq, window_one, 1, midpoint)
-      f_perwindow_run(dir_output, seq, window_two, midpoint+1, ln_seq)
-
-      # run IQ-TREE2
-      fn_fasta_one <- paste0(dir_output, window_one, ".fa")
-      fn_fasta_two <- paste0(dir_output, window_two, ".fa")
-      f_iqtree2_single(fn_fasta_one, NULL, ln_seq, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
-      f_iqtree2_single(fn_fasta_two, NULL, ln_seq, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+    } else {
+      # read FASTA
+      seq <- seqinr::read.fasta(fn_fasta, whole.header = T)
+      ln_seq <- length(seq[[1]])
 
       # extract AIC
-      fn_iqtree_one <- paste0(fn_fasta_one, ".iqtree")
-      fn_treefile_one <- paste0(fn_fasta_one, ".treefile")
-      if (!file.exists(fn_iqtree_one)) {
-        next
+      for (prop in params$division_prop) {
+        window_one <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_1")
+        window_two <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_2")
+
+        # extract the alignment
+        midpoint <- ceiling(prop*ln_seq)
+        f_perwindow_run(dir_output, seq, window_one, 1, midpoint)
+        f_perwindow_run(dir_output, seq, window_two, midpoint+1, ln_seq)
+
+        # run IQ-TREE2
+        fn_fasta_one <- paste0(dir_output, window_one, ".fa")
+        fn_fasta_two <- paste0(dir_output, window_two, ".fa")
+        f_iqtree2_single(fn_fasta_one, NULL, ln_seq, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+        f_iqtree2_single(fn_fasta_two, NULL, ln_seq, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+
+        # extract AIC
+        fn_iqtree_one <- paste0(fn_fasta_one, ".iqtree")
+        fn_treefile_one <- paste0(fn_fasta_one, ".treefile")
+        if (!file.exists(fn_iqtree_one)) {
+          next
+        }
+
+        out_one <- f_window_tree_statistics(fn_iqtree_one, fn_treefile_one, NULL, NULL)
+        aic_one <- (2 * out_one$freeparams) - (2 * out_one$logl)
+
+        fn_iqtree_two <- paste0(fn_fasta_two, ".iqtree")
+        fn_treefile_two <- paste0(fn_fasta_two, ".treefile")
+        if (!file.exists(fn_iqtree_two)) {
+          next
+        }
+
+        out_two <- f_window_tree_statistics(fn_iqtree_two, fn_treefile_two, NULL, NULL)
+        aic_two <- (2 * out_two$freeparams) - (2 * out_two$logl)
+
+        # update data.frame
+        df_prop <- rbind(df_prop, data.table::data.table(prop=prop, window_one=window_one, window_two=window_two,
+                                                                    length_one=length(1:midpoint), length_two=length(midpoint+1:ln_seq),
+                                                                    aic_one=aic_one, aic_two=aic_two))
       }
 
-      out_one <- f_window_tree_statistics(fn_iqtree_one, fn_treefile_one, NULL, NULL)
-      aic_one <- (2 * out_one$freeparams) - (2 * out_one$logl)
-
-      fn_iqtree_two <- paste0(fn_fasta_two, ".iqtree")
-      fn_treefile_two <- paste0(fn_fasta_two, ".treefile")
-      if (!file.exists(fn_iqtree_two)) {
-        next
-      }
-
-      out_two <- f_window_tree_statistics(fn_iqtree_two, fn_treefile_two, NULL, NULL)
-      aic_two <- (2 * out_two$freeparams) - (2 * out_two$logl)
-
-      # update data.frame
-      df_prop <- rbind(df_prop, data.table::data.table(prop=prop, window_one=window_one, window_two=window_two,
-                                                                  length_one=length(1:midpoint), length_two=length(midpoint+1:ln_seq),
-                                                                  aic_one=aic_one, aic_two=aic_two))
+      # save data.frame
+      data.table::fwrite(df_prop, file=fn_output, quote=F, row.names=F, col.names=T, sep="\t")
     }
-
-    # save data.frame
-    fn_output <- paste0(dir_output, "aic_table.tsv")
-    data.table::fwrite(df_prop, file=fn_output, quote=F, row.names=F, col.names=T, sep="\t")
 
     # extract the best AIC score
     if (nrow(df_prop) == 0) {
