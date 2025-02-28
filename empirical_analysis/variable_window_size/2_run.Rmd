@@ -235,7 +235,7 @@ for (i in 1:nrow(df_current)) {
 
     # run IQ-TREE2
     seq_len <- df_current$length[i] + df_current$length[i+1]
-    f_iqtree2_single(fn_combined_fasta, NULL, seq_len, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+    f_iqtree2_single(fn_combined_fasta, params$outgroup, seq_len, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
 
     # extract AIC
     fn_iqtree <- paste0(fn_combined_fasta, ".iqtree")
