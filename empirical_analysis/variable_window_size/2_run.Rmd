@@ -15,7 +15,8 @@ lapply(list(outdir_division, outdir_combine), function(x) if(!dir.exists(x)) dir
 
 # output files
 prefix_division_summary <- paste0(outdir_division, "summary_aic_iter")
-fn_summary <- paste0(getwd(), "summary.tsv")
+fn_summary <- paste0(getwd(), "/summary.tsv")
+fn_position_wsize <- paste0(getwd(), "/position_wsize.tiff")
 ```
 
 ```{r, include=FALSE}
@@ -286,5 +287,65 @@ log4r::info(fn_logger, "Merging Finished!")
 ```
 
 ```{r visualisation, eval=FALSE}
+# extract the initial length
+df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
+initial_length <- df_current %>% group_by(basewindow) %>% summarise(n=sum(length))
+initial_length <- initial_length$n[1]
 
+# extract the last window
+last_window <- df_current$basewindow[nrow(df_current)]
+last_window <- unlist(strsplit(last_window, split="_"))[2]
+
+width <- length(unlist(strsplit(last_window, split="")))
+n_window <- as.numeric(last_window)
+
+# create a new dataframe for visualisation
+df_visualisation <- data.frame(x=0, wname="window_NA", wsize=0)
+for (i in 1:n_window) {
+  iterator_padded <- formatC(i, width=width, format="d", flag="0")
+  current_window <- paste0("window_", iterator_padded)
+
+  # check if window exists
+  df_subset <- df_current[df_current$basewindow == current_window,]
+  if (nrow(df_subset) == 0) {
+    start <- max(df_visualisation$x) + 1
+    stop <- start + initial_length - 1
+    df_visualisation <- rbind(df_visualisation, data.frame(x=seq(start,stop,by=1),
+                                                            wname=rep(current_window,initial_length),
+                                                            wsize=rep(NA,initial_length)))
+  
+  } else {
+    # iterate over partitions
+    for (j in 1:nrow(df_subset)) {
+      start <- max(df_visualisation$x) + 1
+      stop <- start + df_subset$length[j] - 1
+      df_visualisation <- rbind(df_visualisation, data.frame(x=seq(start,stop,by=1),
+                                                              wname=rep(df_subset$window[j],df_subset$length[j]),
+                                                              wsize=rep(df_subset$length[j],df_subset$length[j])))
+    }
+  }
+}
+
+# remove the first row
+df_visualisation <- df_visualisation[-1,]
+
+# plot window size across position
+plot <- ggplot(df_visualisation, aes(x=x, y=wsize, colour=wname)) +
+  geom_point(shape=16) +
+  ggtitle(paste("Variation of Window Size across", params$prefix)) +
+  xlab("Window size (bp)") + ylab("Position (bp)") +
+  theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x = element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y = element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y = element_text(size=30),
+      axis.text.x = element_text(size=30),
+      strip.text = element_text(size=30),
+      legend.position = "none"
+    )
+
+tiff(filename=fn_position_wsize, units="px", width=2880, height=1800)
+print(plot)
+dev.off()
 ```
