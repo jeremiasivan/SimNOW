@@ -216,10 +216,8 @@ iterator_padded <- formatC(iterator, width=width, format="d", flag="0")
 
 # iterate over windows
 for (i in 1:nrow(df_current)) {
-  # output directory
-  dir_output <- paste0(outdir_combine, "merge", iterator_padded, "/")
-  if (!dir.exists(dir_output)) {
-    dir.create(dir_output, recursive=T)
+  if (i == nrow(df_current)) {
+    break
   }
 
   # extract window
@@ -228,28 +226,25 @@ for (i in 1:nrow(df_current)) {
   basewindow_one_num <- as.numeric(unlist(strsplit(df_current$window[i], split="_"))[2])
   basewindow_one_two <- as.numeric(unlist(strsplit(df_current$window[i+1], split="_"))[2])
   if (basewindow_one == basewindow_two || basewindow_one_two-basewindow_one_num == 1) {
-    fn_combined_fasta <- paste0(dir_output, df_current$window[i], "_", df_current$window[i+1], ".fa")
-
-    # combined sequence
-    system(paste(params$exe_seqkit, "concat --full", df_current$dir[i], df_current$dir[i+1], ">", fn_combined_fasta))
-
-    # run IQ-TREE2
-    seq_len <- df_current$length[i] + df_current$length[i+1]
-    f_iqtree2_single(fn_combined_fasta, params$outgroup, seq_len, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
-
-    # extract AIC
+    fn_combined_fasta <- paste0(outdir_combine, df_current$window[i], "_", df_current$window[i+1], ".fa")
     fn_iqtree <- paste0(fn_combined_fasta, ".iqtree")
     fn_treefile <- paste0(fn_combined_fasta, ".treefile")
-    if (!file.exists(fn_iqtree)) {
-      next
+    if (!all(file.exists(fn_combined_fasta, fn_iqtree, fn_treefile))) {
+      # combined sequence
+      system(paste(params$exe_seqkit, "concat --full", df_current$dir[i], df_current$dir[i+1], ">", fn_combined_fasta))
+
+      # run IQ-TREE2
+      seq_len <- df_current$length[i] + df_current$length[i+1]
+      f_iqtree2_single(fn_combined_fasta, params$outgroup, seq_len, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
     }
 
+    # extract AIC
     out <- f_window_tree_statistics(fn_iqtree, fn_treefile, NULL, NULL)
     aic <- (2 * out$freeparams) - (2 * out$logl)
 
     # compare AIC
     if (aic < df_current$aic[i]+df_current$aic[i+1]) {
-      df_current[i,] <- c(iter=iterator_padded, window=df_current$window[i], length=seq_len, aic=aic, dir=fn_combined_fasta)
+      df_current[i,] <- list(iter=iterator_padded, window=df_current$window[i], length=seq_len, aic=aic, dir=fn_combined_fasta)
       df_current <- df_current[-(i+1),]
       i <- i-1
     }
