@@ -235,18 +235,19 @@ for (i in 1:nrow(df_current)) {
 
       # read FASTA file
       seq <- seqinr::read.fasta(fn_combined_fasta, whole.header=T)
-      seq <- as.data.frame(do.call(rbind, seq))
+      seq_len <- length(seq[[1]])
       
-      if (length(seq[[1]]) != df_current$length[i]+df_current$length[i+1]) {
+      if (seq_len != df_current$length[i]+df_current$length[i+1]) {
         log4r::error(fn_logger, paste0("Error: inconsistent length for ", fn_combined_fasta, ". Exited."))
         break
       }
 
       # conditional if bootstrap is needed
+      seq <- as.data.frame(do.call(rbind, seq))
       if (nrow(unique(seq)) <= 3) {
-        f_iqtree2_single(fn_combined_fasta, params$outgroup, length(seq[[1]]), params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+        f_iqtree2_single(fn_combined_fasta, params$outgroup, seq_len, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
       } else {
-        f_iqtree2_single(fn_combined_fasta, params$outgroup, length(seq[[1]]), params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+        f_iqtree2_single(fn_combined_fasta, params$outgroup, seq_len, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
       }
     }
 
@@ -256,7 +257,7 @@ for (i in 1:nrow(df_current)) {
 
     # compare AIC
     if (aic < df_current$aic[i]+df_current$aic[i+1]) {
-      df_current[i,] <- list(iter=iterator_padded, window=df_current$window[i], length=length(seq[[1]]), aic=aic, dir=fn_combined_fasta)
+      df_current[i,] <- list(iter=iterator_padded, window=df_current$window[i], length=seq_len, aic=aic, dir=fn_combined_fasta)
       df_current <- df_current[-(i+1),]
       i <- i-1
     }
