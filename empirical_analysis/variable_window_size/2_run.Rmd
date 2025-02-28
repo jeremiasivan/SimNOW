@@ -220,28 +220,35 @@ for (i in 1:nrow(df_current)) {
     break
   }
 
+  # update iterator
+  iterator <- iterator + 1
+  iterator_padded <- formatC(iterator, width=width, format="d", flag="0")
+
   # extract window
   basewindow_one <- paste(unlist(strsplit(df_current$window[i], split="_"))[1:2], collapse="_")
   basewindow_two <- paste(unlist(strsplit(df_current$window[i+1], split="_"))[1:2], collapse="_")
   basewindow_one_num <- as.numeric(unlist(strsplit(df_current$window[i], split="_"))[2])
   basewindow_one_two <- as.numeric(unlist(strsplit(df_current$window[i+1], split="_"))[2])
+  
   if (basewindow_one == basewindow_two || basewindow_one_two-basewindow_one_num == 1) {
     fn_combined_fasta <- paste0(outdir_combine, df_current$window[i], "_", df_current$window[i+1], ".fa")
-    fn_iqtree <- paste0(fn_combined_fasta, ".iqtree")
-    fn_treefile <- paste0(fn_combined_fasta, ".treefile")
-    if (!all(file.exists(fn_combined_fasta, fn_iqtree, fn_treefile)) && !params$redo) {
+    if (!file.exists(fn_combined_fasta)) {
       # combined sequence
       system(paste(params$exe_seqkit, "concat --full", df_current$dir[i], df_current$dir[i+1], ">", fn_combined_fasta))
+    }
 
-      # read FASTA file
-      seq <- seqinr::read.fasta(fn_combined_fasta, whole.header=T)
-      seq_len <- length(seq[[1]])
-      
-      if (seq_len != df_current$length[i]+df_current$length[i+1]) {
-        log4r::error(fn_logger, paste0("Error: inconsistent length for ", fn_combined_fasta, ". Exited."))
-        break
-      }
+    # read FASTA file
+    seq <- seqinr::read.fasta(fn_combined_fasta, whole.header=T)
+    seq_len <- length(seq[[1]])
+    if (seq_len != df_current$length[i]+df_current$length[i+1]) {
+      log4r::error(fn_logger, paste0("Error: inconsistent length for ", fn_combined_fasta, ". Exited."))
+      break
+    }
 
+    # output files
+    fn_iqtree <- paste0(fn_combined_fasta, ".iqtree")
+    fn_treefile <- paste0(fn_combined_fasta, ".treefile")
+    if (!all(file.exists(fn_iqtree, fn_treefile)) && !params$redo) {
       # conditional if bootstrap is needed
       seq <- as.data.frame(do.call(rbind, seq))
       if (nrow(unique(seq)) <= 3) {
