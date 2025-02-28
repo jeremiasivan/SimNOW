@@ -17,6 +17,9 @@ params:
   thread: 1
   redo: FALSE
   
+  # executables
+  exe_seqkit: ""
+
   # IQ-Tree2
   iqtree2dir: "~/iqtree2"
   set_blmin: FALSE
@@ -37,8 +40,9 @@ params:
 # install.packages("data.table")
 # install.packages("log4r")
 
-library(dplyr)
 library(doSNOW)
+library(dplyr)
+library(ggplot2)
 
 # store initial system time
 sys_tic <- Sys.time()
