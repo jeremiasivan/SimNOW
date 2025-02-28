@@ -211,7 +211,7 @@ df_current$is_divided <- NULL
 
 # set the padded iterator
 iterator <- 0
-width <- length(unlist(strsplit(nrow(df_current), split="")))
+width <- length(unlist(strsplit(as.character(nrow(df_current)), split="")))
 iterator_padded <- formatC(iterator, width=width, format="d", flag="0")
 
 # iterate over windows
