@@ -22,18 +22,13 @@ options(scipen=999)
 
 # extract list of windows
 ls_windows <- list.dirs(params$outdir_stepwise_now_filtered, recursive=F, full.names=F)
-ls_windows_iter <- gsub("window_", "", ls_windows)
-
-# select the first and last windows
-first_window <- as.numeric(ls_windows_iter[1])
-last_window <- as.numeric(ls_windows_iter[length(ls_windows_iter)])
-zerowidth <- length(unlist(strsplit(ls_windows_iter[1], split="")))
 
 # output file
 df_current <- NULL
 iterator <- 0
+iterator_padded <- formatC(iterator, width=2, format="d", flag="0")
 
-fn_df_current <- paste0(prefix_division_summary, formatC(iterator/2, width=2, format="d", flag="0"), ".tsv")
+fn_df_current <- paste0(prefix_division_summary, iterator_padded, ".tsv")
 if (file.exists(fn_df_current) && !params$redo) {
   df_current <- data.table::fread(fn_df_current)
 
@@ -57,7 +52,7 @@ if (file.exists(fn_df_current) && !params$redo) {
     s <- seqinr::read.fasta(fn_fasta, whole.header = T)
 
     # update data.table
-    return(data.table::data.table(window=window, length=length(s[[1]]), aic=aic, is_divided=TRUE, notes=""))
+    return(data.table::data.table(iter=iterator_padded, window=window, length=length(s[[1]]), aic=aic, dir=fn_fasta, is_divided=TRUE))
   }
 
   stopCluster(nwcl)
@@ -67,7 +62,6 @@ if (file.exists(fn_df_current) && !params$redo) {
 
 ```{r division}
 is_repeat <- TRUE
-workdir <- paste0(params$outdir_stepwise_now_filtered, "/")
 
 # create doSNOW cluster
 nwcl <- makeCluster(params$thread)
@@ -75,48 +69,48 @@ doSNOW::registerDoSNOW(nwcl)
 
 # iterate over windows
 while (is_repeat == TRUE) {
+  # skip the iteration if all windows are not divisible
   if (all(df_current$is_divided == FALSE)) {
     is_repeat <- FALSE
     break
   }
-  
+
+  # update iterator
+  iterator <- iterator + 1
+  iterator_padded <- formatC(iterator, width=2, format="d", flag="0")
+
+  # iterate over windows
   df_output <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
     require(dplyr)
 
-    log4r::info(fn_logger, paste0("Analysing ", df_current$window[i], "..."))
-    df_prop <- data.table::data.table(prop=character(), window_one=character(), window_two=character(), length_one=numeric(), length_two=numeric(), aic_one=numeric(), aic_two=numeric())
-
+    # skip the window if not divisible
     if (!df_current$is_divided[i]) {
-      return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE))
+      return(data.table::data.table(iter=df_current$iter[i], window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], dir=df_current$dir[i], is_divided=FALSE))
     }
-
-    # input files
-    window_fdname <- df_current$window[i]
-    if (iterator != 0) {
-      window_fdname <- unlist(strsplit(window_fdname, split="_"))[1:iterator]
-      window_fdname <- paste(window_fdname, collapse="_")
-    }
-    
-    fn_fasta <- paste0(workdir, window_fdname, "/", df_current$window[i], ".fa")
 
     # output directory
-    dir_output <- paste0(outdir_division, df_current$window[i], "/")
+    dir_output <- paste0(outdir_division, "iter", iterator_padded, "/", df_current$window[i], "/")
     if (!dir.exists(dir_output)) {
       dir.create(dir_output, recursive=T)
     }
 
     # output file
+    df_prop <- data.table::data.table(prop=character(), window_one=character(), window_two=character(),
+                                                        length_one=numeric(), length_two=numeric(),
+                                                        aic_one=numeric(), aic_two=numeric(),
+                                                        dir_one=character(), dir_two=character())
     fn_output <- paste0(dir_output, "aic_table.tsv")
+
     if (file.exists(fn_output) && !params$redo) {
       df_prop <- data.table::fread(fn_output)
 
       if (nrow(df_prop) == 0) {
-        return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE, notes=""))
+        return(data.table::data.table(iter=df_current$iter[i], window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], dir=df_current$dir[i], is_divided=FALSE))
       }
 
     } else {
       # read FASTA
-      seq <- seqinr::read.fasta(fn_fasta, whole.header = T)
+      seq <- seqinr::read.fasta(df_current$dir[i], whole.header = T)
       ln_seq <- length(seq[[1]])
 
       # extract AIC
@@ -157,7 +151,8 @@ while (is_repeat == TRUE) {
         # update data.frame
         df_prop <- rbind(df_prop, data.table::data.table(prop=prop, window_one=window_one, window_two=window_two,
                                                                     length_one=length(1:midpoint), length_two=ln_seq-length(1:midpoint),
-                                                                    aic_one=aic_one, aic_two=aic_two))
+                                                                    aic_one=aic_one, aic_two=aic_two,
+                                                                    dir_one=fn_fasta_one, dir_two=fn_fasta_two))
       }
 
       # save data.frame
@@ -166,29 +161,67 @@ while (is_repeat == TRUE) {
 
     # extract the best AIC score
     if (nrow(df_prop) == 0) {
-      return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE, notes=""))
+      return(data.table::data.table(iter=df_current$iter[i], window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], dir=df_current$dir[i], is_divided=FALSE))
     }
 
     df_output_min_aic <- df_prop %>% mutate(sum_aic=aic_one+aic_two) %>% filter(sum_aic==min(sum_aic))
     if (df_output_min_aic$sum_aic[1] < df_current$aic[i]) {
-      return(rbind(data.table::data.table(window=df_output_min_aic$window_one[1], length=df_output_min_aic$length_one[1], aic=df_output_min_aic$aic_one[1], is_divided=TRUE, notes=""),
-                   data.table::data.table(window=df_output_min_aic$window_two[1], length=df_output_min_aic$length_two[1], aic=df_output_min_aic$aic_two[1], is_divided=TRUE, notes="")))
+      return(rbind(data.table::data.table(iter=iterator_padded, window=df_output_min_aic$window_one[1], length=df_output_min_aic$length_one[1],
+                                          aic=df_output_min_aic$aic_one[1], dir=df_output_min_aic$dir_one[1], is_divided=TRUE),
+                   data.table::data.table(iter=iterator_padded, window=df_output_min_aic$window_two[1], length=df_output_min_aic$length_two[1],
+                                          aic=df_output_min_aic$aic_two[1], dir=df_output_min_aic$dir_two[1], is_divided=TRUE)))
     } else {
-      return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE, notes=""))
+      return(data.table::data.table(iter=df_current$iter[i], window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], dir=df_current$dir[i], is_divided=FALSE))
     }
   }
 
   # update variables
-  workdir <- outdir_division
-  iterator <- iterator + 2
   df_current <- as.data.frame(df_output)
+  df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
+  df_current <- df_current %>%
+                  group_by(basewindow) %>%
+                  mutate(freq=formatC(row_number(), width=2, format="d", flag="0")) %>%
+                  ungroup() %>%
+                  mutate(window=paste(basewindow, freq, sep="_")) %>%
+                  select(-basewindow, -freq)
 
   # save output file
-  fn_df_current <- paste0(prefix_division_summary, formatC(iterator/2, width=2, format="d", flag="0"), ".tsv")
+  fn_df_current <- paste0(prefix_division_summary, iterator_padded, ".tsv")
   data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
+
+  log4r::info(fn_logger, paste("Iteration", iterator_padded, "Finished!"))
 
   rm(df_output)
 }
 
 stopCluster(nwcl)
+```
+
+```{r conquer, eval=FALSE}
+is_repeat <- TRUE
+
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
+
+# add a new column to the table
+df_current$is_divided <- NULL
+df_current$is_combined <- TRUE
+
+# iterate over windows
+while (is_repeat == TRUE) {
+  if (all(df_current$is_combined == FALSE)) {
+    is_repeat <- FALSE
+    break
+  }
+
+  df_output <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
+    require(dplyr)
+  
+    if (!df_current$is_combined[i]) {
+      return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], aic=df_current$aic[i], is_divided=FALSE, notes=""))
+    }
+  }
+
+}
 ```
