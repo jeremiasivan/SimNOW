@@ -17,6 +17,7 @@ lapply(list(outdir_division, outdir_combine), function(x) if(!dir.exists(x)) dir
 prefix_division_summary <- paste0(outdir_division, "summary_aic_iter")
 fn_summary <- paste0(getwd(), "/summary.tsv")
 fn_position_wsize <- paste0(getwd(), "/position_wsize.tiff")
+fn_midpos_wsize <- paste0(getwd(), "/midpos_wsize.tiff")
 ```
 
 ```{r, include=FALSE}
@@ -215,33 +216,39 @@ iterator <- 0
 width <- length(unlist(strsplit(as.character(nrow(df_current)), split="")))
 iterator_padded <- formatC(iterator, width=width, format="d", flag="0")
 
+# extract basewindow
+df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
+
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
+
 # iterate over windows
-for (i in 1:nrow(df_current)) {
-  if (i == nrow(df_current)) {
-    break
-  }
+df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %dopar% {
+  df_subset <- df_current[df_current$basewindow == window,]
 
-  # update iterator
-  iterator <- iterator + 1
-  iterator_padded <- formatC(iterator, width=width, format="d", flag="0")
+  # iterate over windows
+  for (i in 1:nrow(df_subset)) {
+    if (i == nrow(df_subset)) {
+      break
+    }
 
-  # extract window
-  basewindow_one <- paste(unlist(strsplit(df_current$window[i], split="_"))[1:2], collapse="_")
-  basewindow_two <- paste(unlist(strsplit(df_current$window[i+1], split="_"))[1:2], collapse="_")
-  basewindow_one_num <- as.numeric(unlist(strsplit(df_current$window[i], split="_"))[2])
-  basewindow_one_two <- as.numeric(unlist(strsplit(df_current$window[i+1], split="_"))[2])
-  
-  if (basewindow_one == basewindow_two || basewindow_one_two-basewindow_one_num == 1) {
-    fn_combined_fasta <- paste0(outdir_combine, df_current$window[i], "_", df_current$window[i+1], ".fa")
+    # output directory
+    dir_output <- paste0(outdir_combine, wname, "/")
+    if (!dir.exists(dir_output)) {
+      dir.create(dir_output, recursive=T)
+    }
+
+    fn_combined_fasta <- paste0(dir_output, df_subset$window[i], "_", df_subset$window[i+1], ".fa")
     if (!file.exists(fn_combined_fasta)) {
-      # combined sequence
-      system(paste(params$exe_seqkit, "concat --full", df_current$dir[i], df_current$dir[i+1], ">", fn_combined_fasta))
+      # combine sequence
+      system(paste(params$exe_seqkit, "concat --full", df_subset$dir[i], df_subset$dir[i+1], ">", fn_combined_fasta))
     }
 
     # read FASTA file
     seq <- seqinr::read.fasta(fn_combined_fasta, whole.header=T)
     seq_len <- length(seq[[1]])
-    if (seq_len != df_current$length[i]+df_current$length[i+1]) {
+    if (seq_len != df_subset$length[i]+df_subset$length[i+1]) {
       log4r::error(fn_logger, paste0("Error: inconsistent length for ", fn_combined_fasta, ". Exited."))
       break
     }
@@ -250,13 +257,7 @@ for (i in 1:nrow(df_current)) {
     fn_iqtree <- paste0(fn_combined_fasta, ".iqtree")
     fn_treefile <- paste0(fn_combined_fasta, ".treefile")
     if (!all(file.exists(fn_iqtree, fn_treefile)) && !params$redo) {
-      # conditional if bootstrap is needed
-      seq <- as.data.frame(do.call(rbind, seq))
-      if (nrow(unique(seq)) <= 3) {
-        f_iqtree2_single(fn_combined_fasta, params$outgroup, seq_len, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
-      } else {
-        f_iqtree2_single(fn_combined_fasta, params$outgroup, seq_len, params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
-      }
+      f_iqtree2_single(fn_combined_fasta, params$outgroup, seq_len, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
     }
 
     # extract AIC
@@ -264,17 +265,59 @@ for (i in 1:nrow(df_current)) {
     aic <- (2 * out$freeparams) - (2 * out$logl)
 
     # compare AIC
-    if (aic < df_current$aic[i]+df_current$aic[i+1]) {
-      df_current[i,] <- list(iter=iterator_padded, window=df_current$window[i], length=seq_len, aic=aic, dir=fn_combined_fasta)
-      df_current <- df_current[-(i+1),]
+    if (aic < df_subset$aic[i]+df_subset$aic[i+1]) {
+      df_subset[i,] <- list(iter=wname, window=df_subset$window[i], length=seq_len, aic=aic, dir=fn_combined_fasta, basewindow=wname)
+      df_subset <- df_subset[-(i+1),]
+      i <- i-1
+    }
+  }
+
+  return(df_subset)
+}
+
+# iterate over window breakpoints
+for (i in 1:nrow(df_output)) {
+  # extract window
+  basewindow_one <- paste(unlist(strsplit(df_output$window[i], split="_"))[1:2], collapse="_")
+  basewindow_two <- paste(unlist(strsplit(df_output$window[i+1], split="_"))[1:2], collapse="_")
+  basewindow_one_num <- as.numeric(unlist(strsplit(df_output$window[i], split="_"))[2])
+  basewindow_two_num <- as.numeric(unlist(strsplit(df_output$window[i+1], split="_"))[2])
+
+  if (basewindow_two_num-basewindow_one_num == 1) {
+    # output directory
+    dir_output <- paste0(outdir_combine, "breakpoints/")
+    if (!dir.exists(dir_output)) {
+      dir.create(dir_output, recursive=T)
+    }
+
+    fn_combined_fasta <- paste0(dir_output, df_output$window[i], "_", df_output$window[i+1], ".fa")
+    if (!file.exists(fn_combined_fasta)) {
+      # combine sequence
+      system(paste(params$exe_seqkit, "concat --full", df_output$dir[i], df_output$dir[i+1], ">", fn_combined_fasta))
+    }
+
+    # output files
+    fn_iqtree <- paste0(fn_combined_fasta, ".iqtree")
+    fn_treefile <- paste0(fn_combined_fasta, ".treefile")
+    if (!all(file.exists(fn_iqtree, fn_treefile)) && !params$redo) {
+      f_iqtree2_single(fn_combined_fasta, params$outgroup, seq_len, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+    }
+
+    # extract AIC
+    out <- f_window_tree_statistics(fn_iqtree, fn_treefile, NULL, NULL)
+    aic <- (2 * out$freeparams) - (2 * out$logl)
+
+    # compare AIC
+    if (aic < df_output$aic[i]+df_output$aic[i+1]) {
+      df_output[i,] <- list(iter=wname, window=df_output$window[i], length=seq_len, aic=aic, dir=fn_combined_fasta, basewindow=wname)
+      df_output <- df_output[-(i+1),]
       i <- i-1
     }
   }
 }
 
 # update data.frame
-df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
-df_current <- df_current %>%
+df_current <- df_output %>%
                 group_by(basewindow) %>%
                 mutate(freq=formatC(row_number(), width=2, format="d", flag="0")) %>%
                 ungroup() %>%
@@ -286,7 +329,7 @@ data.table::fwrite(df_current, file=fn_summary, row.names=F, col.names=T, quote=
 log4r::info(fn_logger, "Merging Finished!")
 ```
 
-```{r visualisation, eval=FALSE}
+```{r visualisation}
 # extract the initial length
 df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
 initial_length <- df_current %>% group_by(basewindow) %>% summarise(n=sum(length))
@@ -333,7 +376,7 @@ df_visualisation <- df_visualisation[-1,]
 plot <- ggplot(df_visualisation, aes(x=x, y=wsize, colour=wname)) +
   geom_point(shape=16) +
   ggtitle(paste("Variation of Window Size across", params$prefix)) +
-  xlab("Window size (bp)") + ylab("Position (bp)") +
+  ylab("Window size (bp)") + xlab("Position (bp)") +
   theme(
       plot.title = element_text(hjust = 0.5, size = 50),
       plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
@@ -346,6 +389,34 @@ plot <- ggplot(df_visualisation, aes(x=x, y=wsize, colour=wname)) +
     )
 
 tiff(filename=fn_position_wsize, units="px", width=2880, height=1800)
+print(plot)
+dev.off()
+
+# plot window size against the middle position
+middle_position <- median(df_visualisation$x)
+
+df_visualisation <- df_visualisation %>%
+  group_by(wname,wsize) %>%
+  summarise(middle_value=median(x)) %>%
+  ungroup() %>%
+  mutate(distmid=abs(middle_value-middle_position))
+
+plot <- ggplot(df_visualisation, aes(x=distmid, y=wsize, colour=wname)) +
+  geom_point(shape=16) +
+  ggtitle("Variation of Window Size from the Centromere") +
+  ylab("Window size (bp)") + xlab("Position from the middle (bp)") +
+  theme(
+      plot.title = element_text(hjust = 0.5, size = 50),
+      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+      axis.title.x = element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+      axis.title.y = element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+      axis.text.y = element_text(size=30),
+      axis.text.x = element_text(size=30),
+      strip.text = element_text(size=30),
+      legend.position = "none"
+    )
+
+tiff(filename=fn_midpos_wsize, units="px", width=2880, height=1800)
 print(plot)
 dev.off()
 ```
