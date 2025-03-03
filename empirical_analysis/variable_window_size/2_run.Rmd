@@ -241,20 +241,21 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
 
     fn_combined_fasta <- paste0(dir_output, df_subset$window[i], "_", df_subset$window[i+1], ".fa")
     if (!file.exists(fn_combined_fasta) && !params$redo) {
-      tryCatch(
-        {
-          # combine sequence
-          system(paste(params$exe_seqkit, "concat --full", df_subset$dir[i], df_subset$dir[i+1], ">", fn_combined_fasta))
-        },
-        error = function(cond) {
-          log4r::error(fn_logger, paste0("Error: invalid file for ", fn_combined_fasta))
-          break
-        }
-      )
+      # combine sequence
+      system(paste(params$exe_seqkit, "concat --full", df_subset$dir[i], df_subset$dir[i+1], ">", fn_combined_fasta))
     }
 
     # read FASTA file
-    seq <- seqinr::read.fasta(fn_combined_fasta, whole.header=T)
+    seq <- tryCatch(
+      {
+        seqinr::read.fasta(fn_combined_fasta, whole.header=T)
+      },
+      error = function(msg) {
+        log4r::error(fn_logger, paste0("Error: invalid file for ", fn_combined_fasta))
+        break
+      }
+    )
+
     seq_len <- length(seq[[1]])
     if (seq_len != df_subset$length[i]+df_subset$length[i+1]) {
       log4r::error(fn_logger, paste0("Error: inconsistent length for ", fn_combined_fasta, ". Exited."))
@@ -282,6 +283,9 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
 
   return(df_subset)
 }
+
+stopCLuster(nwcl)
+log4r::info(fn_logger, paste("Merging of Individual Windows Finished!"))
 
 # iterate over window breakpoints
 for (i in 1:nrow(df_output)) {
