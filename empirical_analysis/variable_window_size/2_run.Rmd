@@ -225,7 +225,7 @@ doSNOW::registerDoSNOW(nwcl)
 
 # iterate over windows
 df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %dopar% {
-  df_subset <- df_current[df_current$basewindow == window,]
+  df_subset <- df_current[df_current$basewindow == wname,]
 
   # iterate over windows
   for (i in 1:nrow(df_subset)) {
@@ -240,9 +240,17 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
     }
 
     fn_combined_fasta <- paste0(dir_output, df_subset$window[i], "_", df_subset$window[i+1], ".fa")
-    if (!file.exists(fn_combined_fasta)) {
-      # combine sequence
-      system(paste(params$exe_seqkit, "concat --full", df_subset$dir[i], df_subset$dir[i+1], ">", fn_combined_fasta))
+    if (!file.exists(fn_combined_fasta) && !params$redo) {
+      tryCatch(
+        {
+          # combine sequence
+          system(paste(params$exe_seqkit, "concat --full", df_subset$dir[i], df_subset$dir[i+1], ">", fn_combined_fasta))
+        },
+        error = function(cond) {
+          log4r::error(fn_logger, paste0("Error: invalid file for ", fn_combined_fasta))
+          break
+        }
+      )
     }
 
     # read FASTA file
@@ -291,7 +299,7 @@ for (i in 1:nrow(df_output)) {
     }
 
     fn_combined_fasta <- paste0(dir_output, df_output$window[i], "_", df_output$window[i+1], ".fa")
-    if (!file.exists(fn_combined_fasta)) {
+    if (!file.exists(fn_combined_fasta) && !params$redo) {
       # combine sequence
       system(paste(params$exe_seqkit, "concat --full", df_output$dir[i], df_output$dir[i+1], ">", fn_combined_fasta))
     }
