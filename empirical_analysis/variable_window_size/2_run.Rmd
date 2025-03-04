@@ -199,7 +199,7 @@ while (is_repeat == TRUE) {
   fn_df_current <- paste0(prefix_division_summary, iterator_padded, ".tsv")
   data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
 
-  log4r::info(fn_logger, paste("Iteration", iterator_padded, "Finished!"))
+  log4r::info(fn_logger, paste("Division: Iteration", iterator_padded, "Finished!"))
 
   rm(df_output)
 }
@@ -298,6 +298,14 @@ for (i in 2:nrow(df_output)) {
     if (!file.exists(fn_combined_fasta) && !params$redo) {
       # combine sequence
       system(paste(params$exe_seqkit, "concat --full", df_current$dir[j], df_output$dir[i], ">", fn_combined_fasta))
+    }
+
+    # read FASTA file
+    seq <- seqinr::read.fasta(fn_combined_fasta, whole.header=T)
+    seq_len <- length(seq[[1]])
+    if (seq_len != df_current$length[j]+df_output$length[i]) {
+      log4r::error(fn_logger, paste0("Error: inconsistent length for ", fn_combined_fasta, ". Exited."))
+      break
     }
 
     # output files
