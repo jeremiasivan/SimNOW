@@ -229,6 +229,13 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
     dir.create(dir_output, recursive=T)
   }
 
+  # output data.frame
+  fn_output_wname <- paste0(dir_output, "aic_table.tsv")
+  if (file.exists(fn_output_wname) && !params$redo) {
+    df_output_wname <- data.table::fread(fn_output_wname)
+    return(df_output_wname)
+  }
+
   # iterate over windows
   for (i in 2:nrow(df_subset)) {
     # last merged entry
@@ -268,6 +275,7 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
     }
   }
 
+  data.table::fwrite(df_subset_out, file=fn_output_wname, row.names=F, col.names=T, quote=F, sep="\t")
   return(df_subset_out)
 }
 
