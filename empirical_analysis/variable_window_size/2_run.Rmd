@@ -236,6 +236,11 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
     return(df_output_wname)
   }
 
+  if (nrow(df_subset) == 1) {
+    data.table::fwrite(df_subset_out, file=fn_output_wname, row.names=F, col.names=T, quote=F, sep="\t")
+    return(df_subset_out)
+  }
+
   # iterate over windows
   for (i in 2:nrow(df_subset)) {
     # last merged entry
