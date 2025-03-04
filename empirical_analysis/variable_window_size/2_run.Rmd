@@ -211,11 +211,6 @@ stopCluster(nwcl)
 # remove column from the table
 df_current$is_divided <- NULL
 
-# set the padded iterator
-iterator <- 0
-width <- length(unlist(strsplit(as.character(nrow(df_current)), split="")))
-iterator_padded <- formatC(iterator, width=width, format="d", flag="0")
-
 # extract basewindow
 df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
 
@@ -227,16 +222,16 @@ doSNOW::registerDoSNOW(nwcl)
 df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %dopar% {
   df_subset <- df_current[df_current$basewindow == wname,]
 
+  # output directory
+  dir_output <- paste0(outdir_combine, wname, "/")
+  if (!dir.exists(dir_output)) {
+    dir.create(dir_output, recursive=T)
+  }
+
   # iterate over windows
   for (i in 1:nrow(df_subset)) {
-    if (i == nrow(df_subset)) {
+    if (i >= nrow(df_subset)) {
       break
-    }
-
-    # output directory
-    dir_output <- paste0(outdir_combine, wname, "/")
-    if (!dir.exists(dir_output)) {
-      dir.create(dir_output, recursive=T)
     }
 
     fn_combined_fasta <- paste0(dir_output, df_subset$window[i], "_", df_subset$window[i+1], ".fa")
@@ -252,9 +247,14 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
       },
       error = function(msg) {
         log4r::error(fn_logger, paste0("Error: invalid file for ", fn_combined_fasta))
-        break
+        NULL
       }
     )
+
+    # return data.frame if error
+    if (is.null(seq)) {
+      break
+    }
 
     seq_len <- length(seq[[1]])
     if (seq_len != df_subset$length[i]+df_subset$length[i+1]) {
@@ -284,7 +284,7 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
   return(df_subset)
 }
 
-stopCLuster(nwcl)
+stopCluster(nwcl)
 log4r::info(fn_logger, paste("Merging of Individual Windows Finished!"))
 
 # iterate over window breakpoints
