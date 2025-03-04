@@ -221,6 +221,7 @@ doSNOW::registerDoSNOW(nwcl)
 # iterate over windows
 df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %dopar% {
   df_subset <- df_current[df_current$basewindow == wname,]
+  df_subset_out <- df_subset[1,]
 
   # output directory
   dir_output <- paste0(outdir_combine, wname, "/")
@@ -229,35 +230,21 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
   }
 
   # iterate over windows
-  for (i in 1:nrow(df_subset)) {
-    if (i >= nrow(df_subset)) {
-      break
-    }
+  for (i in 2:nrow(df_subset)) {
+    # last merged entry
+    j <- nrow(df_subset_out)
 
-    fn_combined_fasta <- paste0(dir_output, df_subset$window[i], "_", df_subset$window[i+1], ".fa")
+    # FASTA file
+    fn_combined_fasta <- paste0(dir_output, df_subset_out$window[j], "_", df_subset$window[i], ".fa")
     if (!file.exists(fn_combined_fasta) && !params$redo) {
       # combine sequence
-      system(paste(params$exe_seqkit, "concat --full", df_subset$dir[i], df_subset$dir[i+1], ">", fn_combined_fasta))
+      system(paste(params$exe_seqkit, "concat --full", df_subset_out$dir[j], df_subset$dir[i], ">", fn_combined_fasta))
     }
 
     # read FASTA file
-    seq <- tryCatch(
-      {
-        seqinr::read.fasta(fn_combined_fasta, whole.header=T)
-      },
-      error = function(msg) {
-        log4r::error(fn_logger, paste0("Error: invalid file for ", fn_combined_fasta))
-        NULL
-      }
-    )
-
-    # return data.frame if error
-    if (is.null(seq)) {
-      break
-    }
-
+    seq <- seqinr::read.fasta(fn_combined_fasta, whole.header=T)
     seq_len <- length(seq[[1]])
-    if (seq_len != df_subset$length[i]+df_subset$length[i+1]) {
+    if (seq_len != df_subset_out$length[j]+df_subset$length[i]) {
       log4r::error(fn_logger, paste0("Error: inconsistent length for ", fn_combined_fasta, ". Exited."))
       break
     }
@@ -274,38 +261,43 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
     aic <- (2 * out$freeparams) - (2 * out$logl)
 
     # compare AIC
-    if (aic < df_subset$aic[i]+df_subset$aic[i+1]) {
-      df_subset[i,] <- list(iter=wname, window=df_subset$window[i], length=seq_len, aic=aic, dir=fn_combined_fasta, basewindow=wname)
-      df_subset <- df_subset[-(i+1),]
-      i <- i-1
+    if (aic < df_subset_out$aic[j]+df_subset$aic[i]) {
+      df_subset_out[j,] <- list(iter=wname, window=df_subset_out$window[j], length=seq_len, aic=aic, dir=fn_combined_fasta, basewindow=wname)
+    } else {
+      df_subset_out <- rbind(df_subset_out, df_subset[i,])
     }
   }
 
-  return(df_subset)
+  return(df_subset_out)
 }
 
 stopCluster(nwcl)
 log4r::info(fn_logger, paste("Merging of Individual Windows Finished!"))
 
 # iterate over window breakpoints
-for (i in 1:nrow(df_output)) {
+df_current <- df_output[1,]
+
+# output directory
+dir_output <- paste0(outdir_combine, "breakpoints/")
+if (!dir.exists(dir_output)) {
+  dir.create(dir_output, recursive=T)
+}
+
+for (i in 2:nrow(df_output)) {
+  # last merged entry
+  j <- nrow(df_current)
+
   # extract window
-  basewindow_one <- paste(unlist(strsplit(df_output$window[i], split="_"))[1:2], collapse="_")
-  basewindow_two <- paste(unlist(strsplit(df_output$window[i+1], split="_"))[1:2], collapse="_")
-  basewindow_one_num <- as.numeric(unlist(strsplit(df_output$window[i], split="_"))[2])
-  basewindow_two_num <- as.numeric(unlist(strsplit(df_output$window[i+1], split="_"))[2])
+  basewindow_one <- paste(unlist(strsplit(df_current$window[j], split="_"))[1:2], collapse="_")
+  basewindow_two <- paste(unlist(strsplit(df_output$window[i], split="_"))[1:2], collapse="_")
+  basewindow_one_num <- as.numeric(unlist(strsplit(df_current$window[j], split="_"))[2])
+  basewindow_two_num <- as.numeric(unlist(strsplit(df_output$window[i], split="_"))[2])
 
   if (basewindow_two_num-basewindow_one_num == 1) {
-    # output directory
-    dir_output <- paste0(outdir_combine, "breakpoints/")
-    if (!dir.exists(dir_output)) {
-      dir.create(dir_output, recursive=T)
-    }
-
-    fn_combined_fasta <- paste0(dir_output, df_output$window[i], "_", df_output$window[i+1], ".fa")
+    fn_combined_fasta <- paste0(dir_output, df_current$window[j], "_", df_output$window[i], ".fa")
     if (!file.exists(fn_combined_fasta) && !params$redo) {
       # combine sequence
-      system(paste(params$exe_seqkit, "concat --full", df_output$dir[i], df_output$dir[i+1], ">", fn_combined_fasta))
+      system(paste(params$exe_seqkit, "concat --full", df_current$dir[j], df_output$dir[i], ">", fn_combined_fasta))
     }
 
     # output files
@@ -320,16 +312,18 @@ for (i in 1:nrow(df_output)) {
     aic <- (2 * out$freeparams) - (2 * out$logl)
 
     # compare AIC
-    if (aic < df_output$aic[i]+df_output$aic[i+1]) {
-      df_output[i,] <- list(iter=wname, window=df_output$window[i], length=seq_len, aic=aic, dir=fn_combined_fasta, basewindow=wname)
-      df_output <- df_output[-(i+1),]
-      i <- i-1
+    if (aic < df_current$aic[j]+df_output$aic[i]) {
+      df_current[j,] <- list(iter=wname, window=df_current$window[j], length=seq_len, aic=aic, dir=fn_combined_fasta, basewindow=wname)
+    } else {
+      df_current <- rbind(df_current, df_output[i,])
     }
+  } else {
+    df_current <- rbind(df_current, df_output[i,])
   }
 }
 
 # update data.frame
-df_current <- df_output %>%
+df_current <- df_current %>%
                 group_by(basewindow) %>%
                 mutate(freq=formatC(row_number(), width=2, format="d", flag="0")) %>%
                 ungroup() %>%
