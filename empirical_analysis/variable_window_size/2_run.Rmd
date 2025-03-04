@@ -82,6 +82,13 @@ while (is_repeat == TRUE) {
   iterator <- iterator + 1
   iterator_padded <- formatC(iterator, width=2, format="d", flag="0")
 
+  # output file
+  fn_df_current <- paste0(prefix_division_summary, iterator_padded, ".tsv")
+  if (file.exists(fn_df_current) && !params$redo) {
+    df_current <- data.table::fread(fn_df_current)
+    next
+  }
+
   # iterate over windows
   df_output <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
     require(dplyr)
@@ -196,9 +203,7 @@ while (is_repeat == TRUE) {
                   select(-basewindow, -freq)
 
   # save output file
-  fn_df_current <- paste0(prefix_division_summary, iterator_padded, ".tsv")
   data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
-
   log4r::info(fn_logger, paste("Division: Iteration", iterator_padded, "Finished!"))
 
   rm(df_output)
@@ -334,7 +339,7 @@ for (i in 2:nrow(df_output)) {
 
     # compare AIC
     if (aic < df_current$aic[j]+df_output$aic[i]) {
-      df_current[j,] <- list(iter=wname, window=df_current$window[j], length=seq_len, aic=aic, dir=fn_combined_fasta, basewindow=wname)
+      df_current[j,] <- list(iter=basewindow_one, window=df_current$window[j], length=seq_len, aic=aic, dir=fn_combined_fasta, basewindow=basewindow_one)
     } else {
       df_current <- rbind(df_current, df_output[i,])
     }
