@@ -114,6 +114,35 @@ f_iqtree2_single <- function(input, outgroup, window_size, setblmin, setmodel, d
   system(iqtree_cmd)
 }
 
+# function: create window tree with duplicate seqs
+f_iqtree2_single_keepident <- function(input, outgroup, window_size, setblmin, setmodel, dna_model, bs_type, bs, dir_iqtree2) {
+  iqtree_cmd <- paste(dir_iqtree2,
+                      "-s", input,
+                      "-T 1 --quiet -redo -keep-ident")
+  
+  if (!is.null(outgroup) && !outgroup == ""){
+    iqtree_cmd <- paste(iqtree_cmd, "-o", outgroup)
+  }
+  
+  if (setblmin) {
+    iqtree_cmd <- paste(iqtree_cmd, "-blmin", 1/window_size)
+  }
+  
+  if (setmodel) {
+    iqtree_cmd <- paste(iqtree_cmd, "-m", dna_model)
+  }
+
+  if (!is.null(bs_type) && bs_type != "") {
+    if (tolower(bs_type) == "ufboot") {
+      iqtree_cmd <- paste(iqtree_cmd, "-bb", bs)
+    } else if (tolower(bs_type) == "nonparametric") {
+      iqtree_cmd <- paste(iqtree_cmd, "-b", bs)
+    }
+  }
+  
+  system(iqtree_cmd)
+}
+
 # function: extract window tree statistics
 # required package: ape
 f_window_tree_statistics <- function(fn_iqtree, fn_treefile, bootstrap_type, min_branch_support) {
