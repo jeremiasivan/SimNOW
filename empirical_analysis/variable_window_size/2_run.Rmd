@@ -270,19 +270,25 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
     # extract the first row
     df_subset_out <- df_subset[1,]
 
+    # output directory
+    dir_output_iter <- paste0(dir_output, "iter", iterator_padded, "/")
+    if (!dir.exists(dir_output_iter)) {
+      dir.create(dir_output_iter, recursive=T)
+    }
+
     # iterate over windows
     for (i in 2:nrow(df_subset)) {
       # last merged entry
       j <- nrow(df_subset_out)
 
       # check if the two windows can be merged
-      if (!any(df_subset_out$is_combined[j] == TRUE || df_subset$is_combined[i] == TRUE)) {
+      if (df_subset_out$is_combined[j] == FALSE && df_subset$is_combined[i] == FALSE) {
         df_subset_out <- rbind(df_subset_out, df_subset[i,])
         next
       }
 
       # FASTA file
-      fn_combined_fasta <- paste0(dir_output, df_subset_out$window[j], "_", df_subset$window[i], ".fa")
+      fn_combined_fasta <- paste0(dir_output_iter, df_subset_out$window[j], "_", df_subset$window[i], ".fa")
       if (!file.exists(fn_combined_fasta) && !params$redo) {
         # combine sequence
         system(paste(params$exe_seqkit, "concat --full", df_subset_out$dir[j], df_subset$dir[i], ">", fn_combined_fasta))
@@ -355,6 +361,12 @@ while (is_repeat == TRUE) {
   # extract the first row
   df_current <- df_output[1,]
 
+  # output directory
+  dir_output_iter <- paste0(dir_output, "iter", iterator_padded, "/")
+  if (!dir.exists(dir_output_iter)) {
+    dir.create(dir_output_iter, recursive=T)
+  }
+
   # iterate over window breakpoints
   for (i in 2:nrow(df_output)) {
     # last merged entry
@@ -366,8 +378,8 @@ while (is_repeat == TRUE) {
     basewindow_one_num <- as.numeric(unlist(strsplit(df_current$window[j], split="_"))[2])
     basewindow_two_num <- as.numeric(unlist(strsplit(df_output$window[i], split="_"))[2])
 
-    if (basewindow_two_num != basewindow_one_num || any(df_subset_out$is_combined[j] == TRUE || df_subset$is_combined[i] == TRUE)) {
-      fn_combined_fasta <- paste0(dir_output, df_current$window[j], "_", df_output$window[i], ".fa")
+    if (basewindow_two_num != basewindow_one_num || any(c(df_subset_out$is_combined[j],df_subset$is_combined[i]))) {
+      fn_combined_fasta <- paste0(dir_output_iter, df_current$window[j], "_", df_output$window[i], ".fa")
       if (!file.exists(fn_combined_fasta) && !params$redo) {
         # combine sequence
         system(paste(params$exe_seqkit, "concat --full", df_current$dir[j], df_output$dir[i], ">", fn_combined_fasta))
