@@ -353,7 +353,7 @@ while (is_repeat == TRUE) {
   }
 
   # check if all windows cannot be merged
-  if (all(df_subset$is_combined == FALSE) && iterator != 1) {
+  if (all(df_output$is_combined == FALSE) && iterator != 1) {
     is_repeat <- FALSE
     break
   }
@@ -378,7 +378,7 @@ while (is_repeat == TRUE) {
     basewindow_one_num <- as.numeric(unlist(strsplit(df_current$window[j], split="_"))[2])
     basewindow_two_num <- as.numeric(unlist(strsplit(df_output$window[i], split="_"))[2])
 
-    if (basewindow_two_num != basewindow_one_num || any(c(df_subset_out$is_combined[j],df_subset$is_combined[i]))) {
+    if (basewindow_two_num != basewindow_one_num || any(c(df_current$is_combined[j],df_output$is_combined[i]))) {
       fn_combined_fasta <- paste0(dir_output_iter, df_current$window[j], "_", df_output$window[i], ".fa")
       if (!file.exists(fn_combined_fasta) && !params$redo) {
         # combine sequence
