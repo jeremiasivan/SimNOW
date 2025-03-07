@@ -215,7 +215,7 @@ stopCluster(nwcl)
 ```{r combine}
 # remove column from the table
 df_current$is_divided <- NULL
-df_current$is_combined <- TRUE
+df_current$is_combined <- rep(TRUE, nrow(df_current))
 
 # extract basewindow
 df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
@@ -310,7 +310,7 @@ df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %
 
       # compare AIC
       if (aic < df_subset_out$aic[j]+df_subset$aic[i]) {
-        df_subset_out[j,] <- list(iter=iterator_padded, window=df_subset_out$window[j], length=seq_len, aic=aic, dir=fn_combined_fasta, basewindow=wname, is_combined=TRUE)
+        df_subset_out[j,] <- list(iter=iterator_padded, window=df_subset_out$window[j], length=seq_len, aic=aic, dir=fn_combined_fasta, is_combined=TRUE, basewindow=wname)
       } else {
         df_subset$is_combined[i] <- FALSE
         df_subset_out$is_combined[j] <- FALSE
@@ -401,7 +401,7 @@ while (is_repeat == TRUE) {
 
       # compare AIC
       if (aic < df_current$aic[j]+df_output$aic[i]) {
-        df_current[j,] <- list(iter=iterator_padded, window=df_current$window[j], length=seq_len, aic=aic, dir=fn_combined_fasta, basewindow=basewindow_one, is_combined=TRUE)
+        df_current[j,] <- list(iter=iterator_padded, window=df_current$window[j], length=seq_len, aic=aic, dir=fn_combined_fasta, is_combined=TRUE, basewindow=basewindow_one)
       } else {
         df_output$is_combined[i] <- FALSE
         df_current$is_combined[j] <- FALSE
