@@ -171,6 +171,16 @@ f_window_tree_statistics <- function(fn_iqtree, fn_treefile, bootstrap_type, min
   return(list(logl=logl, freeparams=freeparams, tree=ape::write.tree(tl)))
 }
 
+# function: extract AIC from iqtree
+f_window_tree_aic <- function(fn_iqtree) {
+  # extract log-likelihood and number of free parameters
+  logl <- gsub(" \\(.*\\)$", "", system(paste("grep '^Log-likelihood of the tree'",fn_iqtree), intern = T))
+  logl <- as.numeric(gsub("^.* ", "", logl))
+  freeparams <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of free parameters'",fn_iqtree), intern = T)))
+
+  return(list(logl=logl, freeparams=freeparams))
+}
+
 # function: summary across window trees
 # required package: data.table, dplyr
 f_window_trees_summary <- function(ls_statistics, fn_uqtops) {
