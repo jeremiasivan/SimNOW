@@ -70,6 +70,9 @@ is_repeat <- TRUE
 nwcl <- makeCluster(params$thread)
 doSNOW::registerDoSNOW(nwcl)
 
+# set initial length
+init_wlen <- df_current$length[1]
+
 # iterate over windows
 while (is_repeat == TRUE) {
   # skip the iteration if all windows are not divisible
@@ -551,7 +554,7 @@ while (is_repeat == TRUE) {
       # update the row
       df_current[id_row,] <- list(iter=iterator_padded_id, window=df_output$window_combine[i], length=df_output$length_combine[i],
                                   aic=df_output$aic_combine[i], dir=df_output$dir_combine[i], is_combined=TRUE)
-      df_current <- df_current[-id_row,]
+      df_current <- df_current[-(id_row+1),]
     }
   } 
 
@@ -575,11 +578,6 @@ log4r::info(fn_logger, "Merging Finished!")
 ```
 
 ```{r dac-visualisation}
-# extract the initial length
-df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
-initial_length <- df_current %>% group_by(basewindow) %>% summarise(n=sum(length))
-initial_length <- initial_length$n[1]
-
 # extract the last window
 last_window <- df_current$basewindow[nrow(df_current)]
 last_window <- unlist(strsplit(last_window, split="_"))[2]
@@ -597,10 +595,10 @@ for (i in 1:n_window) {
   df_subset <- df_current[df_current$basewindow == current_window,]
   if (nrow(df_subset) == 0) {
     start <- max(df_visualisation$x) + 1
-    stop <- start + initial_length - 1
+    stop <- start + init_wlen - 1
     df_visualisation <- rbind(df_visualisation, data.frame(x=seq(start,stop,by=1),
-                                                            wname=rep(current_window,initial_length),
-                                                            wsize=rep(NA,initial_length)))
+                                                            wname=rep(current_window,init_wlen),
+                                                            wsize=rep(NA,init_wlen)))
   
   } else {
     # iterate over partitions
