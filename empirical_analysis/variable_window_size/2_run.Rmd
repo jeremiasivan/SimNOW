@@ -444,7 +444,7 @@ iterator <- 0
 # skip the iteration if all windows cannot be merged together
 while (is_repeat == TRUE) {
   # stop the iteration if none of the windows is newly merged
-  if (all(df_current$is_combined) == FALSE) {
+  if (all(df_current$is_combined == FALSE)) {
     is_repeat <- FALSE
     break
   }
@@ -463,9 +463,10 @@ while (is_repeat == TRUE) {
 
   # iterate over windows
   df_combine_now <- foreach(i = 1:nrow(df_current), .combine='rbind') %dopar% {
+    # output file
+    df_temp <- NULL
+
     if (df_current$is_combined[i]) {
-      # output file
-      df_temp <- NULL
       if (i != nrow(df_current)) {
         wcombine <- paste0(df_current$window[i], df_current$window[i+1])
         df_temp <- rbind(df_temp, data.table::data.table(window_one=df_current$window[i], window_two=df_current$window[i+1],
@@ -578,38 +579,14 @@ log4r::info(fn_logger, "Merging Finished!")
 ```
 
 ```{r dac-visualisation}
-# extract the last window
-last_window <- df_current$basewindow[nrow(df_current)]
-last_window <- unlist(strsplit(last_window, split="_"))[2]
-
-width <- length(unlist(strsplit(last_window, split="")))
-n_window <- as.numeric(last_window)
-
 # create a new dataframe for visualisation
 df_visualisation <- data.frame(x=0, wname="window_NA", wsize=0)
-for (i in 1:n_window) {
-  iterator_padded <- formatC(i, width=width, format="d", flag="0")
-  current_window <- paste0("window_", iterator_padded)
-
-  # check if window exists
-  df_subset <- df_current[df_current$basewindow == current_window,]
-  if (nrow(df_subset) == 0) {
-    start <- max(df_visualisation$x) + 1
-    stop <- start + init_wlen - 1
-    df_visualisation <- rbind(df_visualisation, data.frame(x=seq(start,stop,by=1),
-                                                            wname=rep(current_window,init_wlen),
-                                                            wsize=rep(NA,init_wlen)))
-  
-  } else {
-    # iterate over partitions
-    for (j in 1:nrow(df_subset)) {
-      start <- max(df_visualisation$x) + 1
-      stop <- start + df_subset$length[j] - 1
-      df_visualisation <- rbind(df_visualisation, data.frame(x=seq(start,stop,by=1),
-                                                              wname=rep(df_subset$window[j],df_subset$length[j]),
-                                                              wsize=rep(df_subset$length[j],df_subset$length[j])))
-    }
-  }
+for (i in 1:nrow(df_current)) {
+  start <- max(df_visualisation$x) + 1
+  stop <- start + df_current$length[i] - 1
+  df_visualisation <- rbind(df_visualisation, data.frame(x=seq(start,stop,by=1),
+                                                         wname=rep(df_current$window[i],df_current$length[i]),
+                                                         wsize=rep(df_current$length[i],df_current$length[i])))
 }
 
 # remove the first row
