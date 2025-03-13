@@ -486,11 +486,13 @@ while (is_repeat == TRUE) {
   df_combine_now <- unique(df_combine_now)
 
   # iterate over windows that can be combined
+  fn_output <- paste0(outdir_combine, "iter", iterator_padded, "/aic_table.tsv")
+
   df_output <- foreach (i = 1:nrow(df_combine_now), .combine='rbind') %dopar% {
     require(seqinr)
 
     # output directory
-    dir_output_iter <- paste0(outdir_division, "iter", iterator_padded, "/", df_combine_now$window_one[i], "/")
+    dir_output_iter <- paste0(outdir_combine, "iter", iterator_padded, "/", df_combine_now$window_one[i], "/")
     if (!dir.exists(dir_output_iter)) {
       dir.create(dir_output_iter, recursive=T)
     }
@@ -528,25 +530,29 @@ while (is_repeat == TRUE) {
 
   # sort the AIC from the lowest
   df_output <- df_output %>% arrange(delta_aic) %>% filter(delta_aic < 0)
+  data.table::fwrite(df_output, file=fn_output, row.names=F, col.names=T, quote=F, sep="\t")
 
   # set all is_combined to FALSE
   df_current$is_combined <- rep(FALSE, nrow(df_current))
 
-  # extract the windows that have lowest AIC, change the df_current
-  for (i in 1:nrow(df_output)) {
-    # extract row
-    id_row <- match(df_output$window_one[i], df_current$window)
+  # check if data.frame has zero row
+  if (nrow(df_output) != 0) {
+    # extract the windows that have lowest AIC, change the df_current
+    for (i in 1:nrow(df_output)) {
+      # extract row
+      id_row <- match(df_output$window_one[i], df_current$window)
 
-    # check if combination is invalid
-    if (is.na(id_row) || df_output$window_two[i] != df_current$window[id_row+1]) {
-      next
+      # check if combination is invalid
+      if (is.na(id_row) || df_output$window_two[i] != df_current$window[id_row+1]) {
+        next
+      }
+
+      # update the row
+      df_current[id_row,] <- list(iter=iterator_padded_id, window=df_output$window_one[i], length=df_output$length_combine[i],
+                                  aic=df_output$aic_combine[i], dir=df_output$dir_combine[i], is_combined=TRUE)
+      df_current <- df_current[-id_row,]
     }
-
-    # update the row
-    df_current[id_row,] <- list(iter=iterator_padded_id, window=df_output$window_one[i], length=df_output$length_combine[i],
-                                aic=df_output$aic_combine[i], dir=df_output$dir_combine[i], is_combined=TRUE)
-    df_current <- df_current[-id_row,]
-  }
+  } 
 
   data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
 }
