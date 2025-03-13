@@ -595,7 +595,7 @@ nwcl <- makeCluster(params$thread)
 doSNOW::registerDoSNOW(nwcl)
 
 # iterate over windows
-df_topology <- foreach (i in 1:nrow(df_current)) {
+df_topology <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
   # output directory
   outdir_window <- paste0(outdir_final, df_current$window[i], "/")
   if (!dir.exists(outdir_window)) {
@@ -606,7 +606,7 @@ df_topology <- foreach (i in 1:nrow(df_current)) {
   fn_fasta <- paste0(outdir_window, df_current$window[i], ".fa")
   fn_iqtree <- paste0(fn_fasta, ".iqtree")
   fn_treefile <- paste0(fn_fasta, ".treefile")
-  if (!all(file.exists(fn_fasta, fn_iqtree, fn_treefile))) {
+  if (!all(file.exists(fn_fasta, fn_iqtree, fn_treefile)) || params$redo) {
     system(paste("cp", df_current$dir[i], fn_fasta))
 
     # read FASTA file
@@ -633,19 +633,38 @@ df_topology <- foreach (i in 1:nrow(df_current)) {
 
 stopCluster(nwcl)
 
+# update list of topologies
+ls_topology <- unique(df_topology$topology)
+for (i in unique(df_topology$topology)) {
+  for (j in ls_topology) {
+    if (i == j) {
+      next
+    }
+
+    # update topology name if equal
+    if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = i)), ape::read.tree(text = j))) {
+      df_topology[, topology := gsub(i, j, topology, fixed = TRUE)]
+      
+      idx_row <- match(i, ls_topology)
+      ls_topology <- ls_topology[-idx_row]
+      break
+    }
+  }
+}
+
 # summarise frequency
 df_topology_all <- df_topology %>%
     group_by(topology) %>%
     summarise(sum_freq=n(), sum_length=sum(length)) %>%
-    arrange(desc(sum_freq)) %>%
-    mutate(prop=round(sum_freq/sum(sum_freq),3), w_prop=round(sum_length/sum(sum_length),3))
+    arrange(desc(sum_freq), desc(sum_length)) %>%
+    mutate(prop=round(sum_freq/sum(sum_freq)*100,3), w_prop=round(sum_length/sum(sum_length)*100,3))
 
 df_topology_highbs <- df_topology %>%
     filter(is_highbs==TRUE) %>%
     group_by(topology) %>%
     summarise(sum_freq=n(), sum_length=sum(length)) %>%
-    arrange(desc(sum_freq)) %>%
-    mutate(prop=round(sum_freq/sum(sum_freq),3), w_prop=round(sum_length/sum(sum_length),3))
+    arrange(desc(sum_freq), desc(sum_length)) %>%
+    mutate(prop=round(sum_freq/sum(sum_freq)*100,3), w_prop=round(sum_length/sum(sum_length)*100,3))
 
 data.table::fwrite(df_topology_all, file=fn_topology_all, row.names=F, col.names=T, quote=F, sep="\t")
 data.table::fwrite(df_topology_highbs, file=fn_topology_highbs, row.names=F, col.names=T, quote=F, sep="\t")
