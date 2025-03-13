@@ -63,6 +63,7 @@ if (file.exists(fn_df_current) && !params$redo) {
 ```
 
 ```{r dac-division}
+iterator <- 0
 is_repeat <- TRUE
 
 # create doSNOW cluster
@@ -208,7 +209,7 @@ stopCluster(nwcl)
 df_current$is_divided <- NULL
 ```
 
-```{r dac-combine}
+```{r dac-combine, include=FALSE, eval=FALSE}
 # add new columns to the table
 df_current$is_combined <- rep(TRUE, nrow(df_current))
 df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
@@ -518,10 +519,10 @@ while (is_repeat == TRUE) {
     # initial AIC
     init_aic <- df_combine_now$aic_one[i] + df_combine_now$aic_two[i]
 
-    return(data.table::data.table(window_one=df_current$window[i], window_two=df_current$window[i+1],
-                                  aic_one=df_current$aic[i], aic_two=df_current$aic[i+1],
-                                  dir_one=df_current$dir[i], dir_two=df_current$dir[i+1],
-                                  window_combine=wcombine, aic_combine=aic, delta_aic=aic-init_aic,
+    return(data.table::data.table(window_one=df_combine_now$window[i], window_two=df_combine_now$window[i+1],
+                                  aic_one=df_combine_now$aic[i], aic_two=df_combine_now$aic[i+1],
+                                  dir_one=df_combine_now$dir[i], dir_two=df_combine_now$dir[i+1],
+                                  window_combine=df_combine_now$wcombine, aic_combine=aic, delta_aic=aic-init_aic,
                                   dir_combine=fn_combined_fasta, length_combine=seq_len))
   }
 
@@ -544,6 +545,7 @@ while (is_repeat == TRUE) {
     # update the row
     df_current[id_row,] <- list(iter=iterator_padded_id, window=df_output$window_one[i], length=df_output$length_combine[i],
                                 aic=df_output$aic_combine[i], dir=df_output$dir_combine[i], is_combined=TRUE)
+    df_current <- df_current[-id_row,]
   }
 
   data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
