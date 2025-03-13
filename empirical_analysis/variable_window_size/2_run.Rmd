@@ -428,7 +428,7 @@ log4r::info(fn_logger, "Merging Finished!")
 
 ```{r dac-combine-v2}
 # add new columns to the table
-df_current$is_combined <- rep(TRUE, nrow(df_current))
+df_current$is_combined <- TRUE
 
 # create doSNOW cluster
 nwcl <- makeCluster(params$thread)
@@ -529,11 +529,12 @@ while (is_repeat == TRUE) {
   }
 
   # sort the AIC from the lowest
-  df_output <- df_output %>% arrange(delta_aic) %>% filter(delta_aic < 0)
+  df_output <- df_output %>% arrange(delta_aic)
   data.table::fwrite(df_output, file=fn_output, row.names=F, col.names=T, quote=F, sep="\t")
 
   # set all is_combined to FALSE
-  df_current$is_combined <- rep(FALSE, nrow(df_current))
+  df_current$is_combined <- FALSE
+  df_output <- df_output %>% filter(delta_aic < 0)
 
   # check if data.frame has zero row
   if (nrow(df_output) != 0) {
@@ -548,7 +549,7 @@ while (is_repeat == TRUE) {
       }
 
       # update the row
-      df_current[id_row,] <- list(iter=iterator_padded_id, window=df_output$window_one[i], length=df_output$length_combine[i],
+      df_current[id_row,] <- list(iter=iterator_padded_id, window=df_output$window_combine[i], length=df_output$length_combine[i],
                                   aic=df_output$aic_combine[i], dir=df_output$dir_combine[i], is_combined=TRUE)
       df_current <- df_current[-id_row,]
     }
