@@ -521,10 +521,10 @@ while (is_repeat == TRUE) {
     # initial AIC
     init_aic <- df_combine_now$aic_one[i] + df_combine_now$aic_two[i]
 
-    return(data.table::data.table(window_one=df_combine_now$window_one[i], window_two=df_combine_now$window_two[i+1],
-                                  aic_one=df_combine_now$aic_one[i], aic_two=df_combine_now$aic_two[i+1],
-                                  dir_one=df_combine_now$dir_one[i], dir_two=df_combine_now$dir_two[i+1],
-                                  window_combine=df_combine_now$window_combine, aic_combine=aic, delta_aic=aic-init_aic,
+    return(data.table::data.table(window_one=df_combine_now$window_one[i], window_two=df_combine_now$window_two[i],
+                                  aic_one=df_combine_now$aic_one[i], aic_two=df_combine_now$aic_two[i],
+                                  dir_one=df_combine_now$dir_one[i], dir_two=df_combine_now$dir_two[i],
+                                  window_combine=df_combine_now$window_combine[i], aic_combine=aic, delta_aic=aic-init_aic,
                                   dir_combine=fn_combined_fasta, length_combine=seq_len))
   }
 
