@@ -2,53 +2,12 @@
 
 ## Table of Content
 - <a href="#analyses">Analyses</a>
-    - <a href="#now">Non-overlapping window analysis</a>
     - <a href="#stepnow">Stepwise non-overlapping windows</a>
-    - <a href="#hmm">HMM</a>
 - <a href="#datasets">Datasets</a>
-    - <a href="#heliconius">Erato-sara Heliconius butterflies</a>
+    - <a href="#heliconius">Erato-sara <i>Heliconius</i> butterflies</a>
     - <a href="#hominidae">Great apes</a>
 
 ## <a id="analyses">Analyses</a>
-
-### <a id="now">Non-overlapping window analysis</a>
-In this step, we run non-overlapping window analysis on empirical alignment and generate the summary statistics. The parameters for this step is set in `1_main.Rmd`.
-
-| Parameters               | Definition                                                                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `codedir`                | Directory for folder `SimNOW/codes_empirical`                                                                                         |
-| `prefix`                 | Prefix for output files and folder                                                                                                    | 
-| `outdir`                 | Output directory                                                                                                                      |
-| `thread`                 | Number of threads for parallelization                                                                                                 |
-| `redo`                   | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                                                |
-| `iqtree2dir`             | Directory for `IQ-Tree2` executable                                                                                                   |
-| `set_model`              | If `TRUE`, set the substitution model of window trees to be `dna_model`; if `FALSE` use ModelFinder to find the best model per window |
-| `set_blmin`              | If `TRUE`, set the minimum branch length to be 1/window_size                                                                          |
-| `dna_model`              | DNA substitution model for window trees                                                                                               |
-| `outgroup`               | Outgroup of window trees (optional)                                                                                                   |
-| `input_aln`              | Input FASTA alignment                                                                                                                 |
-| `window_len`             | Number of window sizes                                                                                                                |
-| `window_size`            | Vector of window sizes; if any, trailing positions of `input_aln` will be removed to match the least common multiple of the vector    |
-| `min_window_size`        | Minimum window size                                                                                                                   |
-| `window_size_nogaps`     | Similar with `window_size`, but only applied for `no_gaps` alignments                                                                 |
-| `min_window_size_nogaps` | Similar with `min_window_size`, but only applied for `no_gaps` alignments                                                             |
-
-#### Output
-Running the code will create a new folder called `windows` with individual folder for each window size. Each window size folder consists of three folders:
-- `alignment/`: folder with all window alignments
-- `summary/`
-    - `prefix.atsum`: table of window boundaries and trees
-    - `prefix.cnsum`: frequency of consecutive windows that recover the same topology
-    - `prefix.topsum`: table of unique topologies sorted from the most common one
-- `trees/`: folder with window trees generated using `IQ-TREE 2`
-
-Additionally, the `windows` folder will contain the following files:
-- `prefix.sum`: summary table of window sizes and their respective information criteria scores
-- `prefix.aic.tiff`: correlation plot between AIC and window size
-- `prefix.bic.tiff`: correlation plot between BIC and window size
-- `prefix.aicc.tiff`: correlation plot between AICc and window size
-- `prefix.topdist`: summary table of topology distribution per window size
-- `prefix.topdist.tiff`: plot of topology distribution per window size
 
 ### <a id="stepnow">Stepwise non-overlapping window analysis</a>
 In this step, we run stepwise non-overlapping window analysis on empirical alignment and generate the summary statistics. The parameters for this step is set in `1_main.Rmd`.
@@ -80,10 +39,7 @@ Running the code will create a new folder for each pair of window sizes, startin
     - `wsize.perwindowsum`: summary table that shows if windows are informative or not
     - `wsize.uqtops`: distribution of unique window topologies and their respective frequency. If `bootstrap_type` is provided, it only includes window trees with average bootstrap value more than 80 (parametric) or 95 (UFBoot).
 
-Additionally, the code will generate `prefix.sumtable` in the output folder, which summarises the delta BIC and window trees for each `step`. If `bootstrap_type` is provided, the counts for window trees and topologies only include those with average bootstrap value more than 80 (parametric) or 95 (UFBoot).
-
-### <a id="hmm">HMM</a>
-*(to be implemented later)*
+Additionally, the code will generate `prefix.sumtable` in the output folder, which summarises the delta AIC and window trees for each `step`. If `bootstrap_type` is provided, the counts for window trees and topologies only include those with average bootstrap value more than 80 (parametric) or 95 (UFBoot).
 
 ## <a id="datasets">Datasets</a>
 
@@ -124,7 +80,7 @@ Running the code will create individual folder for each chromosome (i.e., chr1 t
 - `fasta/`: store FASTA alignment per MAF block
     - `concatenation/`: store raw and filtered concatenated FASTA alignments
 
-If you run either non-overlapping window or stepwise non-overlapping window analysis from `run_all.R`, the code will create `summary/` folder in the `outdir/prefix/` which stores summary files and figures used in the publication. 
+If you run either non-overlapping window or stepwise non-overlapping window analysis from `run_all_stepwise_now.R`, the code will create `summary/` folder in the `outdir/prefix/` which stores summary files and figures used in the publication. 
 
 ```
 outdir/
@@ -151,85 +107,7 @@ outdir/
 #### Time complexity
 Running `run_all.R` using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step is as follows:
 - Data preparation and filtering: ~1.6 hours with 50 threads
-- Non-overlapping window analysis: up to 4.4 hours for the longest chromosome (`chr10`)
 - Stepwise non-overlapping windows: up to 10 hours for the longest chromosome (`chr10`)
-
-#### Folder structure
-<i>Non-overlapping window</i>
-```
-prefix/
-├── chr1/
-│   ├── chr1.fa
-│   ├── chr1.log
-│   ├── chr1.html
-│   └── windows/
-│       ├── 10000/
-│       │   ├── alignment/
-│       │   │   ├── window_01.fa
-│       │   │   ├── window_02.fa
-│       │   │   ├── window_03.fa
-│       │   │   ├── window_04.fa
-│       │   │   └── window_05.fa
-│       │   ├── summary/
-│       │   │   ├── prefix.atsum
-│       │   │   ├── prefix.cnsum
-│       │   │   └── prefix.topsum
-│       │   └── trees/
-│       │       ├── prefix.best_model.nex
-│       │       ├── prefix.ckp.gz
-│       │       ├── prefix.iqtree
-│       │       ├── prefix.log
-│       │       ├── prefix.parstree
-│       │       └── prefix.treefile
-│       ...
-│       ├── 50000/
-│       │   └── ...
-│       ├── prefix.sum
-│       ├── prefix.aicc.tiff
-│       ├── prefix.aic.tiff
-│       ├── prefix.bic.tiff
-│       ├── prefix.topdist
-│       └── prefix.topdist.tiff
-...
-└── chr21/
-    └── ...
-```
-
-<i>Stepwise non-overlapping window</i>
-```
-prefix/
-├── chr1/
-│   ├── 1/
-│   │   ├── 64000/
-│   │   │   ├── perwindow/
-│   │   │   │   ├── window_0001.fa
-│   │   │   │   ├── window_0002.fa
-│   │   │   │   ...
-│   │   │   │   └── window_0262.fa
-│   │   │   ├── filtered/
-│   │   │   │   ├── window_0001/
-│   │   │   │   │   ├── window_01.fa
-│   │   │   │   │   ├── window_01.fa.log
-│   │   │   │   │   ├── window_01.fa.iqtree
-│   │   │   │   │   └── window_01.fa.treefile
-│   │   │   │   ...
-│   │   │   │   └── window_0262/
-│   │   │   │       └── ...
-│   │   │   ├── 64000.perwindowsum
-│   │   │   └── 64000.uqtops
-│   │   ├── 32000
-│   │   │   └── ...
-│   │   └── 1.aic.sum
-│   ...
-│   ├── 9/
-│   │   └── ...
-│   ├── chr1.html
-│   ├── chr1.log
-│   └── chr1.sumtable
-...
-└── chr21/
-    └── ...
-```
 
 ### <a id="hominidae">Genome of *Hominidae* (great apes) from <a href="https://genome.ucsc.edu">UCSC Genome Browser</a></a>
 The dataset consists of 25 chromosomes of four *Hominidae* species (human, chimpanzee, orangutan, and gorilla).
@@ -251,7 +129,7 @@ Running the code will create a new `data/` folder which contains the following s
 - `fasta/`: store the FASTA alignments for each chromosome
     - `primates/`: store the FASTA alignments for each chromosome, only for *Hominidae*
 
-If you run the stepwise non-overlapping window analysis from `run_all.R`, the code will create `summary/` folder in the `outdir/prefix/` which stores summary files and figures used in the publication. 
+If you run the stepwise non-overlapping window analysis from `run_all_stepwise_now.R`, the code will create `summary/` folder in the `outdir/prefix/` which stores summary files and figures used in the publication. 
 
 ```
 outdir/
@@ -275,4 +153,4 @@ outdir/
 ```
 
 ---
-*Last update: 12 June 2024 by Jeremias Ivan*
+*Last update: 23 March 2025 by Jeremias Ivan*
