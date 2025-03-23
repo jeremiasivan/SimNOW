@@ -1,5 +1,5 @@
 ---
-title: "Summary for Hominidae Dataset from UCSC"
+title: "Summary for Stepwise NOW Runs"
 params:
   # general
   codedir: "~/SimNOW/empirical_analysis"
@@ -25,7 +25,7 @@ library(doSNOW)
 library(tidyverse)
 
 # load functions
-source(paste0(params$codedir,"/datasets/hominidae/codes/functions.R"), local=TRUE)
+source(paste0(params$codedir,"/stepwise_now/functions.R"), local=TRUE)
 
 # create outdir
 dir_output_prefix <- paste0(params$outdir, "/", params$prefix, "/")
@@ -56,7 +56,7 @@ suffix_all_wsize_toptable <- ".all.wsize_toptable"
 suffix_best_filter_toptable <- ".best.filter_toptable"
 ```
 
-```{r greatapes-alltrees}
+```{r summaryall-alltrees}
 # extract the list of chromosomes
 ls_chr <- list.dirs(dir_output_prefix, full.names=F, recursive=F)
 ls_chr <- ls_chr[grep("^chr", ls_chr)]
@@ -250,7 +250,7 @@ print(plot2 +
 dev.off()
 ```
 
-```{r greatapes-highbs-tree-wsize}
+```{r summaryall-highbs-tree-wsize}
 # output files
 df_topology_count <- data.table::data.table(chr=factor(), wsize=factor(), topology=character(), count=numeric(), count_percentage=numeric())
 
@@ -436,7 +436,7 @@ print(plot)
 dev.off()
 ```
 
-```{r greatapes-all-tree-wsize}
+```{r summaryall-all-tree-wsize}
 # output files
 df_topology_count <- data.table::data.table(chr=factor(), wsize=factor(), topology=character(), count=numeric(), count_percentage=numeric())
 
@@ -605,7 +605,7 @@ print(plot)
 dev.off()
 ```
 
-```{r greatapes-filterwindow}
+```{r summaryall-filterwindow}
 # set up list of window spacing
 ls_window_spacing <- c(1,2,5,10,20,50,100,200,500,1000,2000,5000,10000)
 
