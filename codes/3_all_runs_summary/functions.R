@@ -253,3 +253,66 @@ f_rank_ic_acc <- function(df, i, ifc, type) {
   
   return(plot)
 }
+
+# function: plot true distribution of window sizes vs. best window sizes
+# required library: ggplot2
+f_wsize_rrate <- function(df, df_acc, df_rmse, df_aic, df_bic, dir_output) {
+  # extract simulations
+  ls_simulation <- unique(df$simulation)
+  
+  # iterate over simulation
+  for (sim in ls_simulation) {
+    # output file
+    fn_output <- paste0(dir_output, "/", sim, ".tiff")
+    
+    # extract rows
+    sub_df <- df[df$simulation==sim,]
+    sub_df_acc <- df_acc[df_acc$simulation==sim,]
+    sub_df_rmse <- df_rmse[df_rmse$simulation==sim,]
+    sub_df_aic <- df_aic[df_aic$simulation==sim,]
+    sub_df_bic <- df_bic[df_bic$simulation==sim,]
+    
+    # convert bp to kb
+    sub_df$length <- sub_df$length / 1000
+    
+    # set colour scheme
+    colour <- "#482677FF"
+    if (sub_df$r[1] == 200) {
+      colour <- "#2D708EFF"
+    } else if (sub_df$r[1] == 2000) {
+      colour <- "#29AF7FFF"
+    }
+    
+    # create distribution plot
+    plot <- ggplot(sub_df, aes(x=length)) +
+      geom_histogram(fill=colour, bins=50, size=0)
+    
+    # highlight best window size(s) according to accuracy
+    for (i in 1:nrow(sub_df_rmse)) {
+      plot <- plot + geom_vline(xintercept=sub_df_rmse$window_size[i], colour="#FEB1D8", alpha=0.5, linewidth=5)
+    }
+    
+    # highlight best window size(s) according to RMSE
+    for (j in 1:nrow(sub_df_acc)) {
+      plot <- plot + geom_vline(xintercept=sub_df_acc$window_size[i], colour="#DCE319FF", alpha=0.5, linetype=5, linewidth=5)
+    }
+    
+    # highlight best window size(s) according to AIC and BIC
+    plot <- plot + geom_vline(xintercept=sub_df_bic$window_size[1], colour="black", linewidth=2) +
+      geom_vline(xintercept=sub_df_aic$window_size[1], colour="red", linetype=2, linewidth=2) +
+      guides(alpha="none", fill="none", size="none") +
+      scale_x_log10(labels=scales::label_number(trim = TRUE, accuracy = NULL)) +
+      theme(
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_text(size=30),
+        axis.text.x=element_text(size=30),
+        strip.text=element_blank()
+      )
+    
+    # save the plot
+    tiff(filename=fn_output, units="px")
+    print(plot)
+    dev.off()
+  }
+}
