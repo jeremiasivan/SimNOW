@@ -41,9 +41,14 @@ fn_simsum <- paste0(simsumdir, params$prefix, ".simsum")
 fn_site_rmse <- paste0(simsumdir, params$prefix, ".site_rmse.tiff")
 fn_site_ws <- paste0(sitedir, params$prefix, ".site_ws.tiff")
 fn_rmse_ws <- paste0(rmsedir, params$prefix, ".rmse_ws.tiff")
+<<<<<<< HEAD:codes/4_all_runs_summary/1_main.Rmd
 
 fn_simsum_dac <- paste0(simsumdir, params$prefix, ".dac.simsum")
 fn_dac_tiff <- paste0(simsumdir, params$prefix, ".dac.tiff")
+=======
+fn_rho_ws_tree <- paste0(rmsedir, params$prefix, ".rho_ws_tree.tiff")
+fn_rho_ws_tops <- paste0(rmsedir, params$prefix, ".rho_ws_tops.tiff")
+>>>>>>> c9a6eb9 (Add visualisation for ms locus distribution):codes/3_all_runs_summary/1_main.Rmd
 ```
 
 ```{r simsum, include=FALSE}
@@ -347,4 +352,58 @@ plot <- ggplot(df_dac_sub, aes(x=as.factor(r), y=value, colour=as.factor(r))) +
 tiff(filename=fn_dac_tiff, units="px", width=1920, height=1080)
 print(plot)
 dev.off()
+```
+
+### Visualising the best window size against recombination rates
+```{r sumvisual}
+df_output_tree <- data.table::data.table(simulation=character(), length=numeric(), r=numeric())
+df_output_tops <- data.table::data.table(simulation=character(), length=numeric(), r=numeric())
+
+# iterate over simulation
+for (i in simulation) {
+  # open simulation files
+  fn_mstrees <- paste0(params$outdir,"/",i,"/simulation/",i,".mstrees")
+  fn_mstops <- paste0(params$outdir,"/",i,"/simulation/",i,".mstops")
+
+  df_mstrees <- data.table::fread(fn_mstrees)
+  df_mstops <- data.table::fread(fn_mstops)
+
+  # read ms file
+  fn_ms <- paste0(params$outdir,"/",i,"/simulation/",i,".ms")
+
+  # extract recombination rate
+  command <- strsplit(system(paste("grep 'ms'",fn_ms), intern=T), " ")
+  rrate <- as.numeric(command[[1]][match("-r", command[[1]]) + 1])
+
+  # update data.table
+  df_output_tree <- rbind(df_output_tree, data.table::data.table(simulation=i, length=df_mstrees$length, r=rrate))
+  df_output_tops <- rbind(df_output_tops, data.table::data.table(simulation=i, length=df_mstops$length, r=rrate))
+}
+
+# extract best window size per simulation based on different parameters
+df_best_acc <- simsum %>%
+  group_by(simulation, r) %>%
+  filter(accuracy==max(accuracy)) %>%
+  select(simulation, window_size, r) %>%
+  mutate(type="acc")
+
+df_best_rmse <- simsum %>%
+  group_by(simulation, r) %>%
+  filter(rmse==min(rmse)) %>%
+  select(simulation, window_size, r) %>%
+  mutate(type="rmse")
+
+df_best_aic <- simsum %>%
+  group_by(simulation, r) %>%
+  filter(aic==min(aic)) %>%
+  select(simulation, window_size, r) %>%
+  mutate(type="aic")
+
+df_best_bic <- simsum %>%
+  group_by(simulation, r) %>%
+  filter(bic==min(bic)) %>%
+  select(simulation, window_size, r) %>%
+  mutate(type="bic")
+
+# for visualisation, use f_wsize_rrate() function to iterate over df_output_tree and df_output_tops per r
 ```
