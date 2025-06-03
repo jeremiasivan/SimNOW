@@ -75,7 +75,7 @@ make_runs <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste0(codedir,"/stepwise_now/1_main.Rmd"),
+  rmarkdown::render(input=paste0(codedir,"/1_stepwise_now/1_main.Rmd"),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
@@ -95,7 +95,7 @@ foreach(r=runs, .errorhandling = 'pass') %dopar% {
 stopCluster(cl)
 
 # summary for all chromosomes
-rmarkdown::render(input=paste0(codedir,"/stepwise_now/4_summary_all.Rmd"),
+rmarkdown::render(input=paste0(codedir,"/1_stepwise_now/4_summary_all.Rmd"),
                   output_file=paste0(outdir,"/",prefix,"/hominidae_summary.html"),
                   params=list(codedir=codedir, prefix=prefix, outdir=outdir, thread=nthread, redo=redo,
                               initial_wsize=initial_wsize, min_wsize=min_wsize, colour_scheme=colour_scheme),

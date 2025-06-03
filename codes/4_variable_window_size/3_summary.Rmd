@@ -1,0 +1,61 @@
+---
+title: "Summary of Non-overlapping Windows vs Truth"
+---
+
+## Summarize accuracy of non-overlapping windows on simulated alignment
+```{r sumsetup, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####         DAC vs Truth       ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+# input file
+fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
+
+# create an output directory
+outdir_summary <- paste0(dac_outdir, "summary/")
+if (!dir.exists(outdir_summary)) {
+  dir.create(outdir_summary, recursive=T)
+}
+
+# output files
+fn_cmp <- paste0(outdir_summary, params$prefix, ".cmp")
+fn_cmptw <- paste0(outdir_summary, params$prefix, ".cmptw")
+```
+
+### Comparing topology weight and site assignment between NOW and ms
+```{r sumwindow}
+# read ms topology file
+msfile <- data.table::fread(fn_mstops)
+
+# output files
+if (!all(file.exists(fn_cmp, fn_cmptw)) || params$redo) {
+  # read annotation summary file
+  smfile <- data.table::fread(fn_topology_all)
+  smfile$start <- as.numeric(smfile$start)
+  smfile$stop <- as.numeric(smfile$stop)
+
+  # extract unique ms and NOW topologies
+  mstree_uq <- unique(msfile$topology)
+  smtree_uq <- unique(smfile$topology)
+
+  # match window topology with ms topology
+  for (j in mstree_uq) {
+    for (k in smtree_uq) {
+      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::read.tree(text = k))) {
+        smfile[, topology := gsub(k, j, topology, fixed = TRUE)]
+        break
+      }
+    }
+  }
+
+  # create matrix for site accuracy
+  f_create_site_acc_matrix(msfile, smfile, mstree_uq, fn_cmp)
+
+  # compare weights between ms and NOW topologies
+  f_compare_topology_weight(msfile, smfile, mstree_uq, sum(smfile$length), fn_cmptw)
+
+  rm(msfile)
+}
+```

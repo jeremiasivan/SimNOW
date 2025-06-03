@@ -1,5 +1,5 @@
 ---
-title: "Stepwise NOW for Empirical Datasets"
+title: "Stepwise NOW with Variable Window Sizes for Simulated Datasets"
 author: "Jeremias Ivan"
 date: "`r format(Sys.time(), '%d %B %Y, %H:%M%p')`"
 
@@ -11,46 +11,40 @@ output:
     
 params:
   # general
-  codedir: "~/SimNOW/empirical_analysis"
+  codedir: "~/SimNOW/codes/"
   prefix: "sim"
   outdir: "~/simulation"
-  thread: 1
+  thread: 5
   redo: FALSE
   
+  # executables
+  exe_seqkit: ""
+
   # IQ-Tree2
   iqtree2dir: "~/iqtree2"
-  set_blmin: FALSE
-  set_model: FALSE
-  dna_model: ""
+  set_blmin: TRUE
+  set_model: TRUE
 
-  bootstrap: 1000
-  bootstrap_type: ""
+  dna_model: "JC"
   outgroup: ""
   
   # NOW analysis
-  input_aln: "~/input.fa"
-  initial_wsize: 128000
-  min_wsize: 1000
-
-  min_informative_sites: 1
+  division_prop: !r c(0.25, 0.5, 0.75)
 ---
 
 ```{r, include=FALSE}
+# install.packages("data.table")
 # install.packages("log4r")
-# install.packages("seqinr")
+
+library(doSNOW)
+library(dplyr)
+library(ggplot2)
 
 # store initial system time
 sys_tic <- Sys.time()
 
 # load libraries
 source(paste0(params$codedir, "/stepwise_now/functions.R"), local=TRUE)
-
-library(data.table)
-library(dplyr)
-library(doSNOW)
-library(ggplot2)
-library(ggtree)
-library(kableExtra)
 
 # create outdir
 currentdir <- paste0(params$outdir, "/", params$prefix)
@@ -73,7 +67,10 @@ if (!file.exists(fn_log)) {
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-```{r child = paste0(params$codedir,"/stepwise_now/2_run.Rmd")}
+```{r child = paste0(params$codedir,"/4_variable_window_size/2_run.Rmd")}
+```
+
+```{r child = paste0(params$codedir,"/4_variable_window_size/3_summary.Rmd")}
 ```
 
 ```{r, include=FALSE}
