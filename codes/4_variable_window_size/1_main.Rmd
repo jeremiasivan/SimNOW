@@ -33,6 +33,10 @@ params:
 ---
 
 ```{r, include=FALSE}
+# load libraries
+source(paste0(params$codedir, "/2_non_overlapping_window/functions.R"))
+source(paste0(params$codedir, "/4_variable_window_size/functions.R"))
+
 # install.packages("data.table")
 # install.packages("log4r")
 
@@ -42,9 +46,6 @@ library(ggplot2)
 
 # store initial system time
 sys_tic <- Sys.time()
-
-# load libraries
-source(paste0(params$codedir, "/stepwise_now/functions.R"), local=TRUE)
 
 # create outdir
 currentdir <- paste0(params$outdir, "/", params$prefix)
