@@ -34,8 +34,8 @@ params:
 
 ```{r, include=FALSE}
 # load libraries
-source(paste0(params$codedir, "/2_non_overlapping_window/functions.R"))
-source(paste0(params$codedir, "/4_variable_window_size/functions.R"))
+source(paste0(params$codedir, "/2_non_overlapping_window/functions.R"), local=TRUE)
+source(paste0(params$codedir, "/3_variable_window_size/functions.R"), local=TRUE)
 
 # install.packages("data.table")
 # install.packages("log4r")
@@ -68,10 +68,10 @@ if (!file.exists(fn_log)) {
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-```{r child = paste0(params$codedir,"/4_variable_window_size/2_run.Rmd")}
+```{r child = paste0(params$codedir,"/3_variable_window_size/2_run.Rmd")}
 ```
 
-```{r child = paste0(params$codedir,"/4_variable_window_size/3_summary.Rmd")}
+```{r child = paste0(params$codedir,"/3_variable_window_size/3_summary.Rmd")}
 ```
 
 ```{r, include=FALSE}
