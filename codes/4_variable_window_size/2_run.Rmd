@@ -33,7 +33,7 @@ fn_summary <- paste0(dac_outdir, "summary.tsv")
 fn_topology_all <- paste0(dac_outdir, "topology_all.tsv")
 ```
 
-## Extract list of initial windows
+## Extract the best window size with the AIC scores
 ```{r, include=FALSE}
 options(scipen=999)
 
@@ -68,6 +68,15 @@ df_aic <- df_aic[-1,]
 # save data.frame for reference
 data.table::fwrite(df_ids, file=fn_iqtree_ids, row.names=F, col.names=T, quote=F, sep="\t")
 data.table::fwrite(df_aic, file=fn_iqtree_aic, row.names=F, col.names=T, quote=F, sep="\t")
+```
+
+## Extract list of initial windows
+```{r, include=FALSE}
+options(scipen=999)
+
+# open files
+df_ids <- data.table::fread(df_ids)
+df_aic <- data.table::fread(df_aic)
 
 # output file
 df_current <- NULL
@@ -91,7 +100,7 @@ if (file.exists(fn_df_current) && !params$redo) {
     aic <- as.numeric(df_aic$AIC[df_aic$ID==id])
 
     # update data.table
-    return(data.table::data.table(iter="00", window=window, length=as.numeric(best_wsize_aic), aic=aic, dir=fn_fasta, is_divided=TRUE))
+    return(data.table::data.table(iter="00", window=gsub(".fa","",window), length=as.numeric(best_wsize_aic), aic=aic, dir=fn_fasta, is_divided=TRUE))
   }
 
   stopCluster(nwcl)
