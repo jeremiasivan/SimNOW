@@ -27,6 +27,8 @@ lapply(list(outdir_division, outdir_combine, outdir_final), function(x) if(!dir.
 prefix_division_summary <- paste0(outdir_division, "summary_aic_iter")
 prefix_combine_summary <- paste0(outdir_combine, "summary_aic_iter")
 
+fn_iqtree_ids <- paste0(dac_outdir, "iqtree_ids.tsv")
+fn_iqtree_aic <- paste0(dac_outdir, "iqtree_aic.tsv")
 fn_summary <- paste0(dac_outdir, "summary.tsv")
 fn_topology_all <- paste0(dac_outdir, "topology_all.tsv")
 ```
@@ -57,12 +59,16 @@ colnames(df_ids) <- df_ids[1,]
 df_ids <- df_ids[-1,]
 
 # extract table that stores the AIC for every ID
-df_aic <- system(paste("grep -A", nline, "'List of best-fit models per partition::'", fn_iqtree), intern=T)
-df_aic <- df_aic[-c(1,2)]\
-df_aic <- lapply(df_aic, function(x) { ls_row <- strsplit(x, split=" ")[[1]]; ls_row[ls_row!=""] })
+df_aic <- system(paste("grep -A", nline, "'List of best-fit models per partition:'", fn_iqtree), intern=T)
+df_aic <- df_aic[-c(1,2)]
+df_aic <- lapply(df_aic, function(x) { ls_row <- strsplit(x, split=" ")[[1]]; ls_row[ls_row!="" & ls_row!="+"] })
 df_aic <- do.call(rbind.data.frame, df_aic)
 colnames(df_aic) <- df_aic[1,]
 df_aic <- df_aic[-1,]
+
+# save data.frame for reference
+data.table::fwrite(df_ids, file=fn_iqtree_ids, row.names=F, col.names=T, quote=F, sep="\t")
+data.table::fwrite(df_aic, file=fn_iqtree_aic, row.names=F, col.names=T, quote=F, sep="\t")
 
 # output file
 df_current <- NULL
@@ -83,7 +89,7 @@ if (file.exists(fn_df_current) && !params$redo) {
 
     # calculate AIC
     id <- df_ids$ID[df_ids$Name==window]
-    aic <- df_aic$AIC[df_aic$ID==id]
+    aic <- as.numeric(df_aic$AIC[df_aic$ID==id])
 
     # update data.table
     return(data.table::data.table(iter="00", window=window, length=as.numeric(best_wsize_aic), aic=aic, dir=fn_fasta, is_divided=TRUE))
