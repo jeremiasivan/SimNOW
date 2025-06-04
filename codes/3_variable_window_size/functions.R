@@ -76,3 +76,35 @@ f_window_tree_aic <- function(fn_iqtree) {
 
   return(list(logl=logl, freeparams=freeparams))
 }
+
+# function: extract accuracy from window trees
+# required library: data.table
+f_extract_acc <- function(fn_cmp, fn_cmptw){
+    # open the site assignment matrix file
+    cmp <- data.table::fread(fn_cmp)
+    cmp <- as.matrix(cmp[,-1])
+    
+    # calculate the site accuracy
+    acc <- sum(as.numeric(diag(cmp))) / sum(as.numeric(cmp)) * 100
+    acc <- round(acc, 3)
+    
+    # open the topology weight file
+    cmptw <- data.table::fread(fn_cmptw)
+
+    # set NULL value as zero
+    na_ms <- which(is.na(cmptw$ms))
+    na_now <- which(is.na(cmptw$now))
+    
+    if (length(na_ms) > 0) {
+        cmptw$ms[na_ms] <- 0
+    }
+    
+    if (length(na_now) > 0) {
+        cmptw$now[na_now] <- 0
+    }
+    
+    # extract the RMSE of the topology distribution
+    rmse <- mean((cmptw$ms - cmptw$now) ^ 2) %>% sqrt()
+
+    return(list(acc=acc, rmse=rmse))
+}

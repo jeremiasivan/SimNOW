@@ -32,6 +32,11 @@ dna_model <- alisim_model
 outgroup <- "7"
 
 window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
+
+# divide-and-conquer
+exe_seqkit <- "seqkit"
+division_prop <- c(0.25, 0.5, 0.75)
+
 #################################
 
 if (nthread / thread < 1) {
@@ -44,6 +49,7 @@ temp_table$id <- rownames(temp_table)
 # create sets of parameters
 repsim <- list()
 repnow <- list()
+repdac <- list()
 
 for (i in 1:nrow(temp_table)) {
   prex <- paste0(prefix,"_",temp_table$id[i])
@@ -68,8 +74,16 @@ for (i in 1:nrow(temp_table)) {
                                        window_size=window_size
                                        ))
 
+  tempdac <- list(out=out, params=list(prefix=prex,
+                                       codedir=codedir, outdir=outdir, thread=thread, redo=redo,
+                                       exe_seqkit=exe_seqkit,
+                                       iqtree2dir=iqtree2dir, set_model=set_model, set_blmin=set_blmin, dna_model=dna_model, outgroup=outgroup,
+                                       division_prop=division_prop
+                                       ))                                     
+
   repsim <- append(repsim, list(tempsim))
   repnow <- append(repnow, list(tempnow))
+  repdac <- append(repdac, list(tempdac))
 }
 
 # function to create reports for independent run
@@ -90,6 +104,18 @@ make_repnow <- function(r) {
   dir.create(tf)
   
   rmarkdown::render(input=paste0(codedir,"/2_non_overlapping_window/1_main.Rmd"),
+                    output_file=r$out,
+                    intermediates_dir=tf,
+                    params=r$params,
+                    quiet=TRUE)
+  unlink(tf)
+}
+
+make_repdac <- function(r) {
+  tf <- tempfile()
+  dir.create(tf)
+  
+  rmarkdown::render(input=paste0(codedir,"/3_variable_window_size/1_main.Rmd"),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
@@ -119,8 +145,19 @@ foreach(r=repnow, .errorhandling = 'pass') %dopar% {
 
 stopCluster(cl)
 
+# run parallelized DAC analysis
+cl <- makeCluster(floor(nthread/thread), outfile="")
+registerDoSNOW(cl)
+
+foreach(r=repdac, .errorhandling = 'pass') %dopar% {
+  make_repdac(r)
+  NULL
+}
+
+stopCluster(cl)
+
 # summary
-rmarkdown::render(input=paste(codedir,"/3_all_runs_summary/1_main.Rmd", sep=""),
+rmarkdown::render(input=paste(codedir,"/4_all_runs_summary/1_main.Rmd", sep=""),
                   output_file=paste(outdir, "/", prefix, ".html", sep=""),
                   params=list(prefix=prefix, codedir=codedir, outdir=outdir),
                   quiet=TRUE)

@@ -41,8 +41,11 @@ fn_simsum <- paste0(simsumdir, params$prefix, ".simsum")
 fn_site_rmse <- paste0(simsumdir, params$prefix, ".site_rmse.tiff")
 fn_site_ws <- paste0(sitedir, params$prefix, ".site_ws.tiff")
 fn_rmse_ws <- paste0(rmsedir, params$prefix, ".rmse_ws.tiff")
+
 fn_rho_ws_tree <- paste0(rmsedir, params$prefix, ".rho_ws_tree.tiff")
 fn_rho_ws_tops <- paste0(rmsedir, params$prefix, ".rho_ws_tops.tiff")
+
+fn_simsum_dac <- paste0(simsumdir, params$prefix, ".dac.simsum")
 ```
 
 ```{r simsum, include=FALSE}
@@ -350,4 +353,16 @@ df_best_bic <- simsum %>%
   mutate(type="bic")
 
 # for visualisation, use f_wsize_rrate() function to iterate over df_output_tree and df_output_tops per r
+```
+
+## Divide-and-Conquer
+```{r simsum-dac, eval=FALSE}
+df_dac_output <- data.table::data.table(simulation=character(), now_wsize=numeric(), now_acc=numeric(), now_rmse=numeric(), now_aic=numeric(),
+                                        dac_min_wsize=numeric(), dac_max_wsize=numeric(), dac_acc=numeric(), dac_rmse=numeric(), dac_aic=numeric())
+
+# iterate over simulation
+for (i in simulation) {
+   
+
+}
 ```
