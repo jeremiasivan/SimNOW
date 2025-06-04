@@ -45,6 +45,25 @@ write.table(paste0("Running DAC with a starting window size of ", best_wsize_aic
 ls_windows <- list.files(paste0(getwd(), "/windows/", best_wsize_aic, "/alignment/"), recursive=F, full.names=F)
 ls_windows <- gsub(".fa", "", ls_windows)
 
+# extract the AIC output from IQ-TREE2
+fn_iqtree <- paste0(getwd(), "/windows/", best_wsize_aic, "/trees/", params$prefix, ".iqtree")
+nline <- length(ls_windows) + 2
+
+# extract table that stores the ID for every window
+df_ids <- system(paste("grep -A", nline, "'Input data:'", fn_iqtree), intern=T)
+df_ids <- df_ids[-c(1,2)]
+df_ids <- as.data.frame(stringr::str_split_fixed(df_ids, "\t", 9))
+colnames(df_ids) <- df_ids[1,]
+df_ids <- df_ids[-1,]
+
+# extract table that stores the AIC for every ID
+df_aic <- system(paste("grep -A", nline, "'List of best-fit models per partition::'", fn_iqtree), intern=T)
+df_aic <- df_aic[-c(1,2)]\
+df_aic <- lapply(df_aic, function(x) { ls_row <- strsplit(x, split=" ")[[1]]; ls_row[ls_row!=""] })
+df_aic <- do.call(rbind.data.frame, df_aic)
+colnames(df_aic) <- df_aic[1,]
+df_aic <- df_aic[-1,]
+
 # output file
 df_current <- NULL
 fn_df_current <- paste0(prefix_division_summary, "00.tsv")
@@ -61,11 +80,10 @@ if (file.exists(fn_df_current) && !params$redo) {
   df_current <- foreach (window = ls_windows, .combine='rbind') %dopar% {
     # input files
     fn_fasta <- paste0(getwd(), "/windows/", best_wsize_aic, "/alignment/", window, ".fa")
-    fn_log <- paste0(getwd(), "/windows/", best_wsize_aic, "/trees/", params$prefix, ".log")
 
     # calculate AIC
-    out <- system(paste0("grep 'Partition ", window, ".fa / Model:' ", fn_log), intern=T)
-    aic <- as.numeric(strsplit(out[length(out)], split="LogL: ")[[1]][2])
+    id <- df_ids$ID[df_ids$Name==window]
+    aic <- df_aic$AIC[df_aic$ID==id]
 
     # update data.table
     return(data.table::data.table(iter="00", window=window, length=as.numeric(best_wsize_aic), aic=aic, dir=fn_fasta, is_divided=TRUE))
