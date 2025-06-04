@@ -29,8 +29,8 @@ prefix_combine_summary <- paste0(outdir_combine, "summary_aic_iter")
 
 fn_iqtree_ids <- paste0(dac_outdir, "iqtree_ids.tsv")
 fn_iqtree_aic <- paste0(dac_outdir, "iqtree_aic.tsv")
-fn_summary <- paste0(dac_outdir, "summary.tsv")
-fn_topology_all <- paste0(dac_outdir, "topology_all.tsv")
+fn_dacsum <- paste0(dac_outdir, params$prefix, ".dacsum")
+fn_dactops <- paste0(dac_outdir, params$prefix, ".dactops")
 ```
 
 ## Extract the best window size with the AIC scores
@@ -75,8 +75,8 @@ data.table::fwrite(df_aic, file=fn_iqtree_aic, row.names=F, col.names=T, quote=F
 options(scipen=999)
 
 # open files
-df_ids <- data.table::fread(df_ids)
-df_aic <- data.table::fread(df_aic)
+df_ids <- data.table::fread(fn_iqtree_ids)
+df_aic <- data.table::fread(fn_iqtree_aic)
 
 # output file
 df_current <- NULL
@@ -406,7 +406,7 @@ df_current <- df_current %>%
                 select(-basewindow, -freq, -is_combined)
 
 # save data.frame
-data.table::fwrite(df_current, file=fn_summary, row.names=F, col.names=T, quote=F, sep="\t")
+data.table::fwrite(df_current, file=fn_dacsum, row.names=F, col.names=T, quote=F, sep="\t")
 ```
 
 ## Generate window trees
@@ -470,5 +470,5 @@ df_topology <- df_topology %>% mutate(start = lag(cumsum(length), default = 0) +
                                       stop = start + length - 1)
 
 # save data.table
-data.table::fwrite(df_topology, file=fn_topology_all, row.names=F, col.names=T, quote=F, sep="\t")
+data.table::fwrite(df_topology, file=fn_dactops, row.names=F, col.names=T, quote=F, sep="\t")
 ```

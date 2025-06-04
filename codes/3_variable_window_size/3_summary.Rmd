@@ -22,6 +22,7 @@ if (!dir.exists(outdir_summary)) {
 # output files
 fn_cmp <- paste0(outdir_summary, params$prefix, ".cmp")
 fn_cmptw <- paste0(outdir_summary, params$prefix, ".cmptw")
+fn_acc <- paste0(outdir_summary, params$prefix, ".acc")
 ```
 
 ### Comparing topology weight and site assignment between NOW and ms
@@ -58,4 +59,17 @@ if (!all(file.exists(fn_cmp, fn_cmptw)) || params$redo) {
 
   rm(msfile)
 }
+
+# extract accuracy
+acc <- f_extract_acc(fn_cmp, fn_cmptw)
+
+df_now <- data.table::data.table(method="now", min_wsize=as.numeric(best_wsize_aic), max_wsize=as.numeric(best_wsize_aic),
+                                 acc=df_sum_now$accuracy[df_sum_now$window_size==best_wsize_aic],
+                                 rmse=df_sum_now$rmse[df_sum_now$window_size==best_wsize_aic],
+                                 aic=df_sum_now$aic[df_sum_now$window_size==best_wsize_aic])
+df_dac <- data.table::data.table(method="dac", min_wsize=min(df_topology$length), max_wsize=max(df_topology$length),
+                                 acc=acc$acc, rmse=acc$rmse, aic=sum(df_current$aic))
+
+df_output <- rbind(df_now, df_dac)
+data.table::fwrite(df_output, file=fn_acc, quote=FALSE, sep="\t")
 ```

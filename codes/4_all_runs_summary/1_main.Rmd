@@ -41,6 +41,8 @@ fn_simsum <- paste0(simsumdir, params$prefix, ".simsum")
 fn_site_rmse <- paste0(simsumdir, params$prefix, ".site_rmse.tiff")
 fn_site_ws <- paste0(sitedir, params$prefix, ".site_ws.tiff")
 fn_rmse_ws <- paste0(rmsedir, params$prefix, ".rmse_ws.tiff")
+
+fn_simsum_dac <- paste0(simsumdir, params$prefix, ".dac.simsum")
 ```
 
 ```{r simsum, include=FALSE}
@@ -287,4 +289,16 @@ acc_loss <- simsum %>%
 
 ```{r, results='asis', out.width="100%", echo=FALSE}
 f_plot_all(simsum, acc_loss, rank_simsum, 6, ifc)
+```
+
+## Divide-and-Conquer
+```{r simsum-dac, eval=FALSE}
+df_dac_output <- data.table::data.table(simulation=character(), now_wsize=numeric(), now_acc=numeric(), now_rmse=numeric(), now_aic=numeric(),
+                                        dac_min_wsize=numeric(), dac_max_wsize=numeric(), dac_acc=numeric(), dac_rmse=numeric(), dac_aic=numeric())
+
+# iterate over simulation
+for (i in simulation) {
+   
+
+}
 ```
