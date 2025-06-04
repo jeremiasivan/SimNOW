@@ -11,7 +11,10 @@ write.table(c("",
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 # input file
+<<<<<<< HEAD
 fn_mstrees <- paste0(getwd(), "/simulation/", params$prefix, ".mstrees")
+=======
+>>>>>>> 69962d5 (Rebase)
 fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
 
 # create an output directory
@@ -24,15 +27,19 @@ if (!dir.exists(outdir_summary)) {
 fn_cmp <- paste0(outdir_summary, params$prefix, ".cmp")
 fn_cmptw <- paste0(outdir_summary, params$prefix, ".cmptw")
 fn_acc <- paste0(outdir_summary, params$prefix, ".acc")
+<<<<<<< HEAD
 fn_corlm <- paste0(outdir_summary, params$prefix, ".corlm")
 
 fn_windowdist_tiff <- paste0(outdir_summary, params$prefix, ".wdist.tiff")
 fn_windowdist_binned_tiff <- paste0(outdir_summary, params$prefix, ".wdist_binned.tiff")
+=======
+>>>>>>> 69962d5 (Rebase)
 ```
 
 ### Comparing topology weight and site assignment between NOW and ms
 ```{r sumwindow}
 # read ms topology file
+<<<<<<< HEAD
 mtfile <- data.table::fread(fn_mstrees)
 mtfile <- mtfile %>%
   group_by(tree, group_run = data.table::rleid(topology)) %>%
@@ -48,6 +55,17 @@ smfile <- data.table::fread(fn_dactops)
 
 # output files
 if (!all(file.exists(fn_cmp, fn_cmptw)) || params$redo) {
+=======
+msfile <- data.table::fread(fn_mstops)
+
+# output files
+if (!all(file.exists(fn_cmp, fn_cmptw)) || params$redo) {
+  # read annotation summary file
+  smfile <- data.table::fread(fn_topology_all)
+  smfile$start <- as.numeric(smfile$start)
+  smfile$stop <- as.numeric(smfile$stop)
+
+>>>>>>> 69962d5 (Rebase)
   # extract unique ms and NOW topologies
   mstree_uq <- unique(msfile$topology)
   smtree_uq <- unique(smfile$topology)
