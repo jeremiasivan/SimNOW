@@ -45,7 +45,6 @@ write.table(paste0("Running DAC with a starting window size of ", best_wsize_aic
 
 # extract list of windows
 ls_windows <- list.files(paste0(getwd(), "/windows/", best_wsize_aic, "/alignment/"), recursive=F, full.names=F)
-ls_windows <- gsub(".fa", "", ls_windows)
 
 # extract the AIC output from IQ-TREE2
 fn_iqtree <- paste0(getwd(), "/windows/", best_wsize_aic, "/trees/", params$prefix, ".iqtree")
@@ -85,7 +84,7 @@ if (file.exists(fn_df_current) && !params$redo) {
   # save the AIC per window
   df_current <- foreach (window = ls_windows, .combine='rbind') %dopar% {
     # input files
-    fn_fasta <- paste0(getwd(), "/windows/", best_wsize_aic, "/alignment/", window, ".fa")
+    fn_fasta <- paste0(getwd(), "/windows/", best_wsize_aic, "/alignment/", window)
 
     # calculate AIC
     id <- df_ids$ID[df_ids$Name==window]
