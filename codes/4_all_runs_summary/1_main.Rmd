@@ -293,19 +293,21 @@ f_plot_all(simsum, acc_loss, rank_simsum, 6, ifc)
 
 ## Divide-and-Conquer
 ```{r simsum-dac}
-df_dac_output <- data.table::data.table(simulation=character(), now_wsize=numeric(), now_acc=numeric(), now_rmse=numeric(), now_aic=numeric(),
-                                        dac_min_wsize=numeric(), dac_max_wsize=numeric(), dac_acc=numeric(), dac_rmse=numeric(), dac_aic=numeric(),
-                                        delta_acc=numeric(), delta_rmse=numeric(), delta_aic=numeric())
+df_dac_output <- data.table(simulation=character(), r=numeric(),
+                            now_wsize=numeric(), now_acc=numeric(), now_rmse=numeric(), now_aic=numeric(),
+                            dac_min_wsize=numeric(), dac_max_wsize=numeric(), dac_acc=numeric(), dac_rmse=numeric(), dac_aic=numeric(),
+                            delta_acc=numeric(), delta_rmse=numeric(), delta_aic=numeric())
 
 # iterate over simulation
 for (i in simulation) {
   # open the accuracy table
   fn_acc <- paste0(params$outdir, "/", i, "/dac/summary/", i, ".acc")
-  df_acc <- data.table::fread(fn_acc)
+  df_acc <- fread(fn_acc)
    
   # update the data.table
   df_dac_output <- rbind(df_dac_output,
                          data.table::data.table(simulation=i,
+                                                r=simsum$r[simsum$simulation==i],
                                                 now_wsize=df_acc$min_wsize[1],
                                                 now_acc=df_acc$acc[1],
                                                 now_rmse=df_acc$rmse[1],
@@ -314,13 +316,13 @@ for (i in simulation) {
                                                 dac_max_wsize=df_acc$max_wsize[2],
                                                 dac_acc=df_acc$acc[2],
                                                 dac_rmse=df_acc$rmse[2],
-                                                dac_aic=df_acc$aic[2]),
+                                                dac_aic=df_acc$aic[2],
                                                 delta_acc=df_acc$acc[2]-df_acc$acc[1],
                                                 delta_rmse=df_acc$rmse[2]-df_acc$rmse[1],
-                                                delta_aic=df_acc$aic[2]-df_acc$aic[1]
+                                                delta_aic=df_acc$aic[2]-df_acc$aic[1])
                         )
 }
 
 # save data.table
-data.table::fwrite(df_dac_output, file=fn_simsum_dac, quote=FALSE, sep="\t")
+fwrite(df_dac_output, file=fn_simsum_dac, quote=FALSE, sep="\t")
 ```
