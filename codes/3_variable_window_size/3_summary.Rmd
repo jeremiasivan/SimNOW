@@ -111,12 +111,14 @@ mtfile_dist <- mtfile_dist %>% bind_rows() %>% mutate(bin_mid = (bin_start + bin
 msfile_dist <- msfile_dist %>% bind_rows() %>% mutate(bin_mid = (bin_start + bin_end) / 2, type="mstops")
 smfile_dist <- smfile_dist %>% bind_rows() %>% mutate(bin_mid = (bin_start + bin_end) / 2, type="aic")
 df_dist <- rbind(mtfile_dist, msfile_dist, smfile_dist)
+df_dist$type <- factor(df_dist$type, levels=c("mstrees","mstops","aic"))
 
 # visualisation
 plot <- ggplot(df_dist, aes(x=bin_mid, y=avg_length, colour=type, xmin=0, xmax=total_length)) +
-  geom_line(linewidth=3) +
+  geom_line(linewidth=3, alpha=0.8) +
   geom_hline(yintercept=as.numeric(best_wsize_aic), linewidth=3, linetype=5) +
   scale_y_log10(labels=scales::label_number(trim = TRUE, accuracy = NULL)) +
+  scale_colour_manual(values=c("#619CFF","#00BA38", "#F8766D")) +
   xlab("Genome Position (bp)") + ylab("Average Block Length (bp)") +
   theme(
       axis.title.x=element_text(size=40),
