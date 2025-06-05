@@ -33,7 +33,7 @@ msfile <- data.table::fread(fn_mstops)
 # output files
 if (!all(file.exists(fn_cmp, fn_cmptw)) || params$redo) {
   # read annotation summary file
-  smfile <- data.table::fread(fn_topology_all)
+  smfile <- data.table::fread(fn_dactops)
   smfile$start <- as.numeric(smfile$start)
   smfile$stop <- as.numeric(smfile$stop)
 
