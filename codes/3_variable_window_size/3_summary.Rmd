@@ -11,6 +11,7 @@ write.table(c("",
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 # input file
+fn_mstrees <- paste0(getwd(), "/simulation/", params$prefix, ".mstrees")
 fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
 
 # create an output directory
@@ -23,20 +24,21 @@ if (!dir.exists(outdir_summary)) {
 fn_cmp <- paste0(outdir_summary, params$prefix, ".cmp")
 fn_cmptw <- paste0(outdir_summary, params$prefix, ".cmptw")
 fn_acc <- paste0(outdir_summary, params$prefix, ".acc")
+
+fn_windowdist_tiff <- paste0(outdir_summary, params$prefix, ".wdist.tiff")
 ```
 
 ### Comparing topology weight and site assignment between NOW and ms
 ```{r sumwindow}
 # read ms topology file
+mtfile <- data.table::fread(fn_mstrees)
 msfile <- data.table::fread(fn_mstops)
+
+# read now topology file
+smfile <- data.table::fread(fn_dactops)
 
 # output files
 if (!all(file.exists(fn_cmp, fn_cmptw)) || params$redo) {
-  # read annotation summary file
-  smfile <- data.table::fread(fn_dactops)
-  smfile$start <- as.numeric(smfile$start)
-  smfile$stop <- as.numeric(smfile$stop)
-
   # extract unique ms and NOW topologies
   mstree_uq <- unique(msfile$topology)
   smtree_uq <- unique(smfile$topology)
@@ -72,4 +74,62 @@ df_dac <- data.table::data.table(method="dac", min_wsize=min(df_topology$length)
 
 df_output <- rbind(df_now, df_dac)
 data.table::fwrite(df_output, file=fn_acc, quote=FALSE, sep="\t")
+```
+
+```{r sumvisualisation}
+# transform data.frames into 1000 bins
+n_bins <- 1000
+
+# extract alignment length
+total_length <- sum(msfile$length)
+bin_edges <- round(seq(1, total_length+1, length.out=n_bins+1))
+
+# divide the length distribution based on the bins
+mtfile_dist <- lapply(1:n_bins, function(i) {
+  bin_start <- bin_edges[i]
+  bin_end <- bin_edges[i+1]-1
+
+  f_bin_length_dist(mtfile, bin_start, bin_end, i)
+})
+
+msfile_dist <- lapply(1:n_bins, function(i) {
+  bin_start <- bin_edges[i]
+  bin_end <- bin_edges[i+1]-1
+  
+  f_bin_length_dist(msfile, bin_start, bin_end, i)
+})
+
+smfile_dist <- lapply(1:n_bins, function(i) {
+  bin_start <- bin_edges[i]
+  bin_end <- bin_edges[i+1]-1
+
+  f_bin_length_dist(smfile, bin_start, bin_end, i)
+})
+
+# convert list to data.frame
+mtfile_dist <- mtfile_dist %>% bind_rows() %>% mutate(bin_mid = (bin_start + bin_end) / 2, type="mstrees")
+msfile_dist <- msfile_dist %>% bind_rows() %>% mutate(bin_mid = (bin_start + bin_end) / 2, type="mstops")
+smfile_dist <- smfile_dist %>% bind_rows() %>% mutate(bin_mid = (bin_start + bin_end) / 2, type="aic")
+df_dist <- rbind(mtfile_dist, msfile_dist, smfile_dist)
+
+# visualisation
+plot <- ggplot(df_dist, aes(x=bin_mid, y=avg_length, colour=type, xmin=0, xmax=total_length)) +
+  geom_line(linewidth=3) +
+  geom_hline(yintercept=as.numeric(best_wsize_aic), linewidth=3, linetype=5) +
+  scale_y_log10(labels=scales::label_number(trim = TRUE, accuracy = NULL)) +
+  xlab("Genome Position (bp)") + ylab("Average Block Length (bp)") +
+  theme(
+      axis.title.x=element_text(size=40),
+      axis.title.y=element_text(size=40),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text=element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+tiff(filename=fn_windowdist_tiff, units="px", width=1920, height=1080)
+print(plot)
+dev.off()
 ```
