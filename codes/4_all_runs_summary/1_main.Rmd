@@ -298,7 +298,25 @@ df_dac_output <- data.table::data.table(simulation=character(), now_wsize=numeri
 
 # iterate over simulation
 for (i in simulation) {
+  # open the accuracy table
+  fn_acc <- paste0(params$outdir, "/", i, "/dac/summary/", i, ".acc")
+  df_acc <- data.table::fread(fn_acc)
    
-
+  # update the data.table
+  df_dac_output <- rbind(df_dac_output,
+                         data.table::data.table(simulation=i,
+                                                now_wsize=df_acc$min_wsize[1],
+                                                now_acc=df_acc$acc[1],
+                                                now_rmse=df_acc$rmse[1],
+                                                now_aic=df_acc$aic[1],
+                                                dac_min_wsize=df_acc$min_wsize[2],
+                                                dac_max_wsize=df_acc$max_wsize[2],
+                                                dac_acc=df_acc$acc[2],
+                                                dac_rmse=df_acc$rmse[2],
+                                                dac_aic=df_acc$aic[2])
+                        )
 }
+
+# save data.table
+data.table::fwrite(df_dac_output, file=fn_simsum_dac, quote=FALSE, sep="\t")
 ```
