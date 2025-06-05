@@ -11,10 +11,10 @@ f_perwindow_run <- function(dir_perwindow, fasta, window_name, start, end) {
 }
 
 # function: create window tree with duplicate seqs
-f_iqtree2_single_keepident <- function(input, outgroup, window_size, setblmin, setmodel, dna_model, bs_type, bs, dir_iqtree2) {
+f_iqtree2_single <- function(input, outgroup, window_size, setblmin, setkeepident, setmodel, dna_model, bs_type, bs, dir_iqtree2) {
   iqtree_cmd <- paste(dir_iqtree2,
                       "-s", input,
-                      "-T 1 --quiet -redo -keep-ident")
+                      "-T 1 --quiet -redo")
   
   if (!is.null(outgroup) && !outgroup == ""){
     iqtree_cmd <- paste(iqtree_cmd, "-o", outgroup)
@@ -24,6 +24,10 @@ f_iqtree2_single_keepident <- function(input, outgroup, window_size, setblmin, s
     iqtree_cmd <- paste(iqtree_cmd, "-blmin", 1/window_size)
   }
   
+  if (setkeepident) {
+    iqtree_cmd <- paste(iqtree_cmd, "-keep-ident")
+  }
+
   if (setmodel) {
     iqtree_cmd <- paste(iqtree_cmd, "-m", dna_model)
   }

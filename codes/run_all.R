@@ -27,6 +27,7 @@ src_aln <- "~/empirical_aln.fa"
 # non-overlapping window analysis
 set_model <- FALSE
 set_blmin <- TRUE
+set_keepident <- FALSE
 
 dna_model <- alisim_model
 outgroup <- "7"
@@ -77,7 +78,7 @@ for (i in 1:nrow(temp_table)) {
   tempdac <- list(out=out, params=list(prefix=prex,
                                        codedir=codedir, outdir=outdir, thread=thread, redo=redo,
                                        exe_seqkit=exe_seqkit,
-                                       iqtree2dir=iqtree2dir, set_model=set_model, set_blmin=set_blmin, dna_model=dna_model, outgroup=outgroup,
+                                       iqtree2dir=iqtree2dir, set_model=set_model, set_keepident=set_keepident, set_blmin=set_blmin, dna_model=dna_model, outgroup=outgroup,
                                        division_prop=division_prop
                                        ))                                     
 
