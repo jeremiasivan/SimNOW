@@ -43,6 +43,7 @@ fn_site_ws <- paste0(sitedir, params$prefix, ".site_ws.tiff")
 fn_rmse_ws <- paste0(rmsedir, params$prefix, ".rmse_ws.tiff")
 
 fn_simsum_dac <- paste0(simsumdir, params$prefix, ".dac.simsum")
+fn_dac_tiff <- paste0(simsumdir, params$prefix, ".dac.tiff")
 ```
 
 ```{r simsum, include=FALSE}
@@ -307,7 +308,7 @@ for (i in simulation) {
   # update the data.table
   df_dac_output <- rbind(df_dac_output,
                          data.table::data.table(simulation=i,
-                                                r=simsum$r[simsum$simulation==i],
+                                                r=simsum$r[simsum$simulation==i][1],
                                                 now_wsize=df_acc$min_wsize[1],
                                                 now_acc=df_acc$acc[1],
                                                 now_rmse=df_acc$rmse[1],
@@ -325,4 +326,25 @@ for (i in simulation) {
 
 # save data.table
 fwrite(df_dac_output, file=fn_simsum_dac, quote=FALSE, sep="\t")
+
+# visualisation
+df_dac_sub <- df_dac_output %>% select(r, delta_acc, delta_rmse) %>% pivot_longer(-r)
+
+plot <- ggplot(df_dac_sub, aes(x=as.factor(r), y=value, colour=as.factor(r))) +
+    geom_boxplot(size=2) +
+    geom_point(size=8) +
+    facet_wrap(.~name, scales="free_y") +
+    xlab("Recombination rate") +
+    guides(colour="none") +
+    theme(
+        axis.title.x=element_text(size=40),
+        axis.title.y=element_blank(),
+        axis.text.y=element_text(size=30),
+        axis.text.x=element_text(size=30),
+        strip.text=element_text(size=30)
+    )
+
+tiff(filename=fn_dac_tiff, units="px", width=1920, height=1080)
+print(plot)
+dev.off()
 ```
