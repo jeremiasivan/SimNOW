@@ -259,7 +259,7 @@ stopCluster(nwcl)
 df_current$is_divided <- NULL
 ```
 
-## Iterative merging of the windows (ignoring breakpoints)
+## Iterative merging of the windows
 ```{r dac-combine}
 # add new columns to the table
 df_current$is_combined <- TRUE
@@ -390,22 +390,23 @@ while (is_repeat == TRUE) {
     }
   } 
 
+  # update variables
+  df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
+  df_current <- df_current %>%
+                  group_by(basewindow) %>%
+                  mutate(freq=formatC(row_number(), width=2, format="d", flag="0")) %>%
+                  ungroup() %>%
+                  mutate(window=paste(basewindow, freq, sep="_")) %>%
+                  select(-basewindow, -freq)
+
   data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
   log4r::info(fn_logger, paste("Merging: Iteration", iterator_padded, "Finished!"))
 }
 
 stopCluster(nwcl)
 
-# update data.frame
-df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
-df_current <- df_current %>%
-                group_by(basewindow) %>%
-                mutate(freq=formatC(row_number(), width=2, format="d", flag="0")) %>%
-                ungroup() %>%
-                mutate(window=paste(basewindow, freq, sep="_")) %>%
-                select(-basewindow, -freq, -is_combined)
-
 # save data.frame
+df_current$is_combined <- NULL
 data.table::fwrite(df_current, file=fn_dacsum, row.names=F, col.names=T, quote=F, sep="\t")
 ```
 
