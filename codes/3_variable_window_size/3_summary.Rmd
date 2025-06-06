@@ -36,9 +36,13 @@ fn_windowdist_binned_tiff <- paste0(outdir_summary, params$prefix, ".wdist_binne
 mtfile <- data.table::fread(fn_mstrees)
 mtfile <- mtfile %>%
   group_by(tree, group_run = data.table::rleid(tree)) %>%
-  summarise(length=sum(length), start=start, stop=stop) %>%
+  summarise(length=sum(length)) %>%
   arrange(group_run)
 mtfile$group_run <- NULL
+
+# add start and stop columns
+mtfile <- mtfile %>% mutate(start = lag(cumsum(length), default = 0) + 1,
+                            stop = start + length - 1)
 mtfile <- data.table::as.data.table(mtfile)
 
 msfile <- data.table::fread(fn_mstops)
@@ -90,15 +94,15 @@ if (nrow(smfile) > 1) {
   # convert the lengths into genomic positions
   mtfile_dist <- data.table::data.table(pos = seq(1, sum(mtfile$length)),
                                         len = rep(mtfile$length, times=mtfile$length),
-                                        type = rep("mstrees", times=sum(mtfile$length)))
+                                        type = "mstrees")
 
   msfile_dist <- data.table::data.table(pos = seq(1, sum(msfile$length)),
                                         len = rep(msfile$length, times=msfile$length),
-                                        type = rep("mstops", times=sum(mtfile$length)))
+                                        type = "mstops")
 
   smfile_dist <- data.table::data.table(pos = seq(1, sum(smfile$length)),
-                                        len = rep(smfile$length, times=smfile$length)
-                                        type = rep("aic", times=sum(mtfile$length)))
+                                        len = rep(smfile$length, times=smfile$length),
+                                        type = "aic")
 
   # run linear model
   lm <- lm(smfile_dist$len ~ mtfile_dist$len+msfile_dist$len)
