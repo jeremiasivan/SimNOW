@@ -23,8 +23,8 @@ params:
   # IQ-Tree2
   iqtree2dir: "~/iqtree2"
   set_blmin: TRUE
-  set_model: TRUE
-  set_keepident: TRUE
+  set_model: FALSE
+  set_keepident: FALSE
 
   dna_model: "JC"
   outgroup: ""
