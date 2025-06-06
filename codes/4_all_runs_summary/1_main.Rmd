@@ -366,6 +366,13 @@ for (i in simulation) {
   fn_mstops <- paste0(params$outdir,"/",i,"/simulation/",i,".mstops")
 
   df_mstrees <- data.table::fread(fn_mstrees)
+  df_mstrees <- df_mstrees %>%
+    group_by(tree, group_run = data.table::rleid(topology)) %>%
+    summarise(length=sum(length)) %>%
+    arrange(group_run)
+  df_mstrees$group_run <- NULL
+  df_mstrees <- as.data.table(df_mstrees)
+
   df_mstops <- data.table::fread(fn_mstops)
 
   # read ms file
