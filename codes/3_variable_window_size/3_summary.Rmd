@@ -34,6 +34,13 @@ fn_windowdist_binned_tiff <- paste0(outdir_summary, params$prefix, ".wdist_binne
 ```{r sumwindow}
 # read ms topology file
 mtfile <- data.table::fread(fn_mstrees)
+mtfile <- mtfile %>%
+  group_by(tree, group_run = data.table::rleid(topology)) %>%
+  summarise(length=sum(length)) %>%
+  arrange(group_run)
+mtfile$group_run <- NULL
+mtfile <- as.data.table(mtfile)
+
 msfile <- data.table::fread(fn_mstops)
 
 # read now topology file
