@@ -365,7 +365,7 @@ for (i in simulation) {
 
   df_mstrees <- data.table::fread(fn_mstrees)
   df_mstrees <- df_mstrees %>%
-    group_by(tree, group_run = data.table::rleid(topology)) %>%
+    group_by(tree, group_run = data.table::rleid(tree)) %>%
     summarise(length=sum(length)) %>%
     arrange(group_run)
   df_mstrees$group_run <- NULL
