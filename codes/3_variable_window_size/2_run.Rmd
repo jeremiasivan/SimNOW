@@ -38,8 +38,12 @@ fn_dactops <- paste0(dac_outdir, params$prefix, ".dactops")
 options(scipen=999)
 
 # open data.table
-df_sum_now <- data.table::fread(fn_summary_now)
-best_wsize_aic <- df_sum_now$window_size[df_sum_now$aic==min(df_sum_now$aic)]
+best_wsize_aic <- params$init_wsize
+if (is.null(best_wsize_aic)) {
+  df_sum_now <- data.table::fread(fn_summary_now)
+  best_wsize_aic <- df_sum_now$window_size[df_sum_now$aic==min(df_sum_now$aic)]
+}
+
 write.table(paste0("Running DAC with a starting window size of ", best_wsize_aic, "bp"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 

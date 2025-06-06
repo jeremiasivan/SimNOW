@@ -29,7 +29,8 @@ params:
   dna_model: "JC"
   outgroup: ""
   
-  # NOW analysis
+  # DAC analysis
+  init_wsize: NULL
   division_prop: !r c(0.25, 0.5, 0.75)
 ---
 
