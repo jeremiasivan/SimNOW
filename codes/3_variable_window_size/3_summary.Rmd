@@ -90,15 +90,15 @@ if (nrow(smfile) > 1) {
   # convert the lengths into genomic positions
   mtfile_dist <- data.table::data.table(pos = seq(1, sum(mtfile$length)),
                                         len = rep(mtfile$length, times=mtfile$length),
-                                        type = "mstrees")
+                                        type = rep("mstrees", times=sum(mtfile$length)))
 
   msfile_dist <- data.table::data.table(pos = seq(1, sum(msfile$length)),
                                         len = rep(msfile$length, times=msfile$length),
-                                        type = "mstops")
+                                        type = rep("mstops", times=sum(mtfile$length)))
 
   smfile_dist <- data.table::data.table(pos = seq(1, sum(smfile$length)),
                                         len = rep(smfile$length, times=smfile$length)
-                                        type = "aic")
+                                        type = rep("aic", times=sum(mtfile$length)))
 
   # run linear model
   lm <- lm(smfile_dist$len ~ mtfile_dist$len+msfile_dist$len)
