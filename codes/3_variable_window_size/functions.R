@@ -112,19 +112,3 @@ f_extract_acc <- function(fn_cmp, fn_cmptw){
 
     return(list(acc=acc, rmse=rmse))
 }
-
-# function: partition the alignment into bins (code was generated using ChatGPT)
-# required library: dplyr
-f_bin_length_dist <- function(df, bin_start, bin_end, i) {
-  out <- df %>% mutate(overlap = pmax(0, pmin(stop, bin_end) - pmax(start, bin_start) + 1)) %>%
-          filter(overlap > 0) %>%
-          summarise(
-            bin = i,
-            bin_start = bin_start,
-            bin_end = bin_end,
-            bin_width = bin_end - bin_start + 1,
-            avg_length = sum(overlap * length) / sum(overlap)
-          )
-  
-  return(out)
-}
