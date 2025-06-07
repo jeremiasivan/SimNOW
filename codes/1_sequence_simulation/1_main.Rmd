@@ -117,30 +117,34 @@ options(scipen=999)
 # generate random seeds for ms
 randseed <- paste(sample(10000:99999,3), collapse=" ")
 
-# combine all ms parameters into one variable
-ms_command <- paste(params$msdir,
-                    params$ms_params, "-r", params$ms_r, params$ms_l, "-seeds", randseed,
-                    ">", fn_msfile)
+# check if there are multiple ms_r
+if (length(params$ms_r) > 1) {
+  for (i in 1:length(params$ms_r)) {
+    # write the msfile
+    write.table(paste(params$msdir, params$ms_params, "-r rmix", sum(params$ms_l), "-seeds", randseed, ">", fn_msfile),
+                file=fn_log, quote=F, row.names=F, col.names=F)
 
-# add ms command to logfile                    
-log_ms_command <- paste("Command:", ms_command)                   
-write.table(c(log_ms_command, ""),
-            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+    # run ms
+    temp_msfile <- paste0(fn_msfile, i)
+    f_ms(params$ms_params, params$ms_r[i], params$ms_l[i], params$prefix, temp_msfile, fn_log, fn_logger, params$redo, randseed, params$$msdir)
 
-# generate msfile
-if (file.exists(fn_msfile) && !params$redo) {
-  log4r::info(fn_logger, paste0("File found  : ", params$prefix, ".ms."))
+    # extract locus trees and topologies
+    temp_mstrees <- f_extract_locus_tree(temp_msfile)
+    temp_mstops <- f_extract_locus_topology(temp_msfile)
+
+    # update the data.frame
+    summary <- rbind(summary, temp_mstrees)
+    t_summary <- rbind(t_summary, temp_mstops)
+  }
+  
 } else {
-  system(ms_command)
-  log4r::info(fn_logger, paste0("File created: ", params$prefix, ".ms."))
+  # run ms
+  f_ms(params$ms_params, params$ms_r, params$ms_l, params$prefix, fn_msfile, fn_log, fn_logger, params$redo, randseed, params$$msdir)
+
+  # extract locus trees and topologies
+  summary <- f_extract_locus_tree(fn_msfile)
+  t_summary <- f_extract_locus_topology(summary)
 }
-
-# extract locus trees and topologies
-summary <- f_extract_locus_tree(fn_msfile)
-t_summary <- f_extract_locus_topology(summary)
-
-# print ms command in HTML document
-cat(log_ms_command)
 ```
 
 ### Locus trees and topologies from ms file {.tabset}

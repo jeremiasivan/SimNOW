@@ -42,9 +42,8 @@ mtfile$group_run <- NULL
 
 # add start and stop columns
 mtfile$length <- as.numeric(mtfile$length)
-mtfile <- mtfile %>% mutate(start = lag(cumsum(length), default = 0) + 1,
-                            stop = start + length - 1)
-mtfile <- data.table::as.data.table(mtfile)
+mtfile <- mtfile %>% mutate(start = lag(cumsum(length), default=0)+1,
+                            stop = start+length-1)
 
 msfile <- data.table::fread(fn_mstops)
 

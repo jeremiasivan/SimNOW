@@ -44,7 +44,25 @@ if (nthread / thread < 1) {
   stop("Invalid number of threads (nthread) vs thread per run (thread)")
 }
 
-temp_table <- expand.grid(seq = seq(1:nreps), rrate = ms_r)
+temp_table <- data.frame()
+if (typeof(ms_r) == "character" && file.exists(ms_r)) {
+  # read the table
+  df_ms <- data.table::fread(ms_r)
+
+  # iterate over r
+  iter <- 1
+  for (group in unique(df_ms$group)) {
+    temp_table <- rbind(temp_table, data.frame(seq=seq(iter:iter+nreps-1),
+                                               rrate=df_ms$ms_r[df_ms$grouping==group],
+                                               seqlen=df_ms$ms_l[df_ms$grouping==group]))
+    iter <- iter+nreps
+  } 
+
+} else {
+  temp_table <- expand.grid(seq = seq(1:nreps), rrate = ms_r, seqlen = ms_l)
+}
+
+# add ID
 temp_table$id <- rownames(temp_table)
 
 # create sets of parameters
@@ -63,7 +81,7 @@ for (i in 1:nrow(temp_table)) {
   
   tempsim <- list(out=out, params=list(prefix=prex,
                                        codedir=codedir, outdir=outdir, redo=redo,
-                                       msdir=msdir, ms_params=ms_params, ms_r=temp_table$rrate[i], ms_l=ms_l,
+                                       msdir=msdir, ms_params=ms_params, ms_r=temp_table$rrate[i], ms_l=temp_table$seqlen[i],
                                        iqtree2dir=iqtree2dir, alisim_model=alisim_model, alisim_scale=alisim_scale,
                                        copy_gaps=copy_gaps, src_aln=src_aln
                                        ))
