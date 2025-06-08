@@ -89,24 +89,24 @@ data.table::fwrite(df_output, file=fn_acc, quote=FALSE, sep="\t")
 ```
 
 ```{r sumvisualisation}
+# convert the lengths into genomic positions
+mtfile_dist <- data.table::data.table(pos = seq(1, sum(mtfile$length)),
+                                      len = rep(mtfile$length, times=mtfile$length),
+                                      type = "mstrees")
+
+msfile_dist <- data.table::data.table(pos = seq(1, sum(msfile$length)),
+                                      len = rep(msfile$length, times=msfile$length),
+                                      type = "mstops")
+
+smfile_dist <- data.table::data.table(pos = seq(1, sum(smfile$length)),
+                                      len = rep(smfile$length, times=smfile$length),
+                                      type = "aic")
+
 if (nrow(smfile) > 1) {
   # create an output data.frame
   df_cor <- data.table::data.table(mstrees_est = numeric(), mstrees_ste = numeric(), mstrees_p = numeric(),
-                                   mstops_est = numeric(), mstops_ste = numeric(), mstops_p = numeric(),
-                                   R2 = numeric())
-
-  # convert the lengths into genomic positions
-  mtfile_dist <- data.table::data.table(pos = seq(1, sum(mtfile$length)),
-                                        len = rep(mtfile$length, times=mtfile$length),
-                                        type = "mstrees")
-  
-  msfile_dist <- data.table::data.table(pos = seq(1, sum(msfile$length)),
-                                        len = rep(msfile$length, times=msfile$length),
-                                        type = "mstops")
-
-  smfile_dist <- data.table::data.table(pos = seq(1, sum(smfile$length)),
-                                        len = rep(smfile$length, times=smfile$length),
-                                        type = "aic")
+                                  mstops_est = numeric(), mstops_ste = numeric(), mstops_p = numeric(),
+                                  R2 = numeric())
 
   # run linear model
   if (nrow(mtfile) > 1 && nrow(msfile) > 1) {
@@ -130,7 +130,6 @@ if (nrow(smfile) > 1) {
                                                    mstops_est = ms_est, mstops_ste = ms_ste, mstops_p = ms_p,
                                                    R2 = r2))
 
-  
   } else if (nrow(mtfile) > 1 && nrow(msfile) <= 1) {
     lm <- lm(smfile_dist$len ~ mtfile_dist$len)
     lm_sum <- summary(lm)$coefficients
@@ -146,7 +145,7 @@ if (nrow(smfile) > 1) {
     df_cor <- rbind(df_cor, data.table::data.table(mstrees_est = mt_est, mstrees_ste = mt_ste, mstrees_p = mt_p, R2 = r2),
                     fill=TRUE)
 
-  } else if (nrow(mtfile) > 1 && nrow(msfile) <= 1) {
+  } else if (nrow(mtfile) <= 1 && nrow(msfile) > 1) {
     lm <- lm(smfile_dist$len ~ msfile_dist$len)
     lm_sum <- summary(lm)$coefficients
 
@@ -161,10 +160,10 @@ if (nrow(smfile) > 1) {
     df_cor <- rbind(df_cor, data.table::data.table(mstops_est = ms_est, mstops_ste = ms_ste, mstops_p = ms_p, R2 = r2),
                     fill=TRUE)
   }
-}
 
-# save the correlation result
-data.table::fwrite(df_cor, file=fn_corlm, quote=F, sep="\t")
+  # save the correlation result
+  data.table::fwrite(df_cor, file=fn_corlm, quote=F, sep="\t")
+}
 
 # combine all data.table
 df_dist <- data.table::as.data.table(rbind(mtfile_dist, msfile_dist, smfile_dist))
