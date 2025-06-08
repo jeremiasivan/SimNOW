@@ -38,9 +38,10 @@ fn_dactops <- paste0(dac_outdir, params$prefix, ".dactops")
 options(scipen=999)
 
 # open data.table
+df_sum_now <- data.table::fread(fn_summary_now)
+
 best_wsize_aic <- params$init_wsize
 if (is.null(best_wsize_aic)) {
-  df_sum_now <- data.table::fread(fn_summary_now)
   best_wsize_aic <- df_sum_now$window_size[df_sum_now$aic==min(df_sum_now$aic)]
 }
 
@@ -76,8 +77,6 @@ data.table::fwrite(df_aic, file=fn_iqtree_aic, row.names=F, col.names=T, quote=F
 
 ## Extract list of initial windows
 ```{r, include=FALSE}
-options(scipen=999)
-
 # open files
 df_ids <- data.table::fread(fn_iqtree_ids)
 df_aic <- data.table::fread(fn_iqtree_aic)
@@ -90,6 +89,8 @@ if (file.exists(fn_df_current) && !params$redo) {
   df_current <- data.table::fread(fn_df_current)
 
 } else {
+  options(scipen=999)
+
   # create doSNOW cluster
   nwcl <- makeCluster(params$thread)
   doSNOW::registerDoSNOW(nwcl)
@@ -114,6 +115,8 @@ if (file.exists(fn_df_current) && !params$redo) {
 
 ## Iterative division of the windows
 ```{r dac-division}
+options(scipen=999)
+
 iterator <- 0
 is_repeat <- TRUE
 
@@ -265,6 +268,8 @@ df_current$is_divided <- NULL
 
 ## Iterative merging of the windows
 ```{r dac-combine}
+options(scipen=999)
+
 # add new columns to the table
 df_current$is_combined <- TRUE
 

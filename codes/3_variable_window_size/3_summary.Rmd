@@ -90,11 +90,16 @@ data.table::fwrite(df_output, file=fn_acc, quote=FALSE, sep="\t")
 
 ```{r sumvisualisation}
 if (nrow(smfile) > 1) {
+  # create an output data.frame
+  df_cor <- data.table::data.table(mstrees_est = numeric(), mstrees_ste = numeric(), mstrees_p = numeric(),
+                                   mstops_est = numeric(), mstops_ste = numeric(), mstops_p = numeric(),
+                                   R2 = numeric())
+
   # convert the lengths into genomic positions
   mtfile_dist <- data.table::data.table(pos = seq(1, sum(mtfile$length)),
                                         len = rep(mtfile$length, times=mtfile$length),
                                         type = "mstrees")
-
+  
   msfile_dist <- data.table::data.table(pos = seq(1, sum(msfile$length)),
                                         len = rep(msfile$length, times=msfile$length),
                                         type = "mstops")
@@ -104,53 +109,88 @@ if (nrow(smfile) > 1) {
                                         type = "aic")
 
   # run linear model
-  lm <- lm(smfile_dist$len ~ mtfile_dist$len+msfile_dist$len)
-  lm_sum <- summary(lm)$coefficients
+  if (nrow(mtfile) > 1 && nrow(msfile) > 1) {
+    lm <- lm(smfile_dist$len ~ mtfile_dist$len+msfile_dist$len)
+    lm_sum <- summary(lm)$coefficients
 
-  # extract important values
-  mt_est <- round(lm_sum["mtfile_dist$len", "Estimate"], 3)
-  ms_est <- round(lm_sum["msfile_dist$len", "Estimate"], 3)
+    # extract important values
+    mt_est <- round(lm_sum["mtfile_dist$len", "Estimate"], 3)
+    ms_est <- round(lm_sum["msfile_dist$len", "Estimate"], 3)
 
-  mt_ste <- lm_sum["mtfile_dist$len", "Std. Error"]
-  ms_ste <- lm_sum["msfile_dist$len", "Std. Error"]
+    mt_ste <- lm_sum["mtfile_dist$len", "Std. Error"]
+    ms_ste <- lm_sum["msfile_dist$len", "Std. Error"]
 
-  mt_p <- round(lm_sum["mtfile_dist$len", "Pr(>|t|)"], 3)
-  ms_p <- round(lm_sum["msfile_dist$len", "Pr(>|t|)"], 3)
+    mt_p <- round(lm_sum["mtfile_dist$len", "Pr(>|t|)"], 3)
+    ms_p <- round(lm_sum["msfile_dist$len", "Pr(>|t|)"], 3)
 
-  r2 <- round(summary(lm)$r.squared, 3)
+    r2 <- round(summary(lm)$r.squared, 3)
 
-  # save the correlation result
-  df_cor <- data.table::data.table(mstrees_est = mt_est, mstrees_ste = mt_ste, mstrees_p = mt_p,
-                                  mstops_est = ms_est, mstops_ste = ms_ste, mstops_p = ms_p,
-                                  R2 = r2)
-  data.table::fwrite(df_cor, file=fn_corlm, quote=F, sep="\t")
+    # update data.frame
+    df_cor <- rbind(df_cor, data.table::data.table(mstrees_est = mt_est, mstrees_ste = mt_ste, mstrees_p = mt_p,
+                                                   mstops_est = ms_est, mstops_ste = ms_ste, mstops_p = ms_p,
+                                                   R2 = r2))
 
-  # combine all data.table
-  df_dist <- data.table::as.data.table(rbind(mtfile_dist, msfile_dist, smfile_dist))
-  df_dist$type <- factor(df_dist$type, levels=c("mstrees","mstops","aic"))
+  
+  } else if (nrow(mtfile) > 1 && nrow(msfile) <= 1) {
+    lm <- lm(smfile_dist$len ~ mtfile_dist$len)
+    lm_sum <- summary(lm)$coefficients
 
-  # visualisation
-  plot <- ggplot(df_dist, aes(x=pos, y=len, colour=type, xmin=0, xmax=max(df_dist$pos))) +
-    geom_line(linewidth=2, alpha=0.8) +
-    geom_hline(yintercept=as.numeric(best_wsize_aic), linewidth=2, linetype=5) +
-    scale_y_log10(labels=scales::label_number(trim = TRUE, accuracy = NULL)) +
-    scale_colour_manual(values=c("#619CFF","#00BA38", "#F8766D")) +
-    xlab("Genome Position (bp)") + ylab("Block Length (bp)") +
-    theme(
-        axis.title.x=element_text(size=40),
-        axis.title.y=element_text(size=40),
-        axis.text.y=element_text(size=30),
-        axis.text.x=element_text(size=30),
-        strip.text=element_text(size=30),
-        legend.title=element_text(size=30),
-        legend.text=element_text(size=30),
-        legend.key.size=unit(2,"cm")
-      )
+    # extract important values
+    mt_est <- round(lm_sum["mtfile_dist$len", "Estimate"], 3)
+    mt_ste <- lm_sum["mtfile_dist$len", "Std. Error"]
+    mt_p <- round(lm_sum["mtfile_dist$len", "Pr(>|t|)"], 3)
 
-  tiff(filename=fn_windowdist_tiff, units="px", width=3840, height=1080)
-  print(plot)
-  dev.off()
+    r2 <- round(summary(lm)$r.squared, 3)
 
-  rm(mtfile_dist, msfile_dist, smfile_dist, df_dist)
+    # update data.frame
+    df_cor <- rbind(df_cor, data.table::data.table(mstrees_est = mt_est, mstrees_ste = mt_ste, mstrees_p = mt_p, R2 = r2),
+                    fill=TRUE)
+
+  } else if (nrow(mtfile) > 1 && nrow(msfile) <= 1) {
+    lm <- lm(smfile_dist$len ~ msfile_dist$len)
+    lm_sum <- summary(lm)$coefficients
+
+    # extract important values
+    ms_est <- round(lm_sum["msfile_dist$len", "Estimate"], 3)
+    ms_ste <- lm_sum["msfile_dist$len", "Std. Error"]
+    ms_p <- round(lm_sum["msfile_dist$len", "Pr(>|t|)"], 3)
+
+    r2 <- round(summary(lm)$r.squared, 3)
+
+    # update data.frame
+    df_cor <- rbind(df_cor, data.table::data.table(mstops_est = ms_est, mstops_ste = ms_ste, mstops_p = ms_p, R2 = r2),
+                    fill=TRUE)
+  }
 }
+
+# save the correlation result
+data.table::fwrite(df_cor, file=fn_corlm, quote=F, sep="\t")
+
+# combine all data.table
+df_dist <- data.table::as.data.table(rbind(mtfile_dist, msfile_dist, smfile_dist))
+df_dist$type <- factor(df_dist$type, levels=c("mstrees","mstops","aic"))
+
+# visualisation
+plot <- ggplot(df_dist, aes(x=pos, y=len, colour=type, xmin=0, xmax=max(df_dist$pos))) +
+  geom_line(linewidth=2, alpha=0.8) +
+  geom_hline(yintercept=as.numeric(best_wsize_aic), linewidth=2, linetype=5) +
+  scale_y_log10(labels=scales::label_number(trim = TRUE, accuracy = NULL)) +
+  scale_colour_manual(values=c("#619CFF","#00BA38", "#F8766D")) +
+  xlab("Genome Position (bp)") + ylab("Block Length (bp)") +
+  theme(
+      axis.title.x=element_text(size=40),
+      axis.title.y=element_text(size=40),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text=element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+tiff(filename=fn_windowdist_tiff, units="px", width=3840, height=1080)
+print(plot)
+dev.off()
+
+rm(mtfile_dist, msfile_dist, smfile_dist, df_dist)
 ```

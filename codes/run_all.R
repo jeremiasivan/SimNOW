@@ -36,6 +36,8 @@ window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,5000
 
 # divide-and-conquer
 exe_seqkit <- "seqkit"
+
+init_wsize <- 100000
 division_prop <- c(0.25, 0.5, 0.75)
 
 #################################
@@ -97,7 +99,7 @@ for (i in 1:nrow(temp_table)) {
                                        codedir=codedir, outdir=outdir, thread=thread, redo=redo,
                                        exe_seqkit=exe_seqkit,
                                        iqtree2dir=iqtree2dir, set_model=set_model, set_keepident=set_keepident, set_blmin=set_blmin, dna_model=dna_model, outgroup=outgroup,
-                                       division_prop=division_prop
+                                       init_wsize=init_wsize, division_prop=division_prop
                                        ))                                     
 
   repsim <- append(repsim, list(tempsim))
