@@ -54,11 +54,14 @@ if (typeof(ms_r) == "character" && file.exists(ms_r)) {
   # iterate over r
   iter <- 1
   for (group in unique(df_ms$group)) {
-    temp_table <- rbind(temp_table, data.frame(seq=seq(iter:iter+nreps-1),
-                                               rrate=df_ms$ms_r[df_ms$grouping==group],
-                                               seqlen=df_ms$ms_l[df_ms$grouping==group]))
-    iter <- iter+nreps
-  } 
+    for (i in 1:nreps) {
+      temp_table <- rbind(temp_table, data.frame(seq=i,
+                                                 rrate=I(list(df_ms$ms_r[df_ms$grouping==group])),
+                                                 seqlen=I(list(df_ms$ms_l[df_ms$grouping==group]))
+                                                 ))
+      iter <- iter+1
+    }
+  }
 
 } else {
   temp_table <- expand.grid(seq = seq(1:nreps), rrate = ms_r, seqlen = ms_l)
@@ -83,7 +86,7 @@ for (i in 1:nrow(temp_table)) {
   
   tempsim <- list(out=out, params=list(prefix=prex,
                                        codedir=codedir, outdir=outdir, redo=redo,
-                                       msdir=msdir, ms_params=ms_params, ms_r=temp_table$rrate[i], ms_l=temp_table$seqlen[i],
+                                       msdir=msdir, ms_params=ms_params, ms_r=unlist(temp_table$rrate[i]), ms_l=unlist(temp_table$seqlen[i]),
                                        iqtree2dir=iqtree2dir, alisim_model=alisim_model, alisim_scale=alisim_scale,
                                        copy_gaps=copy_gaps, src_aln=src_aln
                                        ))

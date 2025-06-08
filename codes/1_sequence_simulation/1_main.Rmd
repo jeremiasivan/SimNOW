@@ -126,7 +126,7 @@ if (length(params$ms_r) > 1) {
 
     # run ms
     temp_msfile <- paste0(fn_msfile, i)
-    f_ms(params$ms_params, params$ms_r[i], params$ms_l[i], params$prefix, temp_msfile, fn_log, fn_logger, params$redo, randseed, params$$msdir)
+    f_ms(params$ms_params, params$ms_r[i], params$ms_l[i], params$prefix, temp_msfile, fn_log, fn_logger, params$redo, randseed, params$msdir)
 
     # extract locus trees and topologies
     temp_mstrees <- f_extract_locus_tree(temp_msfile)
@@ -139,7 +139,7 @@ if (length(params$ms_r) > 1) {
   
 } else {
   # run ms
-  f_ms(params$ms_params, params$ms_r, params$ms_l, params$prefix, fn_msfile, fn_log, fn_logger, params$redo, randseed, params$$msdir)
+  f_ms(params$ms_params, params$ms_r, params$ms_l, params$prefix, fn_msfile, fn_log, fn_logger, params$redo, randseed, params$msdir)
 
   # extract locus trees and topologies
   summary <- f_extract_locus_tree(fn_msfile)

@@ -98,7 +98,7 @@ if (file.exists(fn_df_current) && !params$redo) {
   # save the AIC per window
   df_current <- foreach (window = ls_windows, .combine='rbind') %dopar% {
     # input files
-    fn_fasta <- paste0(getwd(), "/windows/", best_wsize_aic, "/alignment/", window)
+    fn_fasta <- paste0(getwd(), "/windows/", format(best_wsize_aic, scientific=F), "/alignment/", window)
 
     # calculate AIC
     id <- df_ids$ID[df_ids$Name==window]
