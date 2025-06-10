@@ -70,8 +70,6 @@ if (!all(file.exists(fn_cmp, fn_cmptw)) || params$redo) {
 
   # compare weights between ms and NOW topologies
   f_compare_topology_weight(msfile, smfile, mstree_uq, sum(smfile$length), fn_cmptw)
-
-  rm(msfile)
 }
 
 # extract accuracy

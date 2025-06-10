@@ -117,25 +117,33 @@ options(scipen=999)
 # generate random seeds for ms
 randseed <- paste(sample(10000:99999,3), collapse=" ")
 
+# output data.frame
+summary <- data.table::data.table()
+t_summary <- data.table::data.table()
+
 # check if there are multiple ms_r
 if (length(params$ms_r) > 1) {
-  for (i in 1:length(params$ms_r)) {
-    # write the msfile
-    write.table(paste(params$msdir, params$ms_params, "-r rmix", sum(params$ms_l), "-seeds", randseed, ">", fn_msfile),
-                file=fn_log, quote=F, row.names=F, col.names=F)
+  # write the msfile
+  write.table(paste(params$msdir, params$ms_params, "-r rmix", sum(params$ms_l), "-seeds", randseed),
+              file=fn_msfile, quote=F, row.names=F, col.names=F)
 
+  for (i in 1:length(params$ms_r)) {
     # run ms
     temp_msfile <- paste0(fn_msfile, i)
     f_ms(params$ms_params, params$ms_r[i], params$ms_l[i], params$prefix, temp_msfile, fn_log, fn_logger, params$redo, randseed, params$msdir)
 
     # extract locus trees and topologies
     temp_mstrees <- f_extract_locus_tree(temp_msfile)
-    temp_mstops <- f_extract_locus_topology(temp_msfile)
+    temp_mstops <- f_extract_locus_topology(temp_mstrees)
 
     # update the data.frame
     summary <- rbind(summary, temp_mstrees)
     t_summary <- rbind(t_summary, temp_mstops)
   }
+
+  # update the start and stop position
+  summary <- summary %>% mutate(start = lag(cumsum(length), default=0)+1, stop = start+length-1)
+  t_summary <- t_summary %>% mutate(start = lag(cumsum(length), default=0)+1, stop = start+length-1)
   
 } else {
   # run ms

@@ -55,9 +55,9 @@ if (typeof(ms_r) == "character" && file.exists(ms_r)) {
   iter <- 1
   for (group in unique(df_ms$group)) {
     for (i in 1:nreps) {
-      temp_table <- rbind(temp_table, data.frame(seq=i,
-                                                 rrate=I(list(df_ms$ms_r[df_ms$grouping==group])),
-                                                 seqlen=I(list(df_ms$ms_l[df_ms$grouping==group]))
+      temp_table <- rbind(temp_table, data.frame(seq=iter,
+                                                 rrate=I(list(df_ms$ms_r[df_ms$group==group])),
+                                                 seqlen=I(list(df_ms$ms_l[df_ms$group==group]))
                                                  ))
       iter <- iter+1
     }
