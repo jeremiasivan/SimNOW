@@ -76,7 +76,7 @@ for (i in simulation) {
 
   # extract recombination rate
   command <- strsplit(system(paste("grep 'ms'",fn_ms), intern=T), " ")
-  rrate <- as.numeric(command[[1]][match("-r", command[[1]]) + 1])
+  rrate <- command[[1]][match("-r", command[[1]]) + 1]
   
   # add the simulation details onto the big table
   sumfile <- data.table::data.table("simulation" = rep(i, nrow(sumfile)), sumfile, "r" = rep(rrate,nrow(sumfile)))
