@@ -31,7 +31,8 @@ params:
   outgroup: ""
   
   # NOW analysis
-  outdir_stepwise_now_filtered: ""
+  input_aln: ""
+  init_wsize: 50000
   division_prop: !r c(0.25, 0.5, 0.75)
 
 ---
@@ -48,7 +49,8 @@ library(ggplot2)
 sys_tic <- Sys.time()
 
 # load libraries
-source(paste0(params$codedir, "/stepwise_now/functions.R"), local=TRUE)
+source(paste0(params$codedir, "/1_stepwise_now/functions.R"), local=TRUE)
+source(paste0(params$codedir, "/2_variable_window_size/functions.R"), local=TRUE)
 
 # create outdir
 currentdir <- paste0(params$outdir, "/", params$prefix)
