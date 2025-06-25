@@ -33,7 +33,7 @@ if (tolower(params$bootstrap_type) == "ufboot") {
 }
 ```
 
-```{r window-aln, include=FALSE, eval=is_generate_window_alignment}
+```{r window-aln, include=FALSE}
 write.table(c("",
               "---------- Window Alignment --------"),
               file=fn_log, quote=F, row.names=F, col.names=F, append=T)
@@ -274,230 +274,14 @@ stopCluster(nwcl)
 df_current$is_divided <- NULL
 ```
 
-```{r dac-combine, include=FALSE, eval=FALSE}
-# add new columns to the table
-df_current$is_combined <- rep(TRUE, nrow(df_current))
-df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
-
-# exclude windows with NA AIC
-df_current$is_combined <- ifelse(is.na(df_current$aic), FALSE, TRUE)
-
-# create doSNOW cluster
-nwcl <- makeCluster(params$thread)
-doSNOW::registerDoSNOW(nwcl)
-
-# iterate over windows
-df_output <- foreach (wname = unique(df_current$basewindow), .combine='rbind') %dopar% {
-  df_subset <- df_current[df_current$basewindow == wname,]
-
-  # output directory
-  dir_output <- paste0(outdir_combine, wname, "/")
-  if (!dir.exists(dir_output)) {
-    dir.create(dir_output, recursive=T)
-  }
-
-  # set initial values
-  is_repeat <- TRUE
-  iterator <- 0
-
-  # skip the iteration if all windows cannot be merged together
-  while (is_repeat == TRUE) {
-    # update iterator
-    iterator <- iterator + 1
-    iterator_padded <- paste0(formatC(iterator, width=2, format="d", flag="0"))
-    iterator_padded_id <- paste0("m",iterator_padded)
-
-    # return data.frame if there is only one row
-    fn_output_wname <- paste0(dir_output, "summary_aic_iter", iterator_padded, ".tsv")
-    if (nrow(df_subset) == 1) {
-      if (!file.exists(fn_output_wname) || params$redo) {
-        data.table::fwrite(df_subset, file=fn_output_wname, row.names=F, col.names=T, quote=F, sep="\t")
-      }
-
-      is_repeat <- FALSE
-      break
-    }
-
-    # output data.frame
-    if (file.exists(fn_output_wname) && !params$redo) {
-      df_subset <- data.table::fread(fn_output_wname)
-      next
-    }
-
-    # check if all windows cannot be merged
-    if (all(df_subset$is_combined == FALSE)) {
-      is_repeat <- FALSE
-      break
-    }
-
-    # extract the first row
-    df_subset_out <- df_subset[1,]
-
-    # output directory
-    dir_output_iter <- paste0(dir_output, "iter", iterator_padded, "/")
-    if (!dir.exists(dir_output_iter)) {
-      dir.create(dir_output_iter, recursive=T)
-    }
-
-    # iterate over windows
-    for (i in 2:nrow(df_subset)) {
-      # last merged entry
-      j <- nrow(df_subset_out)
-
-      # check if the two windows can be merged
-      if (df_subset_out$is_combined[j] == FALSE && df_subset$is_combined[i] == FALSE) {
-        df_subset_out <- rbind(df_subset_out, df_subset[i,])
-        next
-      }
-
-      # FASTA file
-      fn_combined_fasta <- paste0(dir_output_iter, df_subset_out$window[j], "_", df_subset$window[i], ".fa")
-      if (!file.exists(fn_combined_fasta) || params$redo) {
-        # combine sequence
-        system(paste(params$exe_seqkit, "concat --full", df_subset_out$dir[j], df_subset$dir[i], ">", fn_combined_fasta))
-      }
-
-      # read FASTA file
-      seq_len <- df_subset_out$length[j]+df_subset$length[i]
-
-      # output files
-      fn_iqtree <- paste0(fn_combined_fasta, ".iqtree")
-      if (!file.exists(fn_iqtree) || params$redo) {
-        f_iqtree2_single(fn_combined_fasta, "", seq_len, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
-      }
-
-      # extract AIC
-      out <- f_window_tree_aic(fn_iqtree)
-      aic <- (2 * out$freeparams) - (2 * out$logl)
-
-      # compare AIC
-      if (aic < df_subset_out$aic[j]+df_subset$aic[i]) {
-        df_subset_out[j,] <- list(iter=iterator_padded_id, window=df_subset_out$window[j], length=seq_len, aic=aic, dir=fn_combined_fasta, is_combined=TRUE, basewindow=wname)
-      } else {
-        df_subset$is_combined[i] <- FALSE
-        df_subset_out$is_combined[j] <- FALSE
-        df_subset_out <- rbind(df_subset_out, df_subset[i,])
-      }
-    }
-
-    df_subset <- df_subset_out
-    data.table::fwrite(df_subset, file=fn_output_wname, row.names=F, col.names=T, quote=F, sep="\t")
-  }
-
-  return(df_subset)
-}
-
-stopCluster(nwcl)
-log4r::info(fn_logger, paste("Merging: Individual Windows Finished!"))
-
-# ----------------- MERGING INTER-WINDOWS -----------------
-# output directory
-dir_output <- paste0(outdir_combine, "breakpoints/")
-if (!dir.exists(dir_output)) {
-  dir.create(dir_output, recursive=T)
-}
-
-# set initial values
-is_repeat <- TRUE
-iterator <- 0
-
-# skip the iteration if all windows cannot be merged together
-while (is_repeat == TRUE) {
-  # update iterator
-  iterator <- iterator + 1
-  iterator_padded <- paste0(formatC(iterator, width=2, format="d", flag="0"))
-  iterator_padded_id <- paste0("b",iterator_padded)
-
-  # output data.frame
-  fn_output_wname <- paste0(dir_output, "summary_aic_iter", iterator_padded, ".tsv")
-  if (file.exists(fn_output_wname) && !params$redo) {
-    df_output <- data.table::fread(fn_output_wname)
-    next
-  }
-
-  # check if all windows cannot be merged
-  if (all(df_output$is_combined == FALSE) && iterator != 1) {
-    is_repeat <- FALSE
-    break
-  }
-
-  # extract the first row
-  df_current <- df_output[1,]
-
-  # output directory
-  dir_output_iter <- paste0(dir_output, "iter", iterator_padded, "/")
-  if (!dir.exists(dir_output_iter)) {
-    dir.create(dir_output_iter, recursive=T)
-  }
-
-  # iterate over window breakpoints
-  for (i in 2:nrow(df_output)) {
-    # last merged entry
-    j <- nrow(df_current)
-
-    # extract window
-    basewindow_one <- paste(unlist(strsplit(df_current$window[j], split="_"))[1:2], collapse="_")
-    basewindow_two <- paste(unlist(strsplit(df_output$window[i], split="_"))[1:2], collapse="_")
-    basewindow_one_num <- as.numeric(unlist(strsplit(df_current$window[j], split="_"))[2])
-    basewindow_two_num <- as.numeric(unlist(strsplit(df_output$window[i], split="_"))[2])
-
-    if (basewindow_two_num != basewindow_one_num || any(c(df_current$is_combined[j],df_output$is_combined[i]))) {
-      fn_combined_fasta <- paste0(dir_output_iter, df_current$window[j], "_", df_output$window[i], ".fa")
-      if (!file.exists(fn_combined_fasta) || params$redo) {
-        # combine sequence
-        system(paste(params$exe_seqkit, "concat --full", df_current$dir[j], df_output$dir[i], ">", fn_combined_fasta))
-      }
-
-      # read FASTA file
-      seq_len <- df_current$length[j]+df_output$length[i]
-
-      # output files
-      fn_iqtree <- paste0(fn_combined_fasta, ".iqtree")
-      if (!file.exists(fn_iqtree) || params$redo) {
-        f_iqtree2_single(fn_combined_fasta, NULL, seq_len, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
-      }
-
-      # extract AIC
-      out <- f_window_tree_aic(fn_iqtree)
-      aic <- (2 * out$freeparams) - (2 * out$logl)
-
-      # compare AIC
-      if (aic < df_current$aic[j]+df_output$aic[i]) {
-        df_current[j,] <- list(iter=iterator_padded_id, window=df_current$window[j], length=seq_len, aic=aic, dir=fn_combined_fasta, is_combined=TRUE, basewindow=basewindow_one)
-      } else {
-        df_output$is_combined[i] <- FALSE
-        df_current$is_combined[j] <- FALSE
-        df_current <- rbind(df_current, df_output[i,])
-      }
-    } else {
-      df_output$is_combined[i] <- FALSE
-      df_current$is_combined[j] <- FALSE
-      df_current <- rbind(df_current, df_output[i,])
-    }
-  }
-
-  df_output <- df_current
-  data.table::fwrite(df_output, file=fn_output_wname, row.names=F, col.names=T, quote=F, sep="\t")
-}
-
-# update data.frame
-df_current <- df_output %>%
-                group_by(basewindow) %>%
-                mutate(freq=formatC(row_number(), width=2, format="d", flag="0")) %>%
-                ungroup() %>%
-                mutate(window=paste(basewindow, freq, sep="_")) %>%
-                select(-basewindow, -freq, -is_combined)
-
-# save data.frame
-data.table::fwrite(df_current, file=fn_summary, row.names=F, col.names=T, quote=F, sep="\t")
-log4r::info(fn_logger, "Merging Finished!")
-```
-
 ```{r dac-combine-v2}
 options(scipen=999)
 
 # add new columns to the table
 df_current$is_combined <- TRUE
+
+# exclude windows with NA AIC
+df_current$is_combined <- ifelse(is.na(df_current$aic), FALSE, TRUE)
 
 # create doSNOW cluster
 nwcl <- makeCluster(params$thread)
@@ -533,14 +317,14 @@ while (is_repeat == TRUE) {
     df_temp <- NULL
 
     if (df_current$is_combined[i]) {
-      if (i != nrow(df_current)) {
+      if (i != nrow(df_current) && !is.na(df_current$aic[i+1])) {
         wcombine <- paste0(df_current$window[i], "x", gsub("window_","",df_current$window[i+1]))
         df_temp <- rbind(df_temp, data.table::data.table(window_one=df_current$window[i], window_two=df_current$window[i+1],
                                                          aic_one=df_current$aic[i], aic_two=df_current$aic[i+1],
                                                          dir_one=df_current$dir[i], dir_two=df_current$dir[i+1], window_combine=wcombine))
       }
       
-      if (i != 1) {
+      if (i != 1 && !is.na(df_current$aic[i-1])) {
         wcombine <- paste0(df_current$window[i-1], "x", gsub("window_","",df_current$window[i]))
         df_temp <- rbind(df_temp, data.table::data.table(window_one=df_current$window[i-1], window_two=df_current$window[i],
                                                         aic_one=df_current$aic[i-1], aic_two=df_current$aic[i],
@@ -675,6 +459,11 @@ df_topology <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
     } else {
       f_iqtree2_single(fn_fasta, params$outgroup, df_current$length[i], params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
     }
+  }
+
+  # check if .treefile is not available
+  if (!file.exists(fn_treefile)) {
+    return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], topology=NA, is_highbs=FALSE))
   }
 
   # extract topology
