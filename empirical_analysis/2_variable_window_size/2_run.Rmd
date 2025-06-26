@@ -19,9 +19,10 @@ lapply(list(outdir_fasta, outdir_division, outdir_combine, outdir_final), functi
 prefix_division_summary <- paste0(outdir_division, "summary_aic_iter")
 prefix_combine_summary <- paste0(outdir_combine, "summary_aic_iter")
 
-fn_summary <- paste0(getwd(), "/summary.tsv")
-fn_topology_all <- paste0(getwd(), "/topology_all.tsv")
-fn_topology_highbs <- paste0(getwd(), "/topology_highbs.tsv")
+fn_summary <- paste0(getwd(), "/", params$prefix, ".dacsum")
+fn_topology <- paste0(getwd(), "/", params$prefix, ".dactops")
+fn_topology_all <- paste0(getwd(), "/", params$prefix, "_all.uqtops")
+fn_topology_highbs <- paste0(getwd(), "/", params$prefix, "_highbs.uqtops")
 
 fn_position_wsize <- paste0(getwd(), "/position_wsize.tiff")
 fn_midpos_wsize <- paste0(getwd(), "/midpos_wsize.tiff")
@@ -497,6 +498,9 @@ for (i in unique(df_topology$topology)) {
   }
 }
 
+# save data.frame
+data.table::fwrite(df_topology, file=fn_topology, row.names=F, col.names=T, quote=F, sep="\t")
+
 # summarise frequency
 df_topology_all <- df_topology %>%
     group_by(topology) %>%
@@ -515,7 +519,7 @@ data.table::fwrite(df_topology_all, file=fn_topology_all, row.names=F, col.names
 data.table::fwrite(df_topology_highbs, file=fn_topology_highbs, row.names=F, col.names=T, quote=F, sep="\t")
 ```
 
-```{r dac-visualisation}
+```{r dac-visualisation, eval=FALSE}
 # create a new dataframe for visualisation
 df_visualisation <- data.frame(x=0, wname="window_NA", wsize=0)
 for (i in 1:nrow(df_current)) {
