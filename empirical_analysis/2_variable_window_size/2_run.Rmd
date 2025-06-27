@@ -488,6 +488,11 @@ for (i in unique(df_topology$topology)) {
       next
     }
 
+    # skip the comparison if NA
+    if (is.na(i) || is.na(j)) {
+      next
+    }
+
     # update topology name if equal
     if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = i)), ape::unroot(ape::read.tree(text = j)))) {
       df_topology[, topology := gsub(i, j, topology, fixed = TRUE)]
