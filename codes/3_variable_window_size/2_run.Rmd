@@ -345,7 +345,7 @@ while (is_repeat == TRUE) {
     fn_combined_fasta <- paste0(dir_output_iter, df_combine_now$window_one[i], "_", df_combine_now$window_two[i], ".fa")
     if (!file.exists(fn_combined_fasta) || params$redo) {
       # combine sequence
-      system(paste(params$exe_seqkit, "concat", df_combine_now$dir_one[i], df_combine_now$dir_two[i], ">", fn_combined_fasta))
+      system(paste(params$exe_seqkit, "concat --full", df_combine_now$dir_one[i], df_combine_now$dir_two[i], ">", fn_combined_fasta))
     }
 
     # read FASTA file
