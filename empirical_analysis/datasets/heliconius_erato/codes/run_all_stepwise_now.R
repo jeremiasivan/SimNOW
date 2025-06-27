@@ -18,6 +18,8 @@ dir_singleCopy <- "~/getSingleCopy.py"
 dir_mafsort <- "~/maf-sort.sh"
 dir_msaview <- "~/msa_view"
 
+gaps_threshold <- 0.5
+
 # stepwise_now
 prefix <- ""
 dir_iqtree2 <- "~/iqtree2"
@@ -47,7 +49,8 @@ if (nthread / thread < 1) {
 rmarkdown::render(input=paste0(codedir,"/datasets/heliconius_erato/codes/data_preparation.Rmd"),
                   output_file=paste0(outdir,"/heliconius.html"),
                   params=list(fn_hal=fn_hal, fn_refseq=fn_refseq, thread=thread, outdir=outdir, redo=redo,
-                              dir_hal2maf=dir_hal2maf, dir_singleCopy=dir_singleCopy, dir_mafsort=dir_mafsort, dir_msaview=dir_msaview),
+                              dir_hal2maf=dir_hal2maf, dir_singleCopy=dir_singleCopy, dir_mafsort=dir_mafsort, dir_msaview=dir_msaview,
+                              gaps_threshold=gaps_threshold),
                   quiet=TRUE)
 
 # run NOW on every chromosome
