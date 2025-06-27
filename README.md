@@ -1,6 +1,6 @@
 # SimNOW
 
-**SimNOW (Simulation Non-Overlapping Windows)** is an R pipeline to assess the accuracy of non-overlapping windows analysis in simulated phylogenetic studies. It consists of two main steps: sequence simulation and non-overlapping window analysis. It is mainly developed and tested using MacOS and Linux, so there might be incompatibilities using Windows.
+**SimNOW (Simulation Non-Overlapping Windows)** is an R pipeline to assess the accuracy of non-overlapping windows analysis in simulated phylogenetic studies. It consists of two main steps: sequence simulation and non-overlapping window analyses using: one fixed window size and/or variable window sizes. It is mainly developed and tested using MacOS and Linux, so there might be incompatibilities using Windows.
 
 ## Table of Content
 - <a href="#prereqs">Prerequisites</a>
@@ -16,6 +16,7 @@ This pipeline requires several software and R packages to run. All software have
 - <a href="http://home.uchicago.edu/~rhudson1/source/mksamples.html">ms</a>
 - <a href="http://www.iqtree.org/doc/AliSim">AliSim</a>
 - <a href="http://www.iqtree.org">IQ-TREE 2</a>
+- <a href="https://bioinf.shenwei.me/seqkit/">SeqKit</a>
 
 ### R packages
 |    Name    |                               CRAN                               |                             Anaconda                             |
@@ -58,7 +59,8 @@ This pipeline requires several software and R packages to run. All software have
     ```
     Rscript -e "rmarkdown::render('~/SimNOW/codes/1_sequence_simulation/1_main.Rmd')"
     Rscript -e "rmarkdown::render('~/SimNOW/codes/2_non_overlapping_window/1_main.Rmd')"
-    Rscript -e "rmarkdown::render('~/SimNOW/codes/3_all_runs_summary/1_main.Rmd')"
+    Rscript -e "rmarkdown::render('~/SimNOW/codes/3_variable_window_size/1_main.Rmd')"
+    Rscript -e "rmarkdown::render('~/SimNOW/codes/4_all_runs_summary/1_main.Rmd')"
     ```
 
     For running the whole pipeline:
@@ -71,7 +73,8 @@ This pipeline requires several software and R packages to run. All software have
 ## <a id="timecom">Time Complexity</a>
 Running the whole pipeline with the second scenario (see <a href="/codes/README.md#example">here</a>) using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step per replicate is as follows:
 - Sequence simulation: up to 1 hour for `ms_r = 2000`
-- Non-overlapping windows: ~2.25 hours
+- Non-overlapping windows with one fixed window size: ~2.25 hours
+- Non-overlapping windows with variable window sizes: ~1.25 hours
 
 ## <a id="emps">Empirical Analyses</a>
 In order to run non-overlapping windows on empirical datasets, please refer to <a href="empirical_analysis/README.md">`empirical_analysis/README.md`</a>. There are additional software and R packages required to run the pipeline.
@@ -97,11 +100,13 @@ In order to run non-overlapping windows on empirical datasets, please refer to <
 
 3. Minh, B.Q., et al. (<a href="https://doi.org/10.1093/molbev/msaa015">2020</a>). **IQ-TREE 2: New Models and Efficient Methods for Phylogenetic Inference in the Genomic Era**. *Molecular Biology and Evolution*, *37*(5), 1530–1534.
 
-4. Edelman, et al. (<a href="https://doi.org/10.1126/science.aaw2090">2019</a>). **Genomic architecture and introgression shape a butterfly radiation**. *Science*, *366*(6465), 594–599.
+4. Shen et al. (<a href="https://doi.org/10.1371/journal.pone.0163962">2016</a>). **SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation**. *PLOS ONE*, *11*(10), e0163962.
 
-5. Hickey, et al. (<a href="https://doi.org/10.1093/bioinformatics/btt128">2013</a>). **HAL: a hierarchical format for storing and analyzing multiple genome alignments**. *Bioinformatics*, *29*(10), 1341–1342.
+5. Edelman, et al. (<a href="https://doi.org/10.1126/science.aaw2090">2019</a>). **Genomic architecture and introgression shape a butterfly radiation**. *Science*, *366*(6465), 594–599.
 
-6. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). **PHAST and RPHAST: phylogenetic analysis with space/time models**. *Briefings in Bioinformatics*, *12*(1), 41–51.
+6. Hickey, et al. (<a href="https://doi.org/10.1093/bioinformatics/btt128">2013</a>). **HAL: a hierarchical format for storing and analyzing multiple genome alignments**. *Bioinformatics*, *29*(10), 1341–1342.
+
+7. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). **PHAST and RPHAST: phylogenetic analysis with space/time models**. *Briefings in Bioinformatics*, *12*(1), 41–51.
 
 ---
-*Last update: 14 December 2023 by Jeremias Ivan*
+*Last update: 27 June 2025 by Jeremias Ivan*
