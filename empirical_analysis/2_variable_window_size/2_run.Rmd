@@ -484,12 +484,13 @@ stopCluster(nwcl)
 ls_topology <- unique(df_topology$topology)
 for (i in unique(df_topology$topology)) {
   for (j in ls_topology) {
-    if (i == j) {
+    # skip the comparison if NA
+    if (is.na(i) || is.na(j)) {
       next
     }
 
-    # skip the comparison if NA
-    if (is.na(i) || is.na(j)) {
+    # skip if both topologies are identical
+    if (i == j) {
       next
     }
 
