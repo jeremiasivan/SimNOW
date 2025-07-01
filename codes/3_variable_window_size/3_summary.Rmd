@@ -58,7 +58,7 @@ if (!all(file.exists(fn_cmp, fn_cmptw)) || params$redo) {
   # match window topology with ms topology
   for (j in mstree_uq) {
     for (k in smtree_uq) {
-      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::read.tree(text = k))) {
+      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::unroot(ape::read.tree(text = k)))) {
         smfile[, topology := gsub(k, j, topology, fixed = TRUE)]
         break
       }
