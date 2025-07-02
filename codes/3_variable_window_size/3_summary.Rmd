@@ -55,6 +55,22 @@ if (!all(file.exists(fn_cmp, fn_cmptw)) || params$redo) {
   mstree_uq <- unique(msfile$topology)
   smtree_uq <- unique(smfile$topology)
 
+  # update mstree
+  for (j in mstree_uq) {
+    for (k in mstree_uq) {
+      if (j == k) {
+        next
+      }
+
+      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::unroot(ape::read.tree(text = k)))) {
+        msfile[, topology := gsub(j, k, topology, fixed = TRUE)]
+
+        mstree_uq <- mstree_uq[mstree_uq!=j]
+        break
+      }
+    }
+  }
+
   # match window topology with ms topology
   for (j in mstree_uq) {
     for (k in smtree_uq) {
