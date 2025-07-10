@@ -211,6 +211,13 @@ while (is_repeat == TRUE) {
           next
         }
 
+        # check informative sites
+        if (!is.null(params$min_informative_sites)) {
+          if (!f_is_informative(fn_iqtree_one, params$min_informative_sites) || !f_is_informative(fn_iqtree_two, params$min_informative_sites)) {
+            next
+          }
+        }
+
         out_one <- f_window_tree_aic(fn_iqtree_one)
         out_two <- f_window_tree_aic(fn_iqtree_two)
         aic_one <- (2 * out_one$freeparams) - (2 * out_one$logl)

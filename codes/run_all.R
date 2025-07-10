@@ -39,6 +39,7 @@ exe_seqkit <- "seqkit"
 
 init_wsize <- 100000
 division_prop <- c(0.25, 0.5, 0.75)
+min_informative_sites <- 1
 
 #################################
 
@@ -102,7 +103,7 @@ for (i in 1:nrow(temp_table)) {
                                        codedir=codedir, outdir=outdir, thread=thread, redo=redo,
                                        exe_seqkit=exe_seqkit,
                                        iqtree2dir=iqtree2dir, set_model=set_model, set_keepident=set_keepident, set_blmin=set_blmin, dna_model=dna_model, outgroup=outgroup,
-                                       init_wsize=init_wsize, division_prop=division_prop
+                                       init_wsize=init_wsize, division_prop=division_prop, min_informative_sites=min_informative_sites
                                        ))                                     
 
   repsim <- append(repsim, list(tempsim))

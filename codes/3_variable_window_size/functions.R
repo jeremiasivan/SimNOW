@@ -43,6 +43,18 @@ f_iqtree2_single <- function(input, outgroup, window_size, setblmin, setkeepiden
   system(iqtree_cmd)
 }
 
+# function: check the number of informative sites
+f_is_informative <- function(fn_iqtree, min_informative_sites) {
+  n_infsites <- system(paste("grep 'Number of parsimony informative sites:'", fn_iqtree), intern=T)
+  n_infsites <- gsub("Number of parsimony informative sites: ", "", n_infsites)
+
+  if (n_infsites >= min_informative_sites) {
+    return(TRUE)
+  }
+
+  return(FALSE)
+}
+
 # function: extract window tree statistics
 # required package: ape
 f_window_tree_statistics <- function(fn_iqtree, fn_treefile, bootstrap_type, min_branch_support) {
