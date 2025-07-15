@@ -526,40 +526,7 @@ data.table::fwrite(df_topology_all, file=fn_topology_all, row.names=F, col.names
 data.table::fwrite(df_topology_highbs, file=fn_topology_highbs, row.names=F, col.names=T, quote=F, sep="\t")
 ```
 
-```{r dac-visualisation, eval=FALSE}
-# create a new dataframe for visualisation
-df_visualisation <- data.frame(x=0, wname="window_NA", wsize=0)
-for (i in 1:nrow(df_current)) {
-  start <- max(df_visualisation$x) + 1
-  stop <- start + df_current$length[i] - 1
-  df_visualisation <- rbind(df_visualisation, data.frame(x=seq(start,stop,by=1),
-                                                         wname=rep(df_current$window[i],df_current$length[i]),
-                                                         wsize=rep(df_current$length[i],df_current$length[i])))
-}
-
-# remove the first row
-df_visualisation <- df_visualisation[-1,]
-
-# plot window size across position
-plot <- ggplot(df_visualisation, aes(x=x, y=wsize, colour=wname)) +
-  geom_point(shape=16) +
-  ggtitle(paste("Variation of Window Size across", params$prefix)) +
-  ylab("Window size (bp)") + xlab("Position (bp)") +
-  theme(
-      plot.title = element_text(hjust = 0.5, size = 50),
-      plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
-      axis.title.x = element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
-      axis.title.y = element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
-      axis.text.y = element_text(size=30),
-      axis.text.x = element_text(size=30),
-      strip.text = element_text(size=30),
-      legend.position = "none"
-    )
-
-tiff(filename=fn_position_wsize, units="px", width=2880, height=1800)
-print(plot)
-dev.off()
-
+```{r eval=FALSE}
 # plot window size against the middle position
 middle_position <- median(df_visualisation$x)
 
