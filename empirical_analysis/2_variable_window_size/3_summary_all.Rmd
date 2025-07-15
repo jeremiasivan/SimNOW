@@ -56,16 +56,16 @@ df_visualisation_2 <- data.table::data.table()
 
 # iterate over chromosome
 for (chr in ls_chr) {
-  df_current <- data.table::fread(paste0("./", chr, "/", chr, ".dactops"))
-  #df_current_2 <- data.table::fread(paste0(dir_output_prefix, chr, "/", chr, ".dacsum"))
+  df_current <- data.table::fread(paste0(dir_output_prefix, chr, "/", chr, ".dactops"))
+  df_current_2 <- data.table::fread(paste0(dir_output_prefix, chr, "/", chr, ".dacsum"))
 
   # convert the lengths into genomic positions
   df_current <- df_current %>% mutate(start = lag(cumsum(length), default=0)+1,
                                       stop = start+length-1,
                                       chr = chr)
-  #df_current_2 <- data.table::data.table(pos = seq(1, sum(df_current_2$length)),
-  #                                       len = rep(df_current_2$length, times=df_current_2$length),
-  #                                       chr = chr)
+  df_current_2 <- data.table::data.table(pos = seq(1, sum(df_current_2$length)),
+                                         len = rep(df_current_2$length, times=df_current_2$length),
+                                         chr = chr)
 
   # extract unique topologies
   smtree_uq <- unique(df_current$topology)
@@ -92,7 +92,7 @@ for (chr in ls_chr) {
   
   # update the output data.frame
   df_visualisation <- rbind(df_visualisation, df_current)
-  #df_visualisation_2 <- rbind(df_visualisation_2, df_current_2)
+  df_visualisation_2 <- rbind(df_visualisation_2, df_current_2)
 }
 
 # update the column types
@@ -108,6 +108,7 @@ f_plot_top_pos(df_visualisation, ls_colour_scheme, fn_top_pos_highbs)
 
 # plot window sizes across positions
 plot <- ggplot(df_visualisation_2, aes(x=pos, y=len)) +
+  geom_point(linewidth=1, alpha=0.8) +
   scale_y_log10(labels=scales::label_number(trim = TRUE, accuracy = NULL)) +
   facet_wrap(.~chr, ncol=2) +
   xlab("Genome Position (bp)") + ylab("Block Length (bp)") +
