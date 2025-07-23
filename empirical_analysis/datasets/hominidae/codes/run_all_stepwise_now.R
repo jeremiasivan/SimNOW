@@ -27,7 +27,7 @@ outgroup <- ""
 
 initial_wsize <- 64000
 min_wsize <- 0
-min_informative_sites <- 0
+min_informative_sites <- 1
 
 # summary
 colour_scheme <- paste0(codedir, "/datasets/hominidae/files/colour_scheme.txt")

@@ -10,18 +10,11 @@ outdir <- ""
 redo <- FALSE
 
 # data_preparation.Rmd
-fn_hal <- ""
-fn_refseq <- paste0(codedir, "/datasets/heliconius_erato/files/refseq.txt")
-
-dir_hal2maf <- "~/hal2maf"
-dir_singleCopy <- "~/getSingleCopy.py"
-dir_mafsort <- "~/maf-sort.sh"
+fn_mafseq <- paste0(codedir, "/datasets/hominidae/files/mafseq.txt")
 dir_msaview <- "~/msa_view"
 
-gaps_threshold <- 0.5
-
 # variable_window_size.Rmd
-prefix <- ""
+prefix <- "primates"
 
 exe_seqkit <- "~/seqkit"
 dir_iqtree2 <- "~/iqtree2"
@@ -47,17 +40,15 @@ if (nthread / thread < 1) {
   stop("Invalid number of threads (nthread) vs thread per run (thread)")
 }
 
-# data conversion from HAL -> FASTA
-rmarkdown::render(input=paste0(codedir,"/datasets/heliconius_erato/codes/data_preparation.Rmd"),
-                  output_file=paste0(outdir,"/heliconius.html"),
-                  params=list(fn_hal=fn_hal, fn_refseq=fn_refseq, thread=thread, outdir=outdir, redo=redo,
-                              dir_hal2maf=dir_hal2maf, dir_singleCopy=dir_singleCopy, dir_mafsort=dir_mafsort, dir_msaview=dir_msaview,
-                              gaps_threshold=gaps_threshold),
+# data conversion from MAF -> FASTA
+rmarkdown::render(input=paste0(codedir,"/datasets/hominidae/codes/data_preparation.Rmd"),
+                  output_file=paste0(outdir,"/hominidae.html"),
+                  params=list(fn_mafseq=fn_mafseq, thread=nthread, outdir=outdir, redo=redo, dir_msaview=dir_msaview),
                   quiet=TRUE)
 
 # run NOW on every chromosome
-ls_chr <- list.dirs(outdir, full.names=F, recursive=F)
-ls_chr <- subset(ls_chr, grepl("chr+", ls_chr))
+ls_chr <- list.files(paste0(outdir,"/data/fasta/primates/"), pattern='*.fa$', full.names=F, recursive=F)
+ls_chr <- sapply(ls_chr, function(x) { gsub(".fa", "", x) })
 
 # create sets of parameters
 run_outdir <- paste0(outdir,"/",prefix,"/")
@@ -71,13 +62,12 @@ for (c in ls_chr) {
 
   # filtered sequence
   out <- paste0(currentdir,c,".html")
-  input_aln <- paste0(outdir,"/",c,"/fasta/concatenation/",c,"_concat.fa")
+  input_aln <- paste0(outdir,"/data/fasta/primates/",c,".fa")
   temprun <- list(out=out, params=list(codedir=codedir,
                                        prefix=c, outdir=run_outdir, thread=thread, redo=redo,
-                                       exe_seqkit=exe_seqkit,
                                        iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, 
                                        bootstrap=bootstrap, bootstrap_type=bootstrap_type, outgroup=outgroup,
-                                       input_aln=input_aln, init_wsize=init_wsize, division_prop=division_prop, min_informative_sites=min_informative_sites
+                                       input_aln=input_aln, initial_wsize=initial_wsize, min_wsize=min_wsize, min_informative_sites=min_informative_sites
   ))
   runs <- append(runs, list(temprun))
 }
