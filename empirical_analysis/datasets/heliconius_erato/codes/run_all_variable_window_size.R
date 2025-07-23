@@ -36,6 +36,7 @@ outgroup <- "HmelRef"
 
 init_wsize <- 50000
 division_prop <- c(0.25, 0.5, 0.75)
+min_informative_sites <- 1
 
 # summary
 colour_scheme <- paste0(codedir, "/datasets/heliconius_erato/files/colour_scheme.txt")
@@ -76,7 +77,7 @@ for (c in ls_chr) {
                                        exe_seqkit=exe_seqkit,
                                        iqtree2dir=dir_iqtree2, set_blmin=set_blmin, set_model=set_model, dna_model=dna_model, 
                                        bootstrap=bootstrap, bootstrap_type=bootstrap_type, outgroup=outgroup,
-                                       input_aln=input_aln, init_wsize=init_wsize, division_prop=division_prop
+                                       input_aln=input_aln, init_wsize=init_wsize, division_prop=division_prop, min_informative_sites=min_informative_sites
   ))
   runs <- append(runs, list(temprun))
 }

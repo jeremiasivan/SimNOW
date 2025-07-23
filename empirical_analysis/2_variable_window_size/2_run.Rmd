@@ -46,6 +46,14 @@ s <- seqinr::read.fasta(params$input_aln, whole.header = T)
 names(s) <- gsub(" ", "", names(s))
 s_ln <- seqinr::getLength(s)[1]
 
+# set minimum informative sites
+min_inf_sites <- params$min_informative_sites
+
+sp_ln <- length(s)
+if (is.null(min_inf_sites) || min_inf_sites == "") {
+  min_inf_sites <- 2 * sp_ln - 3
+}
+
 numw <- ceiling(s_ln/params$init_wsize)
 
 # generate data.frame for each window
@@ -124,6 +132,11 @@ if (file.exists(fn_df_current) && !params$redo) {
 ```
 
 ```{r dac-division}
+write.table(c("",
+              "----------     Division     --------",
+              paste("Minimum number of informative sites:", min_inf_sites)),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
 iterator <- 0
 is_repeat <- TRUE
 
@@ -221,6 +234,13 @@ while (is_repeat == TRUE) {
           next
         }
 
+        # check informative sites
+        if (!is.null(params$min_informative_sites)) {
+          if (!f_is_informative(fn_iqtree_one, min_inf_sites) || !f_is_informative(fn_iqtree_two, min_inf_sites)) {
+            next
+          }
+        }
+
         out_one <- f_window_tree_aic(fn_iqtree_one)
         out_two <- f_window_tree_aic(fn_iqtree_two)
         aic_one <- (2 * out_one$freeparams) - (2 * out_one$logl)
@@ -276,7 +296,11 @@ stopCluster(nwcl)
 df_current$is_divided <- NULL
 ```
 
-```{r dac-combine-v2}
+```{r dac-combine}
+write.table(c("",
+              "----------     Combine      --------"),
+              file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
 options(scipen=999)
 
 # add new columns to the table
