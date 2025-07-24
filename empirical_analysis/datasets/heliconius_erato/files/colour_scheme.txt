@@ -7,3 +7,5 @@ topology    code    tree
 (HmelRef,(HeraRef,Hhim),((Hhsa,(Hdem,Hsar)),Htel)); #b0d1e5 T6
 (HmelRef,(((HeraRef,Hhim),Hhsa),(Hdem,Hsar)),Htel); #f4c379 T7
 (HmelRef,(((HeraRef,Hhim),Htel),Hhsa),(Hdem,Hsar)); #f796a4 T8
+(HmelRef,((HeraRef,Hhim),(Hdem,Hsar)),(Htel,Hhsa)); #7b35bb T9
+(HmelRef,((HeraRef,Hhim),(Hhsa,(Hdem,Hsar))),Htel); #a0a0a0 T10

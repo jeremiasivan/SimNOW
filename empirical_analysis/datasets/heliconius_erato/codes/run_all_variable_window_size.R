@@ -95,7 +95,7 @@ make_runs <- function(r) {
   unlink(tf)
 }
 
-# run parallelized EmpNOW analysis
+# run parallelized DAC analysis
 cl <- makeCluster(floor(nthread/thread), outfile="")
 registerDoSNOW(cl)
 
@@ -105,5 +105,12 @@ foreach(r=runs, .errorhandling = 'pass') %dopar% {
 }
 
 stopCluster(cl)
+
+# summary for all chromosomes
+rmarkdown::render(input=paste0(codedir,"/2_variable_window_size/3_summary_all.Rmd"),
+                  output_file=paste0(outdir,"/",prefix,"/heliconius_summary.html"),
+                  params=list(codedir=codedir, prefix=prefix, outdir=outdir, thread=nthread, redo=redo,
+                              colour_scheme=colour_scheme),
+                  quiet=TRUE)
                   
 #################################
