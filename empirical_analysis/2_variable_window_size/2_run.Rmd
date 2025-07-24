@@ -235,7 +235,7 @@ while (is_repeat == TRUE) {
         }
 
         # check informative sites
-        if (f_is_informative(fn_iqtree_one, min_inf_sites)==FALSE || f_is_informative(fn_iqtree_two, min_inf_sites)==FALSE) {
+        if (!f_is_informative(fn_iqtree_one, min_inf_sites) || !f_is_informative(fn_iqtree_two, min_inf_sites)) {
           next
         }
 

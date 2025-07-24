@@ -26,7 +26,7 @@ f_create_perwindow_df_v2 <- function(numw, fasta_len, window_size) {
 # function: check the number of informative sites
 f_is_informative <- function(fn_iqtree, min_informative_sites) {
   n_infsites <- system(paste("grep 'Number of parsimony informative sites:'", fn_iqtree), intern=T)
-  n_infsites <- gsub("Number of parsimony informative sites: ", "", n_infsites)
+  n_infsites <- as.numeric(gsub("Number of parsimony informative sites: ", "", n_infsites))
 
   if (n_infsites >= min_informative_sites) {
     return(TRUE)
