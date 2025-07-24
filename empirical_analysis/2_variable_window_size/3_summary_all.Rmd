@@ -21,6 +21,7 @@ library(tidyverse)
 
 # load functions
 source(paste0(params$codedir,"/1_stepwise_now/functions.R"), local=TRUE)
+source(paste0(params$codedir,"/2_variable_window_size/functions.R"), local=TRUE)
 
 # create outdir
 dir_output_prefix <- paste0(params$outdir, "/", params$prefix, "/")
@@ -30,6 +31,8 @@ if (!dir.exists(dir_output_summary)) {
 }
 
 # output files
+fn_summary <- paste0(dir_output_summary, params$prefix, ".sumtable")
+
 fn_wsize_pos <- paste0(dir_output_summary, params$prefix, "_wsize_pos.tiff")
 fn_top_pos <- paste0(dir_output_summary, params$prefix, "_top_pos.tiff")
 fn_top_pos_highbs <- paste0(dir_output_summary, params$prefix, "_top_pos_highbs.tiff")
@@ -94,6 +97,9 @@ for (chr in ls_chr) {
   df_visualisation <- rbind(df_visualisation, df_current)
   df_visualisation_2 <- rbind(df_visualisation_2, df_current_2)
 }
+
+# save data.frame
+data.table::fwrite(df_visualisation, file=fn_summary, sep="\t", quote=F)
 
 # update the column types
 df_visualisation$chr <- factor(df_visualisation$chr, levels=stringr::str_sort(unique(df_visualisation$chr), numeric=T, decreasing=T))
