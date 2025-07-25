@@ -54,10 +54,18 @@ if (is.null(min_inf_sites) || min_inf_sites == "") {
   min_inf_sites <- 2 * sp_ln - 3
 }
 
-numw <- ceiling(s_ln/params$init_wsize)
+# extract the window size
+init_wsize <- params$init_wsize
+if (is.null(init_wsize)) {
+  init_wsize <- s_ln
+}
+
+write.table(paste0("Running DAC with a starting window size of ", init_wsize, "bp"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
 # generate data.frame for each window
-df_windows <- f_create_perwindow_df_v2(numw, s_ln, params$init_wsize)
+numw <- ceiling(s_ln/init_wsize)
+df_windows <- f_create_perwindow_df_v2(numw, s_ln, init_wsize)
 
 # create doSNOW cluster
 nwcl <- makeCluster(params$thread)
