@@ -37,9 +37,9 @@ window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,5000
 # divide-and-conquer
 exe_seqkit <- "seqkit"
 
-init_wsize <- 100000
+init_wsize <- 10000000
 division_prop <- c(0.25, 0.5, 0.75)
-min_informative_sites <- 1
+min_informative_sites <- 0
 
 #################################
 

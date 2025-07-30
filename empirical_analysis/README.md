@@ -3,6 +3,7 @@
 ## Table of Content
 - <a href="#analyses">Analyses</a>
     - <a href="#stepnow">Stepwise non-overlapping windows</a>
+    - <a href="#dacnow">Using variable window sizes</a>
 - <a href="#datasets">Datasets</a>
     - <a href="#heliconius">Erato-sara <i>Heliconius</i> butterflies</a>
     - <a href="#hominidae">Great apes</a>
@@ -10,7 +11,7 @@
 ## <a id="analyses">Analyses</a>
 
 ### <a id="stepnow">Stepwise non-overlapping window analysis</a>
-In this step, we run stepwise non-overlapping window analysis on empirical alignment and generate the summary statistics. The parameters for this step is set in `1_main.Rmd`.
+In this step, we run stepwise non-overlapping window analysis on empirical alignment and generate the summary statistics. The parameters for this step are set in `1_main.Rmd`.
 
 | Parameters               | Definition                                                                                                                            |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -40,6 +41,9 @@ Running the code will create a new folder for each pair of window sizes, startin
     - `wsize.uqtops`: distribution of unique window topologies and their respective frequency. If `bootstrap_type` is provided, it only includes window trees with average bootstrap value more than 80 (parametric) or 95 (UFBoot).
 
 Additionally, the code will generate `prefix.sumtable` in the output folder, which summarises the delta AIC and window trees for each `step`. If `bootstrap_type` is provided, the counts for window trees and topologies only include those with average bootstrap value more than 80 (parametric) or 95 (UFBoot).
+
+### <a id="dacnow">Using variable window sizes</a>
+In this step, we run the splitting-and-merging algorithm on empirical alignment and generate the summary statistics. The parameters for this step are set in `1_main.Rmd`. The details of the parameters and outputs are similar to those from the simulations (see `codes/README.md`).
 
 ## <a id="datasets">Datasets</a>
 
@@ -108,6 +112,7 @@ outdir/
 Running `run_all.R` using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step is as follows:
 - Data preparation and filtering: ~1.6 hours with 50 threads
 - Stepwise non-overlapping windows: up to 10 hours for the longest chromosome (`chr10`)
+- Non-overlapping windows with variable window sizes: up to 10 hours for the longest chromosome (`chr10`)
 
 ### <a id="hominidae">Genome of *Hominidae* (great apes) from <a href="https://genome.ucsc.edu">UCSC Genome Browser</a></a>
 The dataset consists of 25 chromosomes of four *Hominidae* species (human, chimpanzee, orangutan, and gorilla).
@@ -153,4 +158,4 @@ outdir/
 ```
 
 ---
-*Last update: 23 March 2025 by Jeremias Ivan*
+*Last update: 30 July 2025 by Jeremias Ivan*

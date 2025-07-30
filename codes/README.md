@@ -146,22 +146,23 @@ Additionally, the `windows` folder will contain `prefix.sum` which contains summ
 ### <a id="dac">Using variable window sizes</a>
 In this step, we use the simulated alignment to run splitting-and-merging procedure and generate the summary statistics. The parameters for this step is set in `3_variable_window_size/1_main.Rmd`.
 
-| Parameters     | Definition                                                                                                                            |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `codedir`      | Directory for folder `SimNOW/codes`                                                                                                   |
-| `prefix`       | Prefix for output files and folder                                                                                                    | 
-| `outdir`       | Output directory                                                                                                                      |
-| `thread`       | Number of threads for parallelization                                                                                                 |
-| `redo`         | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                                                |
-| `exe_seqkit`   | Executable for SeqKit                                                                                                                 |
-| `iqtree2dir`   | Directory for `IQ-TREE2` executable                                                                                                   |
-| `set_model`    | If `TRUE`, set the substitution model of window trees to be `dna_model`; if `FALSE` use ModelFinder to find the best model per window |
-| `set_blmin`    | If `TRUE`, set the minimum branch length to be 1/window_size                                                                          |
-| `set_keepident`| If `TRUE`, keep identical sequences during tree inference                                                                             |
-| `dna_model`    | DNA substitution model for window trees                                                                                               |
-| `outgroup`     | Outgroup of window trees (optional)                                                                                                   |
-| `init_wsize`   | Initial window size to partition the alignment; if `NULL`, use the window size with the lowest AIC from previous step                 |
-| `division_prop`| Vector of size ratios of the first window during the splitting step                                                                   |
+| Parameters             | Definition                                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `codedir`              | Directory for folder `SimNOW/codes`                                                                                                   |
+| `prefix`               | Prefix for output files and folder                                                                                                    | 
+| `outdir`               | Output directory                                                                                                                      |
+| `thread`               | Number of threads for parallelization                                                                                                 |
+| `redo`                 | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                                                |
+| `exe_seqkit`           | Executable for SeqKit                                                                                                                 |
+| `iqtree2dir`           | Directory for `IQ-TREE2` executable                                                                                                   |
+| `set_model`            | If `TRUE`, set the substitution model of window trees to be `dna_model`; if `FALSE` use ModelFinder to find the best model per window |
+| `set_blmin`            | If `TRUE`, set the minimum branch length to be 1/window_size                                                                          |
+| `set_keepident`        | If `TRUE`, keep identical sequences during tree inference                                                                             |
+| `dna_model`            | DNA substitution model for window trees                                                                                               |
+| `outgroup`             | Outgroup of window trees (optional)                                                                                                   |
+| `init_wsize`           | Initial window size to partition the alignment; if `NULL`, use the window size with the lowest AIC from previous step                 |
+| `division_prop`        | Vector of size ratios of the first window during the splitting step                                                                   |
+| `min_informative_sites`| Minimum number of parsimony informative sites per window during the splitting procedure                                               |
 
 #### Output
 Running the code will create a new folder called `dac` that consists of:
@@ -191,6 +192,7 @@ If you want to run more than one analysis at the same time, you can run `run_all
 #### Output
 Running the code will create a new folder called `summary` in `outdir` that stores the summary of all simulations. It contains the following folders/files:
 - `prefix.simsum`: summary table for all simulations
+- `prefix.dac.simsum`: summary table for all simulations from the splitting-and-merging algorithm
 - `prefix.aic_ws.tiff`: plot between AIC vs. window size
 - `prefix.bic_ws.tiff`: plot between BIC vs. window size
 - `prefix.aicc_ws.tiff`: plot between AICc vs. window size
@@ -238,8 +240,9 @@ window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,5000
 
 exe_seqkit <- "~/seqkit"
 
-init_wsize <- NULL
+init_wsize <- 10000000
 division_prop <- c(0.25, 0.5, 0.75)
+min_informative_sites <- 11
 ```
 
 Specific parameters (in `codes/run_all.R`) for each scenario: <br>
@@ -274,4 +277,4 @@ alisim_scale <- 0.007
 ```
 
 ---
-*Last update: 27 June 2025 by Jeremias Ivan*
+*Last update: 30 July 2025 by Jeremias Ivan*
