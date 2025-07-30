@@ -1,0 +1,87 @@
+---
+title: "Stepwise NOW with Variable Window Sizes for Simulated Datasets"
+author: "Jeremias Ivan"
+date: "`r format(Sys.time(), '%d %B %Y, %H:%M%p')`"
+
+output:
+  html_document:
+    code_folding: show
+    toc: true
+    toc_float: true
+    
+params:
+  # general
+  codedir: "~/SimNOW/codes/"
+  prefix: "sim"
+  outdir: "~/simulation"
+  thread: 5
+  redo: FALSE
+  
+  # executables
+  exe_seqkit: ""
+
+  # IQ-Tree2
+  iqtree2dir: "~/iqtree2"
+  set_blmin: TRUE
+  set_model: FALSE
+  set_keepident: FALSE
+
+  dna_model: "JC"
+  outgroup: ""
+  
+  # DAC analysis
+  init_wsize: NULL
+  division_prop: !r c(0.25, 0.5, 0.75)
+  min_informative_sites: 1
+---
+
+```{r, include=FALSE}
+# load libraries
+source(paste0(params$codedir, "/2_non_overlapping_window/functions.R"), local=TRUE)
+source(paste0(params$codedir, "/3_variable_window_size/functions.R"), local=TRUE)
+
+# install.packages("data.table")
+# install.packages("log4r")
+
+library(doSNOW)
+library(dplyr)
+library(ggplot2)
+
+# store initial system time
+sys_tic <- Sys.time()
+
+# create outdir
+currentdir <- paste0(params$outdir, "/", params$prefix)
+if (!dir.exists(currentdir)) {
+  dir.create(currentdir, recursive = T)
+}
+
+# create log file
+fn_log <- paste0(params$outdir, "/", params$prefix, "/", params$prefix, ".log")
+log_appender <- log4r::file_appender(fn_log, append = TRUE, layout = log4r::default_log_layout())
+fn_logger <- log4r::logger(threshold = "INFO", appenders = log_appender)
+if (params$redo) {
+  unlink(fn_log)
+}
+
+if (!file.exists(fn_log)) {
+  write.table("SimNOW", file=fn_log, quote=F, row.names=F, col.names=F)
+}
+
+knitr::opts_knit$set(root.dir = currentdir)
+```
+
+```{r child = paste0(params$codedir,"/3_variable_window_size/2_run.Rmd")}
+```
+
+```{r child = paste0(params$codedir,"/3_variable_window_size/3_summary.Rmd")}
+```
+
+```{r, include=FALSE}
+# store final system time
+sys_toc <- Sys.time()
+
+# write the system time in log file
+write.table(c("", paste0("Total elapsed time: ", round(as.numeric(difftime(sys_toc, sys_tic, units = "mins")), 3), " mins")),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+```

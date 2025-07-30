@@ -10,27 +10,30 @@ outdir <- ""
 redo <- FALSE
 
 # data_preparation.Rmd
-fn_mafseq <- "~/SimNOW/empirical_analysis/datasets/hominidae/files/mafseq.txt"
+fn_mafseq <- paste0(codedir, "/datasets/hominidae/files/mafseq.txt")
 dir_msaview <- "~/msa_view"
 
-# stepwise_now
+# variable_window_size.Rmd
 prefix <- "primates"
+
+exe_seqkit <- "~/seqkit"
 dir_iqtree2 <- "~/iqtree2"
 
-set_blmin <- TRUE
+set_blmin <- FALSE
 set_model <- FALSE
 dna_model <- ""
 
 bootstrap <- 1000
 bootstrap_type <- "ufboot"
-outgroup <- ""
+outgroup <- "HmelRef"
 
-initial_wsize <- 64000
-min_wsize <- 0
+init_wsize <- 50000
+division_prop <- c(0.25, 0.5, 0.75)
+min_informative_sites <- NULL
 
-min_informative_sites <- 0
+# summary
+colour_scheme <- paste0(codedir, "/datasets/heliconius_erato/files/colour_scheme.txt")
 
-colour_scheme <- paste0(codedir, "/datasets/hominidae/files/colour_scheme.txt")
 #################################
 
 if (nthread / thread < 1) {
@@ -74,7 +77,7 @@ make_runs <- function(r) {
   tf <- tempfile()
   dir.create(tf)
   
-  rmarkdown::render(input=paste0(codedir,"/stepwise_now/1_main.Rmd"),
+  rmarkdown::render(input=paste0(codedir,"/2_variable_window_size/1_main.Rmd"),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
@@ -82,7 +85,7 @@ make_runs <- function(r) {
   unlink(tf)
 }
 
-# run parallelized EmpNOW analysis
+# run parallelized DAC analysis
 cl <- makeCluster(floor(nthread/thread), outfile="")
 registerDoSNOW(cl)
 
@@ -94,10 +97,10 @@ foreach(r=runs, .errorhandling = 'pass') %dopar% {
 stopCluster(cl)
 
 # summary for all chromosomes
-rmarkdown::render(input=paste0(codedir,"/datasets/hominidae/codes/stepwise_now/summary_all.Rmd"),
+rmarkdown::render(input=paste0(codedir,"/2_variable_window_size/3_summary_all.Rmd"),
                   output_file=paste0(outdir,"/",prefix,"/hominidae_summary.html"),
                   params=list(codedir=codedir, prefix=prefix, outdir=outdir, thread=nthread, redo=redo,
-                              initial_wsize=initial_wsize, min_wsize=min_wsize, colour_scheme=colour_scheme),
+                              colour_scheme=colour_scheme),
                   quiet=TRUE)
-
+                  
 #################################

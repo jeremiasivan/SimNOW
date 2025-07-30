@@ -43,7 +43,7 @@ params:
 sys_tic <- Sys.time()
 
 # load libraries
-source(paste0(params$codedir, "/stepwise_now/functions.R"), local=TRUE)
+source(paste0(params$codedir, "/1_stepwise_now/functions.R"), local=TRUE)
 
 library(data.table)
 library(dplyr)
@@ -73,7 +73,7 @@ if (!file.exists(fn_log)) {
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-```{r child = paste0(params$codedir,"/stepwise_now/2_run.Rmd")}
+```{r child = paste0(params$codedir,"/1_stepwise_now/2_run.Rmd")}
 ```
 
 ```{r, include=FALSE}

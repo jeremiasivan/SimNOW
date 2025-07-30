@@ -1,5 +1,27 @@
 # functions for codes/1_sequence_simulation
 
+# function: run ms
+# required library: log4r
+f_ms <- function(ms_params, ms_r, ms_l, prefix, fn_msfile, fn_log, fn_logger, is_redo, randseed, msdir) {
+    # combine all ms parameters into one variable
+    ms_command <- paste(msdir, ms_params, "-r", ms_r, ms_l, "-seeds", randseed, ">", fn_msfile)
+
+    # add ms command to logfile                    
+    log_ms_command <- paste("Command:", ms_command)                   
+    write.table(c(log_ms_command, ""), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+    # generate msfile
+    if (file.exists(fn_msfile) && is_redo) {
+        log4r::info(fn_logger, paste0("File found  : ", prefix, ".ms."))
+    } else {
+        system(ms_command)
+        log4r::info(fn_logger, paste0("File created: ", prefix, ".ms."))
+    }
+
+    # print ms command in HTML document
+    cat(log_ms_command)
+}
+
 # function: open msfile and convert locus trees into data.table
 # required library: ape, data.table
 f_extract_locus_tree <- function(fn_msfile) {

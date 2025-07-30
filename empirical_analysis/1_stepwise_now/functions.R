@@ -1,4 +1,4 @@
-# functions for codes_empirical/stepwise_now
+# functions for codes_empirical/1_stepwise_now
 
 # function: calculate FASTA alignment length
 f_get_alignment_length <- function(filepath) {
@@ -114,6 +114,35 @@ f_iqtree2_single <- function(input, outgroup, window_size, setblmin, setmodel, d
   system(iqtree_cmd)
 }
 
+# function: create window tree with duplicate seqs
+f_iqtree2_single_keepident <- function(input, outgroup, window_size, setblmin, setmodel, dna_model, bs_type, bs, dir_iqtree2) {
+  iqtree_cmd <- paste(dir_iqtree2,
+                      "-s", input,
+                      "-T 1 --quiet -redo -keep-ident")
+  
+  if (!is.null(outgroup) && !outgroup == ""){
+    iqtree_cmd <- paste(iqtree_cmd, "-o", outgroup)
+  }
+  
+  if (setblmin) {
+    iqtree_cmd <- paste(iqtree_cmd, "-blmin", 1/window_size)
+  }
+  
+  if (setmodel) {
+    iqtree_cmd <- paste(iqtree_cmd, "-m", dna_model)
+  }
+
+  if (!is.null(bs_type) && bs_type != "") {
+    if (tolower(bs_type) == "ufboot") {
+      iqtree_cmd <- paste(iqtree_cmd, "-bb", bs)
+    } else if (tolower(bs_type) == "nonparametric") {
+      iqtree_cmd <- paste(iqtree_cmd, "-b", bs)
+    }
+  }
+  
+  system(iqtree_cmd)
+}
+
 # function: extract window tree statistics
 # required package: ape
 f_window_tree_statistics <- function(fn_iqtree, fn_treefile, bootstrap_type, min_branch_support) {
@@ -140,6 +169,16 @@ f_window_tree_statistics <- function(fn_iqtree, fn_treefile, bootstrap_type, min
   }
 
   return(list(logl=logl, freeparams=freeparams, tree=ape::write.tree(tl)))
+}
+
+# function: extract AIC from iqtree
+f_window_tree_aic <- function(fn_iqtree) {
+  # extract log-likelihood and number of free parameters
+  logl <- gsub(" \\(.*\\)$", "", system(paste("grep '^Log-likelihood of the tree'",fn_iqtree), intern = T))
+  logl <- as.numeric(gsub("^.* ", "", logl))
+  freeparams <- as.numeric(gsub("^.* ", "", system(paste("grep '^Number of free parameters'",fn_iqtree), intern = T)))
+
+  return(list(logl=logl, freeparams=freeparams))
 }
 
 # function: summary across window trees
@@ -354,4 +393,100 @@ f_print_fasta_alignment <- function(fn_fasta) {
     scroll_box(width = "100%", fixed_thead = TRUE, height = ifelse(len_taxa > 7, "300px", ""))
 
   return(output)
+}
+
+# function: extract window topology
+f_extract_perwindow_topology <- function(fn_perwindowsum, dir_output_prefix, chr, step, window_size, thread) {
+    # open file
+    df_perwindowsum <- data.table::fread(fn_perwindowsum)
+
+    # create doSNOW cluster
+    nwcl <- makeCluster(thread)
+    doSNOW::registerDoSNOW(nwcl)
+
+    # iterate over windows
+    df_output_chr <- foreach (window=df_perwindowsum$name, .combine='rbind') %dopar% {
+        # check if treefile exists
+        fn_tree <- paste0(dir_output_prefix, chr, "/", step, "/", window_size, "/filtered/", window, "/", window, ".fa.treefile")
+        if (!file.exists(fn_tree)) {
+            return(data.table::data.table(chr=chr, wsize=window_size, topology="-"))
+        }
+
+        # open treefile
+        tre <- ape::read.tree(fn_tree)
+        tre$edge.length <- NULL
+        tre$node.label <- NULL
+        
+        return(data.table::data.table(chr=chr, wsize=window_size, topology=ape::write.tree(tre)))
+    }
+
+    stopCluster(nwcl)
+
+    return(df_output_chr)
+}
+
+# function: plot the distribution of window topologies
+f_plot_perwindow_topology_dist <- function(df_topology_count, df_topology_count_avg, topology) {
+    # create a plot of all window sizes
+    df_topology_count_wsize <- df_topology_count[df_topology_count$wsize!="best",]
+
+    plot <- ggplot(df_topology_count_wsize, aes(x=fct_rev(wsize), y=count_percentage, group=chr, ymin=0, ymax=1)) +
+        geom_line(aes(alpha=0.2), size=4)
+
+    if (is.null(df_topology_count_wsize$chr_type)) {
+        plot <- plot + geom_point(aes(colour=chr), size=15)
+    } else {
+        plot <- plot + geom_point(aes(colour=chr_type), size=15)
+    }
+    
+    plot <- plot + viridis::scale_color_viridis(discrete = TRUE) + labs(colour="Chromosomes")
+
+    if (!is.null(df_topology_count_avg)) {
+        df_topology_count_avg_wsize <- df_topology_count_avg[df_topology_count_avg$wsize!="best",]
+
+        plot <- plot + geom_point(data=df_topology_count_avg_wsize, aes(x=wsize, y=count_percentage), colour="red", size=15, shape=18) +
+            geom_line(data=df_topology_count_avg_wsize, aes(x=wsize, y=count_percentage), colour="red", size=6)
+    }
+        
+    plot <- plot + ggtitle(paste("Distribution of", topology, "across Window Sizes")) + ylab("Proportion") + xlab("Window Size") +
+        guides(alpha="none", size="none", colour=guide_legend(override.aes=list(size=5))) +
+        theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=40),
+            axis.text.x=element_text(size=40),
+            strip.text=element_text(size=40),
+            legend.title=element_text(size=30),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+        )
+    
+    return(plot)
+}
+
+# function: plot the distribution of best window topologies
+f_plot_bestwindow_topology_dist <- function(df_topology_count) {
+    plot <- ggplot(df_topology_count, aes(x=topology, y=count_percentage)) +
+        geom_boxplot(lwd=3, outlier.shape = NA) +
+        geom_point(aes(colour=chr), size=15) +
+        viridis::scale_color_viridis(discrete = TRUE) +
+        ggtitle("Topology Distribution for Best Window Sizes across Chromosomes") +
+        xlab("Topology") + ylab("Proportion") + labs(colour="Chromosomes") +
+        guides(size="none", colour=guide_legend(override.aes=list(size=5))) +
+        theme(
+            plot.title = element_text(hjust = 0.5, size = 50),
+            plot.margin = margin(1.25, 1.25, 1.25, 1.25, "cm"),
+            axis.title.x=element_text(size = 40, margin = margin(t=20, r=0, b=0, l=0)),
+            axis.title.y=element_text(size = 40, margin = margin(t=0, r=20, b=0, l=0)),
+            axis.text.y=element_text(size=40),
+            axis.text.x=element_text(size=40),
+            strip.text = element_text(size=40),
+            legend.title=element_text(size=30),
+            legend.text=element_text(size=30),
+            legend.key.size=unit(2,"cm")
+        )
+
+    return(plot)
 }

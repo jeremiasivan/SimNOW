@@ -1,0 +1,209 @@
+---
+title: "Summary of Non-overlapping Windows vs Truth"
+---
+
+## Summarize accuracy of non-overlapping windows on simulated alignment
+```{r sumsetup, include=FALSE}
+write.table(c("",
+              "####################################",
+              "####         DAC vs Truth       ####",
+              "####################################"),
+            file=fn_log, quote=F, row.names=F, col.names=F, append=T)
+
+# input file
+fn_mstrees <- paste0(getwd(), "/simulation/", params$prefix, ".mstrees")
+fn_mstops <- paste0(getwd(), "/simulation/", params$prefix, ".mstops")
+
+# create an output directory
+outdir_summary <- paste0(dac_outdir, "summary/")
+if (!dir.exists(outdir_summary)) {
+  dir.create(outdir_summary, recursive=T)
+}
+
+# output files
+fn_cmp <- paste0(outdir_summary, params$prefix, ".cmp")
+fn_cmptw <- paste0(outdir_summary, params$prefix, ".cmptw")
+fn_acc <- paste0(outdir_summary, params$prefix, ".acc")
+fn_corlm <- paste0(outdir_summary, params$prefix, ".corlm")
+
+fn_windowdist_tiff <- paste0(outdir_summary, params$prefix, ".wdist.tiff")
+```
+
+### Comparing topology weight and site assignment between NOW and ms
+```{r sumwindow}
+# read ms topology file
+mtfile <- data.table::fread(fn_mstrees)
+mtfile <- mtfile %>%
+  group_by(tree, group_run = data.table::rleid(tree)) %>%
+  summarise(length=sum(length)) %>%
+  arrange(group_run)
+mtfile$group_run <- NULL
+
+# add start and stop columns
+mtfile$length <- as.numeric(mtfile$length)
+mtfile <- mtfile %>% mutate(start = lag(cumsum(length), default=0)+1,
+                            stop = start+length-1)
+
+msfile <- data.table::fread(fn_mstops)
+
+# read now topology file
+smfile <- data.table::fread(fn_dactops)
+
+# output files
+if (!all(file.exists(fn_cmp, fn_cmptw)) || params$redo) {
+  # extract unique ms and NOW topologies
+  mstree_uq <- unique(msfile$topology)
+  smtree_uq <- unique(smfile$topology)
+
+  # update mstree
+  for (j in mstree_uq) {
+    for (k in mstree_uq) {
+      if (j == k) {
+        next
+      }
+
+      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::unroot(ape::read.tree(text = k)))) {
+        msfile[, topology := gsub(j, k, topology, fixed = TRUE)]
+
+        mstree_uq <- mstree_uq[mstree_uq!=j]
+        break
+      }
+    }
+  }
+
+  # match window topology with ms topology
+  for (j in mstree_uq) {
+    for (k in smtree_uq) {
+      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::unroot(ape::read.tree(text = k)))) {
+        smfile[, topology := gsub(k, j, topology, fixed = TRUE)]
+        break
+      }
+    }
+  }
+
+  # create matrix for site accuracy
+  f_create_site_acc_matrix(msfile, smfile, mstree_uq, fn_cmp)
+
+  # compare weights between ms and NOW topologies
+  f_compare_topology_weight(msfile, smfile, mstree_uq, sum(smfile$length), fn_cmptw)
+}
+
+# extract accuracy
+acc <- f_extract_acc(fn_cmp, fn_cmptw)
+
+df_now <- data.table::data.table(method="now", min_wsize=as.numeric(best_wsize_aic), max_wsize=as.numeric(best_wsize_aic),
+                                 acc=df_sum_now$accuracy[df_sum_now$window_size==best_wsize_aic],
+                                 rmse=df_sum_now$rmse[df_sum_now$window_size==best_wsize_aic],
+                                 aic=df_sum_now$aic[df_sum_now$window_size==best_wsize_aic])
+df_dac <- data.table::data.table(method="dac", min_wsize=min(df_topology$length), max_wsize=max(df_topology$length),
+                                 acc=acc$acc, rmse=acc$rmse, aic=sum(df_current$aic))
+
+df_output <- rbind(df_now, df_dac)
+data.table::fwrite(df_output, file=fn_acc, quote=FALSE, sep="\t")
+```
+
+```{r sumvisualisation}
+# convert the lengths into genomic positions
+mtfile_dist <- data.table::data.table(pos = seq(1, sum(mtfile$length)),
+                                      len = rep(mtfile$length, times=mtfile$length),
+                                      type = "mstrees")
+
+msfile_dist <- data.table::data.table(pos = seq(1, sum(msfile$length)),
+                                      len = rep(msfile$length, times=msfile$length),
+                                      type = "mstops")
+
+smfile_dist <- data.table::data.table(pos = seq(1, sum(smfile$length)),
+                                      len = rep(smfile$length, times=smfile$length),
+                                      type = "aic")
+
+if (nrow(smfile) > 1) {
+  # create an output data.frame
+  df_cor <- data.table::data.table(mstrees_est = numeric(), mstrees_ste = numeric(), mstrees_p = numeric(),
+                                  mstops_est = numeric(), mstops_ste = numeric(), mstops_p = numeric(),
+                                  R2 = numeric())
+
+  # run linear model
+  if (nrow(mtfile) > 1 && nrow(msfile) > 1) {
+    lm <- lm(smfile_dist$len ~ mtfile_dist$len+msfile_dist$len)
+    lm_sum <- summary(lm)$coefficients
+
+    # extract important values
+    mt_est <- round(lm_sum["mtfile_dist$len", "Estimate"], 3)
+    ms_est <- round(lm_sum["msfile_dist$len", "Estimate"], 3)
+
+    mt_ste <- lm_sum["mtfile_dist$len", "Std. Error"]
+    ms_ste <- lm_sum["msfile_dist$len", "Std. Error"]
+
+    mt_p <- round(lm_sum["mtfile_dist$len", "Pr(>|t|)"], 3)
+    ms_p <- round(lm_sum["msfile_dist$len", "Pr(>|t|)"], 3)
+
+    r2 <- round(summary(lm)$r.squared, 3)
+
+    # update data.frame
+    df_cor <- rbind(df_cor, data.table::data.table(mstrees_est = mt_est, mstrees_ste = mt_ste, mstrees_p = mt_p,
+                                                   mstops_est = ms_est, mstops_ste = ms_ste, mstops_p = ms_p,
+                                                   R2 = r2))
+
+  } else if (nrow(mtfile) > 1 && nrow(msfile) <= 1) {
+    lm <- lm(smfile_dist$len ~ mtfile_dist$len)
+    lm_sum <- summary(lm)$coefficients
+
+    # extract important values
+    mt_est <- round(lm_sum["mtfile_dist$len", "Estimate"], 3)
+    mt_ste <- lm_sum["mtfile_dist$len", "Std. Error"]
+    mt_p <- round(lm_sum["mtfile_dist$len", "Pr(>|t|)"], 3)
+
+    r2 <- round(summary(lm)$r.squared, 3)
+
+    # update data.frame
+    df_cor <- rbind(df_cor, data.table::data.table(mstrees_est = mt_est, mstrees_ste = mt_ste, mstrees_p = mt_p, R2 = r2),
+                    fill=TRUE)
+
+  } else if (nrow(mtfile) <= 1 && nrow(msfile) > 1) {
+    lm <- lm(smfile_dist$len ~ msfile_dist$len)
+    lm_sum <- summary(lm)$coefficients
+
+    # extract important values
+    ms_est <- round(lm_sum["msfile_dist$len", "Estimate"], 3)
+    ms_ste <- lm_sum["msfile_dist$len", "Std. Error"]
+    ms_p <- round(lm_sum["msfile_dist$len", "Pr(>|t|)"], 3)
+
+    r2 <- round(summary(lm)$r.squared, 3)
+
+    # update data.frame
+    df_cor <- rbind(df_cor, data.table::data.table(mstops_est = ms_est, mstops_ste = ms_ste, mstops_p = ms_p, R2 = r2),
+                    fill=TRUE)
+  }
+
+  # save the correlation result
+  data.table::fwrite(df_cor, file=fn_corlm, quote=F, sep="\t")
+}
+
+# combine all data.table
+df_dist <- data.table::as.data.table(rbind(mtfile_dist, msfile_dist, smfile_dist))
+df_dist$type <- factor(df_dist$type, levels=c("mstrees","mstops","aic"))
+
+# visualisation
+plot <- ggplot(df_dist, aes(x=pos, y=len, colour=type, xmin=0, xmax=max(df_dist$pos))) +
+  geom_line(linewidth=2, alpha=0.8) +
+  geom_hline(yintercept=as.numeric(best_wsize_aic), linewidth=2, linetype=5) +
+  scale_y_log10(labels=scales::label_number(trim = TRUE, accuracy = NULL)) +
+  scale_colour_manual(values=c("#619CFF","#00BA38", "#F8766D")) +
+  xlab("Genome Position (bp)") + ylab("Block Length (bp)") +
+  theme(
+      axis.title.x=element_text(size=40),
+      axis.title.y=element_text(size=40),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text=element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+tiff(filename=fn_windowdist_tiff, units="px", width=3840, height=1080)
+print(plot)
+dev.off()
+
+rm(mtfile_dist, msfile_dist, smfile_dist, df_dist)
+```

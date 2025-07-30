@@ -1,5 +1,5 @@
 ---
-title: "Non-overlapping Window Analysis for Empirical Datasets"
+title: "Stepwise NOW with Variable Window Sizes for Empirical Datasets"
 author: "Jeremias Ivan"
 date: "`r format(Sys.time(), '%d %B %Y, %H:%M%p')`"
 
@@ -8,53 +8,49 @@ output:
     code_folding: show
     toc: true
     toc_float: true
-
+    
 params:
   # general
   codedir: "~/SimNOW/empirical_analysis"
   prefix: "sim"
   outdir: "~/simulation"
-  thread: 5
+  thread: 1
   redo: FALSE
   
+  # executables
+  exe_seqkit: ""
+
   # IQ-Tree2
   iqtree2dir: "~/iqtree2"
-  set_blmin: TRUE
-  set_model: TRUE
-  dna_model: "JC"
+  set_blmin: FALSE
+  set_model: FALSE
+  dna_model: ""
 
   bootstrap: 1000
   bootstrap_type: ""
   outgroup: ""
   
   # NOW analysis
-  input_aln: "~/input.fa"
-  
-  window_len: 20
-  window_size: !r c(50000)
-  min_window_size: 1000
-
-  ic_type: "aic"
+  input_aln: ""
+  init_wsize: 50000
+  division_prop: !r c(0.25, 0.5, 0.75)
+  min_informative_sites: 1
 ---
 
 ```{r, include=FALSE}
-# install.packages("ape")
-# install.packages("forcats")
-# install.packages("ggplot2")
+# install.packages("data.table")
 # install.packages("log4r")
-# install.packages("numbers)
-# install.packages("seqinr")
-# install.packages("stringr")
+
+library(doSNOW)
+library(dplyr)
+library(ggplot2)
 
 # store initial system time
 sys_tic <- Sys.time()
 
 # load libraries
-source(paste0(params$codedir, "/non_overlapping_window/functions.R"), local=TRUE)
-
-library(data.table)
-library(dplyr)
-library(doSNOW)
+source(paste0(params$codedir, "/1_stepwise_now/functions.R"), local=TRUE)
+source(paste0(params$codedir, "/2_variable_window_size/functions.R"), local=TRUE)
 
 # create outdir
 currentdir <- paste0(params$outdir, "/", params$prefix)
@@ -77,13 +73,7 @@ if (!file.exists(fn_log)) {
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-```{r child = paste0(params$codedir,"/non_overlapping_window/2_run.Rmd"), include=FALSE}
-```
-
-```{r child = paste0(params$codedir,"/non_overlapping_window/3_summary.Rmd"), include=FALSE}
-```
-
-```{r child = paste0(params$codedir,"/non_overlapping_window/4_rerun.Rmd"), include=FALSE}
+```{r child = paste0(params$codedir,"/2_variable_window_size/2_run.Rmd")}
 ```
 
 ```{r, include=FALSE}

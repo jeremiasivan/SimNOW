@@ -1,0 +1,135 @@
+---
+title: "Summary for Splitting-and-Merging NOW Runs"
+params:
+  # general
+  codedir: "~/SimNOW/empirical_analysis"
+  prefix: "sim"
+  outdir: ""
+  thread: 1
+  redo: FALSE
+
+  # stepwise NOW
+  colour_scheme: "colour_scheme.txt"
+---
+
+```{r, include=FALSE}
+# install.packages(ape)
+# install.packages(data.table)
+
+# load libraries
+library(tidyverse)
+
+# load functions
+source(paste0(params$codedir,"/1_stepwise_now/functions.R"), local=TRUE)
+source(paste0(params$codedir,"/2_variable_window_size/functions.R"), local=TRUE)
+
+# create outdir
+dir_output_prefix <- paste0(params$outdir, "/", params$prefix, "/")
+dir_output_summary <- paste0(dir_output_prefix, "summary/")
+if (!dir.exists(dir_output_summary)) {
+    dir.create(dir_output_summary, recursive=T)
+}
+
+# output files
+fn_summary <- paste0(dir_output_summary, params$prefix, ".sumtable")
+
+fn_wsize_pos <- paste0(dir_output_summary, params$prefix, "_wsize_pos.tiff")
+fn_top_pos <- paste0(dir_output_summary, params$prefix, "_top_pos.tiff")
+fn_top_pos_highbs <- paste0(dir_output_summary, params$prefix, "_top_pos_highbs.tiff")
+```
+
+```{r dac-visualisation}
+# list chromosomes
+ls_chr <- list.dirs(dir_output_prefix, recursive=F, full.names=F)
+ls_chr <- ls_chr[grepl("^chr", ls_chr)]
+
+# open the colour scheme
+ls_colour_scheme <- NULL
+if (file.exists(params$colour_scheme)) {
+    df_colour_scheme <- data.table::fread(params$colour_scheme)
+    ls_colour_scheme <- sapply(df_colour_scheme$topology, function(x) {
+        df_colour_scheme$code[df_colour_scheme$topology==x]
+    })
+    ls_colour_scheme <- c(ls_colour_scheme, "-"="#010101", "Others"="#fcfc9a")
+}
+
+# output data.frame
+df_visualisation <- data.table::data.table()
+df_visualisation_2 <- data.table::data.table()
+
+# iterate over chromosome
+for (chr in ls_chr) {
+  df_current <- data.table::fread(paste0(dir_output_prefix, chr, "/", chr, ".dactops"))
+  df_current_2 <- data.table::fread(paste0(dir_output_prefix, chr, "/", chr, ".dacsum"))
+
+  # convert the lengths into genomic positions
+  df_current <- df_current %>% mutate(start = lag(cumsum(length), default=0)+1,
+                                      stop = start+length-1,
+                                      chr = chr)
+  df_current_2 <- data.table::data.table(pos = seq(1, sum(df_current_2$length)),
+                                         len = rep(df_current_2$length, times=df_current_2$length),
+                                         chr = chr)
+
+  # extract unique topologies
+  smtree_uq <- unique(df_current$topology)
+  smtree_uq <- smtree_uq[smtree_uq!=""]
+
+  # update topology
+  if (!is.null(ls_colour_scheme)) {
+    ls_tops <- names(ls_colour_scheme)
+    ls_tops <- ls_tops[!ls_tops%in%c("-","Others")]
+
+    # iterate over topologies to match the naming convention
+    for (j in ls_tops) {
+        for (k in smtree_uq) {
+            if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = j)), ape::unroot(ape::read.tree(text = k)))) {
+                df_current[, topology := gsub(k, j, topology, fixed = TRUE)]
+                break
+            }
+        }
+    }
+
+    df_current$topology <- ifelse(df_current$topology=="", "-", df_current$topology)
+    df_current$topology <- ifelse(df_current$topology%in%ls_tops | df_current$topology=="-", df_current$topology, "Others")
+  }
+  
+  # update the output data.frame
+  df_visualisation <- rbind(df_visualisation, df_current)
+  df_visualisation_2 <- rbind(df_visualisation_2, df_current_2)
+}
+
+# save data.frame
+data.table::fwrite(df_visualisation, file=fn_summary, sep="\t", quote=F)
+
+# update the column types
+df_visualisation$chr <- factor(df_visualisation$chr, levels=stringr::str_sort(unique(df_visualisation$chr), numeric=T, decreasing=T))
+df_visualisation$y <- as.numeric(df_visualisation$chr) * 1.5
+
+# plot topologies across positions (all gene trees) 
+f_plot_top_pos(df_visualisation, ls_colour_scheme, fn_top_pos)
+
+# plot topologies across positions (gene trees with high bootstrap value)
+df_visualisation$topology <- ifelse(df_visualisation$is_highbs, df_visualisation$topology, "-")
+f_plot_top_pos(df_visualisation, ls_colour_scheme, fn_top_pos_highbs)
+
+# plot window sizes across positions
+plot <- ggplot(df_visualisation_2, aes(x=pos, y=len)) +
+  geom_point(linewidth=1, alpha=0.8) +
+  scale_y_log10(labels=scales::label_number(trim = TRUE, accuracy = NULL)) +
+  facet_wrap(.~chr, ncol=2) +
+  xlab("Genome Position (bp)") + ylab("Block Length (bp)") +
+  theme(
+      axis.title.x=element_text(size=40),
+      axis.title.y=element_text(size=40),
+      axis.text.y=element_text(size=30),
+      axis.text.x=element_text(size=30),
+      strip.text=element_text(size=30),
+      legend.title=element_text(size=30),
+      legend.text=element_text(size=30),
+      legend.key.size=unit(2,"cm")
+    )
+
+tiff(filename=fn_wsize_pos, units="px", width=4000, height=8000)
+print(plot)
+dev.off()
+```

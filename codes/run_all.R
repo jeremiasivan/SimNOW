@@ -27,23 +27,54 @@ src_aln <- "~/empirical_aln.fa"
 # non-overlapping window analysis
 set_model <- FALSE
 set_blmin <- TRUE
+set_keepident <- FALSE
 
 dna_model <- alisim_model
 outgroup <- "7"
 
 window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
+
+# divide-and-conquer
+exe_seqkit <- "seqkit"
+
+init_wsize <- 10000000
+division_prop <- c(0.25, 0.5, 0.75)
+min_informative_sites <- 0
+
 #################################
 
 if (nthread / thread < 1) {
   stop("Invalid number of threads (nthread) vs thread per run (thread)")
 }
 
-temp_table <- expand.grid(seq = seq(1:nreps), rrate = ms_r)
+temp_table <- data.frame()
+if (typeof(ms_r) == "character" && file.exists(ms_r)) {
+  # read the table
+  df_ms <- data.table::fread(ms_r)
+
+  # iterate over r
+  iter <- 1
+  for (group in unique(df_ms$group)) {
+    for (i in 1:nreps) {
+      temp_table <- rbind(temp_table, data.frame(seq=iter,
+                                                 rrate=I(list(df_ms$ms_r[df_ms$group==group])),
+                                                 seqlen=I(list(df_ms$ms_l[df_ms$group==group]))
+                                                 ))
+      iter <- iter+1
+    }
+  }
+
+} else {
+  temp_table <- expand.grid(seq = seq(1:nreps), rrate = ms_r, seqlen = ms_l)
+}
+
+# add ID
 temp_table$id <- rownames(temp_table)
 
 # create sets of parameters
 repsim <- list()
 repnow <- list()
+repdac <- list()
 
 for (i in 1:nrow(temp_table)) {
   prex <- paste0(prefix,"_",temp_table$id[i])
@@ -56,7 +87,7 @@ for (i in 1:nrow(temp_table)) {
   
   tempsim <- list(out=out, params=list(prefix=prex,
                                        codedir=codedir, outdir=outdir, redo=redo,
-                                       msdir=msdir, ms_params=ms_params, ms_r=temp_table$rrate[i], ms_l=ms_l,
+                                       msdir=msdir, ms_params=ms_params, ms_r=unlist(temp_table$rrate[i]), ms_l=unlist(temp_table$seqlen[i]),
                                        iqtree2dir=iqtree2dir, alisim_model=alisim_model, alisim_scale=alisim_scale,
                                        copy_gaps=copy_gaps, src_aln=src_aln
                                        ))
@@ -68,8 +99,16 @@ for (i in 1:nrow(temp_table)) {
                                        window_size=window_size
                                        ))
 
+  tempdac <- list(out=out, params=list(prefix=prex,
+                                       codedir=codedir, outdir=outdir, thread=thread, redo=redo,
+                                       exe_seqkit=exe_seqkit,
+                                       iqtree2dir=iqtree2dir, set_model=set_model, set_keepident=set_keepident, set_blmin=set_blmin, dna_model=dna_model, outgroup=outgroup,
+                                       init_wsize=init_wsize, division_prop=division_prop, min_informative_sites=min_informative_sites
+                                       ))                                     
+
   repsim <- append(repsim, list(tempsim))
   repnow <- append(repnow, list(tempnow))
+  repdac <- append(repdac, list(tempdac))
 }
 
 # function to create reports for independent run
@@ -90,6 +129,18 @@ make_repnow <- function(r) {
   dir.create(tf)
   
   rmarkdown::render(input=paste0(codedir,"/2_non_overlapping_window/1_main.Rmd"),
+                    output_file=r$out,
+                    intermediates_dir=tf,
+                    params=r$params,
+                    quiet=TRUE)
+  unlink(tf)
+}
+
+make_repdac <- function(r) {
+  tf <- tempfile()
+  dir.create(tf)
+  
+  rmarkdown::render(input=paste0(codedir,"/3_variable_window_size/1_main.Rmd"),
                     output_file=r$out,
                     intermediates_dir=tf,
                     params=r$params,
@@ -119,8 +170,19 @@ foreach(r=repnow, .errorhandling = 'pass') %dopar% {
 
 stopCluster(cl)
 
+# run parallelized DAC analysis
+cl <- makeCluster(floor(nthread/thread), outfile="")
+registerDoSNOW(cl)
+
+foreach(r=repdac, .errorhandling = 'pass') %dopar% {
+  make_repdac(r)
+  NULL
+}
+
+stopCluster(cl)
+
 # summary
-rmarkdown::render(input=paste(codedir,"/3_all_runs_summary/1_main.Rmd", sep=""),
+rmarkdown::render(input=paste(codedir,"/4_all_runs_summary/1_main.Rmd", sep=""),
                   output_file=paste(outdir, "/", prefix, ".html", sep=""),
                   params=list(prefix=prefix, codedir=codedir, outdir=outdir),
                   quiet=TRUE)

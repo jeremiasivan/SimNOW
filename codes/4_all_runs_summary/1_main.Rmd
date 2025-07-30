@@ -17,8 +17,8 @@ params:
 
 ## Load required libraries and functions
 ```{r}
-source(paste0(params$codedir, "/3_all_runs_summary/functions.R"))
-source(paste0(params$codedir, "/3_all_runs_summary/functions_html.R"))
+source(paste0(params$codedir, "/4_all_runs_summary/functions.R"))
+source(paste0(params$codedir, "/4_all_runs_summary/functions_html.R"))
 
 library(data.table)
 library(kableExtra)
@@ -41,8 +41,12 @@ fn_simsum <- paste0(simsumdir, params$prefix, ".simsum")
 fn_site_rmse <- paste0(simsumdir, params$prefix, ".site_rmse.tiff")
 fn_site_ws <- paste0(sitedir, params$prefix, ".site_ws.tiff")
 fn_rmse_ws <- paste0(rmsedir, params$prefix, ".rmse_ws.tiff")
+
 fn_rho_ws_tree <- paste0(rmsedir, params$prefix, ".rho_ws_tree.tiff")
 fn_rho_ws_tops <- paste0(rmsedir, params$prefix, ".rho_ws_tops.tiff")
+
+fn_simsum_dac <- paste0(simsumdir, params$prefix, ".dac.simsum")
+fn_dac_tiff <- paste0(simsumdir, params$prefix, ".dac.tiff")
 ```
 
 ```{r simsum, include=FALSE}
@@ -72,7 +76,7 @@ for (i in simulation) {
 
   # extract recombination rate
   command <- strsplit(system(paste("grep 'ms'",fn_ms), intern=T), " ")
-  rrate <- as.numeric(command[[1]][match("-r", command[[1]]) + 1])
+  rrate <- command[[1]][match("-r", command[[1]]) + 1]
   
   # add the simulation details onto the big table
   sumfile <- data.table::data.table("simulation" = rep(i, nrow(sumfile)), sumfile, "r" = rep(rrate,nrow(sumfile)))
@@ -304,7 +308,7 @@ for (i in simulation) {
 
   df_mstrees <- data.table::fread(fn_mstrees)
   df_mstrees <- df_mstrees %>%
-    group_by(tree, group_run = data.table::rleid(topology)) %>%
+    group_by(tree, group_run = data.table::rleid(tree)) %>%
     summarise(length=sum(length)) %>%
     arrange(group_run)
   df_mstrees$group_run <- NULL
@@ -350,4 +354,61 @@ df_best_bic <- simsum %>%
   mutate(type="bic")
 
 # for visualisation, use f_wsize_rrate() function to iterate over df_output_tree and df_output_tops per r
+```
+
+## Divide-and-Conquer
+```{r simsum-dac}
+df_dac_output <- data.table(simulation=character(), r=numeric(),
+                            now_wsize=numeric(), now_acc=numeric(), now_rmse=numeric(), now_aic=numeric(),
+                            dac_min_wsize=numeric(), dac_max_wsize=numeric(), dac_acc=numeric(), dac_rmse=numeric(), dac_aic=numeric(),
+                            delta_acc=numeric(), delta_rmse=numeric(), delta_aic=numeric())
+
+# iterate over simulation
+for (i in simulation) {
+  # open the accuracy table
+  fn_acc <- paste0(params$outdir, "/", i, "/dac/summary/", i, ".acc")
+  df_acc <- fread(fn_acc)
+   
+  # update the data.table
+  df_dac_output <- rbind(df_dac_output,
+                         data.table::data.table(simulation=i,
+                                                r=simsum$r[simsum$simulation==i][1],
+                                                now_wsize=df_acc$min_wsize[1],
+                                                now_acc=df_acc$acc[1],
+                                                now_rmse=df_acc$rmse[1],
+                                                now_aic=df_acc$aic[1],
+                                                dac_min_wsize=df_acc$min_wsize[2],
+                                                dac_max_wsize=df_acc$max_wsize[2],
+                                                dac_acc=df_acc$acc[2],
+                                                dac_rmse=df_acc$rmse[2],
+                                                dac_aic=df_acc$aic[2],
+                                                delta_acc=df_acc$acc[2]-df_acc$acc[1],
+                                                delta_rmse=df_acc$rmse[2]-df_acc$rmse[1],
+                                                delta_aic=df_acc$aic[2]-df_acc$aic[1])
+                        )
+}
+
+# save data.table
+fwrite(df_dac_output, file=fn_simsum_dac, quote=FALSE, sep="\t")
+
+# visualisation
+df_dac_sub <- df_dac_output %>% select(r, delta_acc, delta_rmse) %>% pivot_longer(-r)
+
+plot <- ggplot(df_dac_sub, aes(x=as.factor(r), y=value, colour=as.factor(r))) +
+    geom_boxplot(size=2) +
+    geom_point(size=8) +
+    facet_wrap(.~name, scales="free_y") +
+    xlab("Recombination rate") +
+    guides(colour="none") +
+    theme(
+        axis.title.x=element_text(size=40),
+        axis.title.y=element_blank(),
+        axis.text.y=element_text(size=30),
+        axis.text.x=element_text(size=30),
+        strip.text=element_text(size=30)
+    )
+
+tiff(filename=fn_dac_tiff, units="px", width=1920, height=1080)
+print(plot)
+dev.off()
 ```
