@@ -20,7 +20,7 @@ if (!dir.exists(outdir_final)) {
 }
 
 # output files
-prefix_dac_summary <- paste0(outdir_division, "summary_aic_iter")
+prefix_dac_summary <- paste0(dac_outdir, "summary_aic_iter")
 
 fn_iqtree_ids <- paste0(dac_outdir, "iqtree_ids.tsv")
 fn_iqtree_aic <- paste0(dac_outdir, "iqtree_aic.tsv")
@@ -148,159 +148,164 @@ while (is_repeat == TRUE) {
     df_current <- data.table::fread(fn_df_current)
   
   } else {
-    # iterate over windows
-    df_output <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
-        require(dplyr)
+    if (any(df_current$is_divided)) {
+        # iterate over windows
+        df_output <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
+            require(dplyr)
 
-        # skip the window if not divisible
-        if (!df_current$is_divided[i]) {
-            return(data.table::data.table(iter=df_current$iter[i],
-                                          window=df_current$window[i],
-                                          length=df_current$length[i],
-                                          aic=df_current$aic[i],
-                                          dir=df_current$dir[i],
-                                          is_divided=FALSE,
-                                          is_combined=df_current$is_combined[i]))
-        }
-
-        # output directory
-        dir_output <- paste0(dac_outdir, "iter", iterator_padded, "/division/", df_current$window[i], "/")
-        if (!dir.exists(dir_output)) {
-            dir.create(dir_output, recursive=T)
-        }
-
-        # output file
-        df_prop <- data.table::data.table(prop=character(), window_one=character(), window_two=character(),
-                                                            length_one=numeric(), length_two=numeric(),
-                                                            aic_one=numeric(), aic_two=numeric(),
-                                                            dir_one=character(), dir_two=character())
-        fn_output <- paste0(dir_output, "aic_table.tsv")
-
-        if (file.exists(fn_output) && !params$redo) {
-            df_prop <- data.table::fread(fn_output)
-
-            if (nrow(df_prop) == 0) {
+            # skip the window if not divisible
+            if (!df_current$is_divided[i]) {
                 return(data.table::data.table(iter=df_current$iter[i],
-                                              window=df_current$window[i],
-                                              length=df_current$length[i],
-                                              aic=df_current$aic[i],
-                                              dir=df_current$dir[i],
-                                              is_divided=FALSE,
-                                              is_combined=df_current$is_combined[i]))
-            }
-
-        } else {
-            # read FASTA
-            seq <- seqinr::read.fasta(df_current$dir[i], whole.header = T)
-            ln_seq <- length(seq[[1]])
-
-            # extract AIC
-            for (prop in params$division_prop) {
-                window_one <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_1")
-                window_two <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_2")
-
-                # extract the alignment
-                midpoint <- ceiling(prop*ln_seq)
-                f_perwindow_run(dir_output, seq, window_one, 1, midpoint)
-                f_perwindow_run(dir_output, seq, window_two, midpoint+1, ln_seq)
-
-                # check -blmin
-                seq_len_one <- midpoint
-                seq_len_two <- ln_seq - midpoint
-                if (1/seq_len_one >= 0.1 || 1/seq_len_two >= 0.1) {
-                    next
-                }
-
-                # run IQ-TREE2
-                fn_fasta_one <- paste0(dir_output, window_one, ".fa")
-                fn_fasta_two <- paste0(dir_output, window_two, ".fa")
-                f_iqtree2_single(fn_fasta_one, NULL, seq_len_one, params$set_blmin, params$set_keepident, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
-                f_iqtree2_single(fn_fasta_two, NULL, seq_len_two, params$set_blmin, params$set_keepident, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
-
-                # input IQTREE files
-                fn_iqtree_one <- paste0(fn_fasta_one, ".iqtree")
-                fn_iqtree_two <- paste0(fn_fasta_two, ".iqtree")
-                if (!all(file.exists(fn_iqtree_one, fn_iqtree_two))) {
-                    next
-                }
-
-                # check informative sites
-                if (!is.null(params$min_informative_sites)) {
-                    if (!f_is_informative(fn_iqtree_one, params$min_informative_sites) || !f_is_informative(fn_iqtree_two, params$min_informative_sites)) {
-                        next
-                    }
-                }
-
-                # extract AIC
-                out_one <- f_window_tree_aic(fn_iqtree_one)
-                out_two <- f_window_tree_aic(fn_iqtree_two)
-                aic_one <- (2 * out_one$freeparams) - (2 * out_one$logl)
-                aic_two <- (2 * out_two$freeparams) - (2 * out_two$logl)
-
-                # update data.frame
-                df_prop <- rbind(df_prop, data.table::data.table(prop=prop, window_one=window_one, window_two=window_two,
-                                                                            length_one=seq_len_one, length_two=seq_len_two,
-                                                                            aic_one=aic_one, aic_two=aic_two,
-                                                                            dir_one=fn_fasta_one, dir_two=fn_fasta_two))
-            }
-
-            # save data.frame
-            data.table::fwrite(df_prop, file=fn_output, quote=F, row.names=F, col.names=T, sep="\t")
-        }
-
-        # extract the best AIC score
-        if (nrow(df_prop) == 0) {
-            return(data.table::data.table(iter=df_current$iter[i],
                                             window=df_current$window[i],
                                             length=df_current$length[i],
                                             aic=df_current$aic[i],
                                             dir=df_current$dir[i],
                                             is_divided=FALSE,
                                             is_combined=df_current$is_combined[i]))
+            }
+
+            # output directory
+            dir_output <- paste0(dac_outdir, "iter", iterator_padded, "/division/", df_current$window[i], "/")
+            if (!dir.exists(dir_output)) {
+                dir.create(dir_output, recursive=T)
+            }
+
+            # output file
+            df_prop <- data.table::data.table(prop=character(), window_one=character(), window_two=character(),
+                                                                length_one=numeric(), length_two=numeric(),
+                                                                aic_one=numeric(), aic_two=numeric(),
+                                                                dir_one=character(), dir_two=character())
+            fn_output <- paste0(dir_output, "aic_table.tsv")
+
+            if (file.exists(fn_output) && !params$redo) {
+                df_prop <- data.table::fread(fn_output)
+
+                if (nrow(df_prop) == 0) {
+                    return(data.table::data.table(iter=df_current$iter[i],
+                                                window=df_current$window[i],
+                                                length=df_current$length[i],
+                                                aic=df_current$aic[i],
+                                                dir=df_current$dir[i],
+                                                is_divided=FALSE,
+                                                is_combined=df_current$is_combined[i]))
+                }
+
+            } else {
+                # read FASTA
+                seq <- seqinr::read.fasta(df_current$dir[i], whole.header = T)
+                ln_seq <- length(seq[[1]])
+
+                # extract AIC
+                for (prop in params$division_prop) {
+                    window_one <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_1")
+                    window_two <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_2")
+
+                    # extract the alignment
+                    midpoint <- ceiling(prop*ln_seq)
+                    f_perwindow_run(dir_output, seq, window_one, 1, midpoint)
+                    f_perwindow_run(dir_output, seq, window_two, midpoint+1, ln_seq)
+
+                    # check -blmin
+                    seq_len_one <- midpoint
+                    seq_len_two <- ln_seq - midpoint
+                    if (1/seq_len_one >= 0.1 || 1/seq_len_two >= 0.1) {
+                        next
+                    }
+
+                    # run IQ-TREE2
+                    fn_fasta_one <- paste0(dir_output, window_one, ".fa")
+                    fn_fasta_two <- paste0(dir_output, window_two, ".fa")
+                    f_iqtree2_single(fn_fasta_one, NULL, seq_len_one, params$set_blmin, params$set_keepident, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+                    f_iqtree2_single(fn_fasta_two, NULL, seq_len_two, params$set_blmin, params$set_keepident, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+
+                    # input IQTREE files
+                    fn_iqtree_one <- paste0(fn_fasta_one, ".iqtree")
+                    fn_iqtree_two <- paste0(fn_fasta_two, ".iqtree")
+                    if (!all(file.exists(fn_iqtree_one, fn_iqtree_two))) {
+                        next
+                    }
+
+                    # check informative sites
+                    if (!is.null(params$min_informative_sites)) {
+                        if (!f_is_informative(fn_iqtree_one, params$min_informative_sites) || !f_is_informative(fn_iqtree_two, params$min_informative_sites)) {
+                            next
+                        }
+                    }
+
+                    # extract AIC
+                    out_one <- f_window_tree_aic(fn_iqtree_one)
+                    out_two <- f_window_tree_aic(fn_iqtree_two)
+                    aic_one <- (2 * out_one$freeparams) - (2 * out_one$logl)
+                    aic_two <- (2 * out_two$freeparams) - (2 * out_two$logl)
+
+                    # update data.frame
+                    df_prop <- rbind(df_prop, data.table::data.table(prop=prop, window_one=window_one, window_two=window_two,
+                                                                                length_one=seq_len_one, length_two=seq_len_two,
+                                                                                aic_one=aic_one, aic_two=aic_two,
+                                                                                dir_one=fn_fasta_one, dir_two=fn_fasta_two))
+                }
+
+                # save data.frame
+                data.table::fwrite(df_prop, file=fn_output, quote=F, row.names=F, col.names=T, sep="\t")
+            }
+
+            # extract the best AIC score
+            if (nrow(df_prop) == 0) {
+                return(data.table::data.table(iter=df_current$iter[i],
+                                                window=df_current$window[i],
+                                                length=df_current$length[i],
+                                                aic=df_current$aic[i],
+                                                dir=df_current$dir[i],
+                                                is_divided=FALSE,
+                                                is_combined=df_current$is_combined[i]))
+            }
+
+            df_output_min_aic <- df_prop %>% mutate(sum_aic=aic_one+aic_two) %>% filter(sum_aic==min(sum_aic))
+            if (df_output_min_aic$sum_aic[1] < df_current$aic[i]) {
+                return(rbind(data.table::data.table(iter=iterator_padded_division,
+                                                    window=df_output_min_aic$window_one[1],
+                                                    length=df_output_min_aic$length_one[1],
+                                                    aic=df_output_min_aic$aic_one[1],
+                                                    dir=df_output_min_aic$dir_one[1],
+                                                    is_divided=TRUE,
+                                                    is_combined=TRUE),
+                            data.table::data.table(iter=iterator_padded_division,
+                                                    window=df_output_min_aic$window_two[1],
+                                                    length=df_output_min_aic$length_two[1],
+                                                    aic=df_output_min_aic$aic_two[1],
+                                                    dir=df_output_min_aic$dir_two[1],
+                                                    is_divided=TRUE,
+                                                    is_combined=TRUE)))
+            } else {
+                return(data.table::data.table(iter=df_current$iter[i],
+                                            window=df_current$window[i],
+                                            length=df_current$length[i],
+                                            aic=df_current$aic[i],
+                                            dir=df_current$dir[i],
+                                            is_divided=FALSE,
+                                            is_combined=df_current$is_combined[i]))
+                }
         }
 
-        df_output_min_aic <- df_prop %>% mutate(sum_aic=aic_one+aic_two) %>% filter(sum_aic==min(sum_aic))
-        if (df_output_min_aic$sum_aic[1] < df_current$aic[i]) {
-            return(rbind(data.table::data.table(iter=iterator_padded_division,
-                                                window=df_output_min_aic$window_one[1],
-                                                length=df_output_min_aic$length_one[1],
-                                                aic=df_output_min_aic$aic_one[1],
-                                                dir=df_output_min_aic$dir_one[1],
-                                                is_divided=TRUE,
-                                                is_combined=TRUE),
-                         data.table::data.table(iter=iterator_padded_division,
-                                                window=df_output_min_aic$window_two[1],
-                                                length=df_output_min_aic$length_two[1],
-                                                aic=df_output_min_aic$aic_two[1],
-                                                dir=df_output_min_aic$dir_two[1],
-                                                is_divided=TRUE,
-                                                is_combined=TRUE)))
-        } else {
-            return(data.table::data.table(iter=df_current$iter[i],
-                                          window=df_current$window[i],
-                                          length=df_current$length[i],
-                                          aic=df_current$aic[i],
-                                          dir=df_current$dir[i],
-                                          is_divided=FALSE,
-                                          is_combined=df_current$is_combined[i]))
-            }
+        # update variables
+        df_current <- as.data.frame(df_output)
+        df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
+        df_current <- df_current %>%
+                        group_by(basewindow) %>%
+                        mutate(freq=formatC(row_number(), width=2, format="d", flag="0")) %>%
+                        ungroup() %>%
+                        mutate(window=paste(basewindow, freq, sep="_")) %>%
+                        select(-basewindow, -freq)
+
+        # save output file
+        data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
+        log4r::info(fn_logger, paste("Division: Iteration", iterator_padded, "Finished!"))
+    
+    } else {
+        # save output file
+        data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
+        log4r::info(fn_logger, paste("Division: Iteration", iterator_padded, "Finished!"))
     }
-
-    # update variables
-    df_current <- as.data.frame(df_output)
-    df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
-    df_current <- df_current %>%
-                    group_by(basewindow) %>%
-                    mutate(freq=formatC(row_number(), width=2, format="d", flag="0")) %>%
-                    ungroup() %>%
-                    mutate(window=paste(basewindow, freq, sep="_")) %>%
-                    select(-basewindow, -freq)
-
-    # save output file
-    data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
-    log4r::info(fn_logger, paste("Division: Iteration", iterator_padded, "Finished!"))
-
-    rm(df_output)
   }
 
   # ------------------------------------------- COMBINED -------------------------------------------
@@ -309,120 +314,128 @@ while (is_repeat == TRUE) {
     df_current <- data.table::fread(fn_df_current)
     
   } else {
-    # iterate over windows
-    df_combine_now <- foreach(i = 1:nrow(df_current), .combine='rbind') %dopar% {
-        # output file
-        df_temp <- NULL
+    if (any(df_current$is_combined)) {
+        # iterate over windows
+        df_combine_now <- foreach(i = 1:nrow(df_current), .combine='rbind') %dopar% {
+            # output file
+            df_temp <- NULL
 
-        if (df_current$is_combined[i]) {
-            if (i != nrow(df_current)) {
-                wcombine <- paste0(df_current$window[i], "x", gsub("window_","",df_current$window[i+1]))
-                df_temp <- rbind(df_temp, data.table::data.table(window_one=df_current$window[i], window_two=df_current$window[i+1],
-                                                                 aic_one=df_current$aic[i], aic_two=df_current$aic[i+1],
-                                                                 dir_one=df_current$dir[i], dir_two=df_current$dir[i+1], window_combine=wcombine))
+            if (df_current$is_combined[i]) {
+                if (i != nrow(df_current)) {
+                    wcombine <- paste0(df_current$window[i], "x", gsub("window_","",df_current$window[i+1]))
+                    df_temp <- rbind(df_temp, data.table::data.table(window_one=df_current$window[i], window_two=df_current$window[i+1],
+                                                                    aic_one=df_current$aic[i], aic_two=df_current$aic[i+1],
+                                                                    dir_one=df_current$dir[i], dir_two=df_current$dir[i+1], window_combine=wcombine))
+                }
+            
+                if (i != 1) {
+                    wcombine <- paste0(df_current$window[i-1], "x", gsub("window_","",df_current$window[i]))
+                    df_temp <- rbind(df_temp, data.table::data.table(window_one=df_current$window[i-1], window_two=df_current$window[i],
+                                                                    aic_one=df_current$aic[i-1], aic_two=df_current$aic[i],
+                                                                    dir_one=df_current$dir[i-1], dir_two=df_current$dir[i], window_combine=wcombine))
+                    
+                }
             }
-        
-            if (i != 1) {
-                wcombine <- paste0(df_current$window[i-1], "x", gsub("window_","",df_current$window[i]))
-                df_temp <- rbind(df_temp, data.table::data.table(window_one=df_current$window[i-1], window_two=df_current$window[i],
-                                                                 aic_one=df_current$aic[i-1], aic_two=df_current$aic[i],
-                                                                 dir_one=df_current$dir[i-1], dir_two=df_current$dir[i], window_combine=wcombine))
-                
-            }
+
+            return(df_temp)
         }
 
-        return(df_temp)
+        # remove duplicated entry
+        df_combine_now <- unique(df_combine_now)
+
+        # iterate over windows that can be combined
+        fn_output <- paste0(dac_outdir, "iter", iterator_padded, "/combined/aic_table.tsv")
+
+        df_output <- foreach (i = 1:nrow(df_combine_now), .combine='rbind') %dopar% {
+            require(seqinr)
+
+            # output directory
+            dir_output_iter <- paste0(dac_outdir, "iter", iterator_padded, "/combined/", df_combine_now$window_one[i], "/")
+            if (!dir.exists(dir_output_iter)) {
+                dir.create(dir_output_iter, recursive=T)
+            }
+
+            # output file
+            fn_combined_fasta <- paste0(dir_output_iter, df_combine_now$window_one[i], "_", df_combine_now$window_two[i], ".fa")
+            if (!file.exists(fn_combined_fasta) || params$redo) {
+                # combine sequence
+                system(paste(params$exe_seqkit, "concat --full", df_combine_now$dir_one[i], df_combine_now$dir_two[i], ">", fn_combined_fasta))
+            }
+
+            # read FASTA file
+            seq <- seqinr::read.fasta(fn_combined_fasta, whole.header = T)
+            seq_len <- length(seq[[1]])
+
+            # output files
+            fn_iqtree <- paste0(fn_combined_fasta, ".iqtree")
+            if (!file.exists(fn_iqtree) || params$redo) {
+            f_iqtree2_single(fn_combined_fasta, NULL, seq_len, params$set_blmin, params$set_keepident, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+            }
+
+            # extract AIC
+            out <- f_window_tree_aic(fn_iqtree)
+            aic <- (2 * out$freeparams) - (2 * out$logl)
+
+            # initial AIC
+            init_aic <- df_combine_now$aic_one[i] + df_combine_now$aic_two[i]
+
+            return(data.table::data.table(window_one=df_combine_now$window_one[i], window_two=df_combine_now$window_two[i],
+                                        aic_one=df_combine_now$aic_one[i], aic_two=df_combine_now$aic_two[i],
+                                        dir_one=df_combine_now$dir_one[i], dir_two=df_combine_now$dir_two[i],
+                                        window_combine=df_combine_now$window_combine[i], aic_combine=aic, delta_aic=aic-init_aic,
+                                        dir_combine=fn_combined_fasta, length_combine=seq_len))
+        }
+
+        # sort the AIC from the lowest
+        df_output <- df_output %>% arrange(delta_aic)
+        data.table::fwrite(df_output, file=fn_output, row.names=F, col.names=T, quote=F, sep="\t")
+
+        # set all is_combined to FALSE
+        df_current$is_combined <- FALSE
+        df_output <- df_output %>% filter(delta_aic < 0)
+
+        # check if data.frame has zero row
+        if (nrow(df_output) != 0) {
+            # extract the windows that have lowest AIC, change the df_current
+            for (i in 1:nrow(df_output)) {
+                # extract row
+                id_row <- match(df_output$window_one[i], df_current$window)
+
+                # check if combination is invalid
+                if (is.na(id_row) || df_output$window_two[i] != df_current$window[id_row+1]) {
+                    next
+                }
+
+                # update the row
+                df_current[id_row,] <- list(iter=iterator_padded_combined,
+                                            window=df_output$window_combine[i],
+                                            length=df_output$length_combine[i],
+                                            aic=df_output$aic_combine[i],
+                                            dir=df_output$dir_combine[i],
+                                            is_divided=TRUE,
+                                            is_combined=TRUE)
+                df_current <- df_current[-(id_row+1),]
+            }
+        } 
+
+        # update variables
+        df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
+        df_current <- df_current %>%
+                        group_by(basewindow) %>%
+                        mutate(freq=formatC(row_number(), width=2, format="d", flag="0")) %>%
+                        ungroup() %>%
+                        mutate(window=paste(basewindow, freq, sep="_")) %>%
+                        select(-basewindow, -freq)
+
+        # save output data.table
+        data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
+        log4r::info(fn_logger, paste("Merging: Iteration", iterator_padded, "Finished!"))
+    
+    } else {
+        # save output data.table
+        data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
+        log4r::info(fn_logger, paste("Merging: Iteration", iterator_padded, "Finished!"))
     }
-
-    # remove duplicated entry
-    df_combine_now <- unique(df_combine_now)
-
-    # iterate over windows that can be combined
-    fn_output <- paste0(dac_outdir, "iter", iterator_padded, "/combined/aic_table.tsv")
-
-    df_output <- foreach (i = 1:nrow(df_combine_now), .combine='rbind') %dopar% {
-        require(seqinr)
-
-        # output directory
-        dir_output_iter <- paste0(dac_outdir, "iter", iterator_padded, "/combined/", df_combine_now$window_one[i], "/")
-        if (!dir.exists(dir_output_iter)) {
-            dir.create(dir_output_iter, recursive=T)
-        }
-
-        # output file
-        fn_combined_fasta <- paste0(dir_output_iter, df_combine_now$window_one[i], "_", df_combine_now$window_two[i], ".fa")
-        if (!file.exists(fn_combined_fasta) || params$redo) {
-            # combine sequence
-            system(paste(params$exe_seqkit, "concat --full", df_combine_now$dir_one[i], df_combine_now$dir_two[i], ">", fn_combined_fasta))
-        }
-
-        # read FASTA file
-        seq <- seqinr::read.fasta(fn_combined_fasta, whole.header = T)
-        seq_len <- length(seq[[1]])
-
-        # output files
-        fn_iqtree <- paste0(fn_combined_fasta, ".iqtree")
-        if (!file.exists(fn_iqtree) || params$redo) {
-        f_iqtree2_single(fn_combined_fasta, NULL, seq_len, params$set_blmin, params$set_keepident, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
-        }
-
-        # extract AIC
-        out <- f_window_tree_aic(fn_iqtree)
-        aic <- (2 * out$freeparams) - (2 * out$logl)
-
-        # initial AIC
-        init_aic <- df_combine_now$aic_one[i] + df_combine_now$aic_two[i]
-
-        return(data.table::data.table(window_one=df_combine_now$window_one[i], window_two=df_combine_now$window_two[i],
-                                    aic_one=df_combine_now$aic_one[i], aic_two=df_combine_now$aic_two[i],
-                                    dir_one=df_combine_now$dir_one[i], dir_two=df_combine_now$dir_two[i],
-                                    window_combine=df_combine_now$window_combine[i], aic_combine=aic, delta_aic=aic-init_aic,
-                                    dir_combine=fn_combined_fasta, length_combine=seq_len))
-    }
-
-    # sort the AIC from the lowest
-    df_output <- df_output %>% arrange(delta_aic)
-    data.table::fwrite(df_output, file=fn_output, row.names=F, col.names=T, quote=F, sep="\t")
-
-    # set all is_combined to FALSE
-    df_current$is_combined <- FALSE
-    df_output <- df_output %>% filter(delta_aic < 0)
-
-    # check if data.frame has zero row
-    if (nrow(df_output) != 0) {
-        # extract the windows that have lowest AIC, change the df_current
-        for (i in 1:nrow(df_output)) {
-            # extract row
-            id_row <- match(df_output$window_one[i], df_current$window)
-
-            # check if combination is invalid
-            if (is.na(id_row) || df_output$window_two[i] != df_current$window[id_row+1]) {
-                next
-            }
-
-            # update the row
-            df_current[id_row,] <- list(iter=iterator_padded_combined,
-                                        window=df_output$window_combine[i],
-                                        length=df_output$length_combine[i],
-                                        aic=df_output$aic_combine[i],
-                                        dir=df_output$dir_combine[i],
-                                        is_divided=TRUE,
-                                        is_combined=TRUE)
-            df_current <- df_current[-(id_row+1),]
-        }
-    } 
-
-    # update variables
-    df_current$basewindow <- sapply(df_current$window, function(x) { paste(unlist(strsplit(x, split="_"))[1:2], collapse="_") })
-    df_current <- df_current %>%
-                    group_by(basewindow) %>%
-                    mutate(freq=formatC(row_number(), width=2, format="d", flag="0")) %>%
-                    ungroup() %>%
-                    mutate(window=paste(basewindow, freq, sep="_")) %>%
-                    select(-basewindow, -freq)
-
-    data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
-    log4r::info(fn_logger, paste("Merging: Iteration", iterator_padded, "Finished!"))
   }
 }   
 
