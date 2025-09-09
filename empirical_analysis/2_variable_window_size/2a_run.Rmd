@@ -329,7 +329,7 @@ while (is_repeat == TRUE) {
     } else {
         # save output file
         data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
-        log4r::info(fn_logger, paste("Division: Iteration", iterator_padded, "Finished!"))
+        log4r::info(fn_logger, paste("Division: Iteration", iterator_padded, "Skipped!"))
     }
   }
 
@@ -459,7 +459,7 @@ while (is_repeat == TRUE) {
     } else {
         # save output data.table
         data.table::fwrite(df_current, file=fn_df_current, row.names=F, col.names=T, quote=F, sep="\t")
-        log4r::info(fn_logger, paste("Merging: Iteration", iterator_padded, "Finished!"))
+        log4r::info(fn_logger, paste("Merging: Iteration", iterator_padded, "Skipped!"))
     }
   }
 }   
