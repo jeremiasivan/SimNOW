@@ -12,10 +12,10 @@ write.table(c("",
 
 # output directory
 dac_outdir <- paste0(getwd(), "/dac/")
+outdir_fasta <- paste0(dac_outdir, "fasta/")
 outdir_final <- paste0(dac_outdir, "final/")
-if (!dir.exists(outdir_final)) {
-    dir.create(outdir_final, recursive=T)
-}
+lapply(list(outdir_fasta, outdir_final), function(x) if(!dir.exists(x)) dir.create(x, recursive=T))
+
 
 # output files
 prefix_dac_summary <- paste0(dac_outdir, "summary_aic_iter")
