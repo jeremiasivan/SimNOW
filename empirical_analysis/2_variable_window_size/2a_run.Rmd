@@ -16,7 +16,6 @@ outdir_fasta <- paste0(dac_outdir, "fasta/")
 outdir_final <- paste0(dac_outdir, "final/")
 lapply(list(outdir_fasta, outdir_final), function(x) if(!dir.exists(x)) dir.create(x, recursive=T))
 
-
 # output files
 prefix_dac_summary <- paste0(dac_outdir, "summary_aic_iter")
 
@@ -103,7 +102,7 @@ options(scipen=999)
 
 # output file
 df_current <- NULL
-fn_df_current <- paste0(prefix_division_summary, "00.tsv")
+fn_df_current <- paste0(prefix_dac_summary, "00.tsv")
 
 if (file.exists(fn_df_current) && !params$redo) {
   df_current <- data.table::fread(fn_df_current)
@@ -240,8 +239,8 @@ while (is_repeat == TRUE) {
                     # run IQ-TREE2
                     fn_fasta_one <- paste0(dir_output, window_one, ".fa")
                     fn_fasta_two <- paste0(dir_output, window_two, ".fa")
-                    f_iqtree2_single(fn_fasta_one, NULL, seq_len_one, params$set_blmin, params$set_keepident, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
-                    f_iqtree2_single(fn_fasta_two, NULL, seq_len_two, params$set_blmin, params$set_keepident, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+                    f_iqtree2_single(fn_fasta_one, NULL, seq_len_one, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+                    f_iqtree2_single(fn_fasta_two, NULL, seq_len_two, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
 
                     # input IQTREE files
                     fn_iqtree_one <- paste0(fn_fasta_one, ".iqtree")
@@ -394,7 +393,7 @@ while (is_repeat == TRUE) {
             # output files
             fn_iqtree <- paste0(fn_combined_fasta, ".iqtree")
             if (!file.exists(fn_iqtree) || params$redo) {
-              f_iqtree2_single(fn_combined_fasta, NULL, seq_len, params$set_blmin, params$set_keepident, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+              f_iqtree2_single(fn_combined_fasta, NULL, seq_len, params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
             }
 
             # extract AIC
