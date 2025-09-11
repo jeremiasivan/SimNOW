@@ -250,10 +250,8 @@ while (is_repeat == TRUE) {
                     }
 
                     # check informative sites
-                    if (!is.null(params$min_informative_sites)) {
-                        if (!f_is_informative(fn_iqtree_one, params$min_informative_sites) || !f_is_informative(fn_iqtree_two, params$min_informative_sites)) {
-                            next
-                        }
+                    if (!f_is_informative(fn_iqtree_one, min_inf_sites) || !f_is_informative(fn_iqtree_two, min_inf_sites)) {
+                        next
                     }
 
                     # extract AIC
