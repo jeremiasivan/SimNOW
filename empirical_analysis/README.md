@@ -45,6 +45,9 @@ Additionally, the code will generate `prefix.sumtable` in the output folder, whi
 ### <a id="dacnow">Using variable window sizes</a>
 In this step, we run the splitting-and-merging algorithm on empirical alignment and generate the summary statistics. The parameters for this step are set in `1_main.Rmd`. The details of the parameters and outputs are similar to those from the simulations (see `codes/README.md`).
 
+> **Important Notes** <br>
+When `init_wsize` set to `NULL`, the approach would start with full concatenation (instead of the best fixed window size from AIC).
+
 ## <a id="datasets">Datasets</a>
 
 ### <a id="heliconius">Genome of *erato-sara Heliconius* butterflies from <a href="https://doi.org/10.1126/science.aaw2090">Edelman et al. (2019)</a></a>
@@ -158,4 +161,4 @@ outdir/
 ```
 
 ---
-*Last update: 30 July 2025 by Jeremias Ivan*
+*Last update: 01 March 2026 by Jeremias Ivan*
