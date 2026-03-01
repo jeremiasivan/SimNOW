@@ -46,7 +46,7 @@ Additionally, the code will generate `prefix.sumtable` in the output folder, whi
 In this step, we run the splitting-and-merging algorithm on empirical alignment and generate the summary statistics. The parameters for this step are set in `1_main.Rmd`. The details of the parameters and outputs are similar to those from the simulations (see `codes/README.md`).
 
 > **Important Notes** <br>
-When `init_wsize` set to `NULL`, the approach would start with full concatenation (instead of the best fixed window size from AIC).
+When `initial_wsize` set to `NULL`, the approach would start with full concatenation (instead of the best fixed window size from AIC).
 
 ## <a id="datasets">Datasets</a>
 
