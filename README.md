@@ -52,7 +52,7 @@ This pipeline requires several software and R packages to run. All software have
         Notes: Please install all of the R packages and their dependencies. A good starting point is to install <a href="https://anaconda.org/conda-forge/r-essentials">`r-essentials`</a> which includes commonly-used packages in R. 
 
 3. **Update the parameters in the file** <br>
-    Please refer to `codes/README.md` for the details of each parameter and which files to be updated. 
+    Please refer to <a href="/codes/README.md">`codes/README.md`</a> for the details of each parameter and which files to be updated. 
 
 4. **Run the code file** <br>
     For running individual steps:
@@ -77,7 +77,7 @@ Running the whole pipeline with the second scenario (see <a href="/codes/README.
 - Non-overlapping windows with variable window sizes: ~1.25 hours
 
 ## <a id="emps">Empirical Analyses</a>
-In order to run non-overlapping windows on empirical datasets, please refer to <a href="empirical_analysis/README.md">`empirical_analysis/README.md`</a>. There are additional software and R packages required to run the pipeline.
+In order to run non-overlapping windows on empirical datasets, please refer to <a href="/empirical_analysis/README.md">`empirical_analysis/README.md`</a>. There are additional software and R packages required to run the pipeline.
 
 ### R packages
 |    Name    |                                 CRAN / Bioconductor                                |            Anaconda            |
@@ -109,4 +109,4 @@ In order to run non-overlapping windows on empirical datasets, please refer to <
 7. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). **PHAST and RPHAST: phylogenetic analysis with space/time models**. *Briefings in Bioinformatics*, *12*(1), 41–51.
 
 ---
-*Last update: 30 July 2025 by Jeremias Ivan*
+*Last update: 06 March 2026 by Jeremias Ivan*

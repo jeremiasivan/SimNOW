@@ -5,7 +5,7 @@
     - <a href="#stepnow">Stepwise non-overlapping windows</a>
     - <a href="#dacnow">Using variable window sizes</a>
 - <a href="#datasets">Datasets</a>
-    - <a href="#heliconius">Erato-sara <i>Heliconius</i> butterflies</a>
+    - <a href="#heliconius"><i>Erato-sara</i> clade of <i>Heliconius</i> butterflies</a>
     - <a href="#hominidae">Great apes</a>
 
 ## <a id="analyses">Analyses</a>
@@ -43,15 +43,15 @@ Running the code will create a new folder for each pair of window sizes, startin
 Additionally, the code will generate `prefix.sumtable` in the output folder, which summarises the delta AIC and window trees for each `step`. If `bootstrap_type` is provided, the counts for window trees and topologies only include those with average bootstrap value more than 80 (parametric) or 95 (UFBoot).
 
 ### <a id="dacnow">Using variable window sizes</a>
-In this step, we run the splitting-and-merging algorithm on empirical alignment and generate the summary statistics. The parameters for this step are set in `1_main.Rmd`. The details of the parameters and outputs are similar to those from the simulations (see `codes/README.md`).
+In this step, we run the splitting-and-merging algorithm on empirical alignment and generate the summary statistics. The parameters for this step are set in `1_main.Rmd`. The details of the parameters and outputs are similar to those from the simulations (see <a href="../codes/README.md">`codes/README.md`</a>).
 
 > **Important Notes** <br>
 When `initial_wsize` set to `NULL`, the approach would start with full concatenation (instead of the best fixed window size from AIC).
 
 ## <a id="datasets">Datasets</a>
 
-### <a id="heliconius">Genome of *erato-sara Heliconius* butterflies from <a href="https://doi.org/10.1126/science.aaw2090">Edelman et al. (2019)</a></a>
-The dataset consists of 21 chromosomes of six *erato-sara Heliconius* species (*H. demeter, H. sara, H. telesiphe, H. hecalesia, H. himera, H. erato*) and one *H. melpomene* as outgroup.
+### <a id="heliconius">Genome of *erato-sara* clade of *Heliconius* butterflies from <a href="https://doi.org/10.1126/science.aaw2090">Edelman et al. (2019)</a></a>
+The dataset consists of 21 chromosomes of six *erato-sara* clade of *Heliconius* species (*H. demeter, H. sara, H. telesiphe, H. hecalesia, H. himera, H. erato*) and one *H. melpomene* as outgroup.
 
 #### Data Preparation
 Following the original publication, we extract FASTA alignments from HAL by following these steps:
@@ -161,4 +161,4 @@ outdir/
 ```
 
 ---
-*Last update: 01 March 2026 by Jeremias Ivan*
+*Last update: 06 March 2026 by Jeremias Ivan*
