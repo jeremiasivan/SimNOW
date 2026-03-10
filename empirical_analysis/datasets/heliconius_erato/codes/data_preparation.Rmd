@@ -15,7 +15,7 @@ params:
   dir_mafsort: ""
   dir_msaview: ""
 
-  # data filtering
+  # data filtering (optional)
   gaps_threshold: 0.15
 ---
 
@@ -177,9 +177,15 @@ ls_concat <- foreach (chr=unique(refseq$chr), .combine='c') %dopar% {
 }
 
 stopCluster(nwcl)
+
+# check if data filtering is requested
+run_filter <- TRUE
+if (is.null(params$gaps_threshold) || params$gaps_threshold == "") {
+  run_filter <- FALSE
+}
 ```
 
-```{r filter, include=FALSE}
+```{r filter, include=FALSE, eval=run_filter}
 write.table(c("",
               "####################################",
               "####       Data Filtering       ####",

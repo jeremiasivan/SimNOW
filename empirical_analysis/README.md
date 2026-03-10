@@ -11,7 +11,7 @@
 ## <a id="analyses">Analyses</a>
 
 ### <a id="stepnow">Stepwise non-overlapping window analysis</a>
-In this step, we run stepwise non-overlapping window analysis on empirical alignment and generate the summary statistics. The parameters for this step are set in `1_main.Rmd`.
+In this step, we run stepwise non-overlapping window analysis on empirical alignment and generate the summary statistics. The parameters for this step are set in <a href="/empirical_analysis/1_stepwise_now/1_main.Rmd">`1_main.Rmd`</a>.
 
 | Parameters               | Definition                                                                                                                            |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -43,7 +43,7 @@ Running the code will create a new folder for each pair of window sizes, startin
 Additionally, the code will generate `prefix.sumtable` in the output folder, which summarises the delta AIC and window trees for each `step`. If `bootstrap_type` is provided, the counts for window trees and topologies only include those with average bootstrap value more than 80 (parametric) or 95 (UFBoot).
 
 ### <a id="dacnow">Using variable window sizes</a>
-In this step, we run the splitting-and-merging algorithm on empirical alignment and generate the summary statistics. The parameters for this step are set in `1_main.Rmd`. The details of the parameters and outputs are similar to those from the simulations (see <a href="../codes/README.md">`codes/README.md`</a>).
+In this step, we run the splitting-and-merging algorithm on empirical alignment and generate the summary statistics. The parameters for this step are set in <a href="/empirical_analysis/2_variable_window_size/1_main.Rmd">`1_main.Rmd`</a>. The details of the parameters and outputs are similar to those from the simulations (see <a href="/codes/README.md">`codes/README.md`</a>).
 
 > **Important Notes** <br>
 When `initial_wsize` set to `NULL`, the approach would start with full concatenation (instead of the best fixed window size from AIC).
@@ -60,8 +60,8 @@ Following the original publication, we extract FASTA alignments from HAL by foll
 3. Sort the taxa of each MAF block using `maf-sort.sh`
 4. Convert MAF blocks to FASTA alignments using `msa_view`
 5. Concatenate the FASTA alignments using `msa_view`
-6. (Additional step) Trim the leading and trailing positions of each chromosome based on the `gaps_threshold` value (see below).
-7. (Additional step) Trim all positions of each chromosome based on the `gaps_threshold` value (see below).
+6. (Optional) Trim the leading and trailing positions of each chromosome based on the `gaps_threshold` value (see below).
+7. (Optional) Trim all positions of each chromosome based on the `gaps_threshold` value (see below).
 
 | Parameters       | Definition                                                                                                              |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
@@ -87,7 +87,7 @@ Running the code will create individual folder for each chromosome (i.e., chr1 t
 - `fasta/`: store FASTA alignment per MAF block
     - `concatenation/`: store raw and filtered concatenated FASTA alignments
 
-If you run either non-overlapping window or stepwise non-overlapping window analysis from `run_all_stepwise_now.R`, the code will create `summary/` folder in the `outdir/prefix/` which stores summary files and figures used in the publication. 
+If you run stepwise non-overlapping window analysis from `run_all_stepwise_now.R`, the code will create `summary/` folder in the `outdir/prefix/` which stores summary files and figures used in the publication. 
 
 ```
 outdir/
@@ -112,7 +112,7 @@ outdir/
 ```
 
 #### Time complexity
-Running `run_all.R` using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step is as follows:
+Running the whole analyses using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step is as follows:
 - Data preparation and filtering: ~1.6 hours with 50 threads
 - Stepwise non-overlapping windows: up to 10 hours for the longest chromosome (`chr10`)
 - Non-overlapping windows with variable window sizes: up to 10 hours for the longest chromosome (`chr10`)
@@ -161,4 +161,4 @@ outdir/
 ```
 
 ---
-*Last update: 06 March 2026 by Jeremias Ivan*
+*Last update: 10 March 2026 by Jeremias Ivan*
