@@ -294,7 +294,7 @@ f_wsize_rrate <- function(df, df_acc, df_rmse, df_aic, df_bic, dir_output) {
     
     # highlight best window size(s) according to RMSE
     for (j in 1:nrow(sub_df_acc)) {
-      plot <- plot + geom_vline(xintercept=sub_df_acc$window_size[i], colour="#DCE319FF", alpha=0.5, linetype=5, linewidth=5)
+      plot <- plot + geom_vline(xintercept=sub_df_acc$window_size[j], colour="#DCE319FF", alpha=0.5, linetype=5, linewidth=5)
     }
     
     # highlight best window size(s) according to AIC and BIC

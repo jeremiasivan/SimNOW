@@ -16,7 +16,7 @@ f_iqtree2_single <- function(input, outgroup, window_size, setblmin, setkeepiden
                       "-s", input,
                       "-T 1 --quiet -redo")
   
-  if (!is.null(outgroup) && !outgroup == ""){
+  if (!is.null(outgroup) && outgroup != ""){
     iqtree_cmd <- paste(iqtree_cmd, "-o", outgroup)
   }
   

@@ -581,5 +581,5 @@ if (file.exists(fn_summary) && !params$redo) {
 }
 ```
 
-```{r child = paste0(params$codedir,"/stepwise_now/3_summary.Rmd")}
+```{r child = paste0(params$codedir,"/1_stepwise_now/3_summary.Rmd")}
 ```

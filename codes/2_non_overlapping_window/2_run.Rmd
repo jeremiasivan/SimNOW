@@ -49,7 +49,7 @@ foreach (w = sort(params$window_size)) %dopar% {
 
   # total alignment length should be divisible by the window size
   numw <- params$ms_l/w
-  if (w == 0 || !numw%%1 == 0) {
+  if (w == 0 || numw%%1 != 0) {
     log4r::warn(fn_logger, paste0("Warning: invalid window size (", w, "bp). Skipped."))
     return(NULL)
   }

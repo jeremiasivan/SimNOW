@@ -11,7 +11,7 @@ f_ms <- function(ms_params, ms_r, ms_l, prefix, fn_msfile, fn_log, fn_logger, is
     write.table(c(log_ms_command, ""), file=fn_log, quote=F, row.names=F, col.names=F, append=T)
 
     # generate msfile
-    if (file.exists(fn_msfile) && is_redo) {
+    if (file.exists(fn_msfile) && !is_redo) {
         log4r::info(fn_logger, paste0("File found  : ", prefix, ".ms."))
     } else {
         system(ms_command)

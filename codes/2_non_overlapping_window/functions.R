@@ -29,7 +29,7 @@ f_window_tree <- function(dir_aln, prefix, thread, outgroup, set_model, set_blmi
                         "-cptime 1000000 --quiet -redo")
     
     # set outgroup
-    if (!is.null(outgroup) && outgroup == ""){
+    if (!is.null(outgroup) && outgroup != ""){
         iqtree_cmd <- paste(iqtree_cmd, "-o", outgroup)
     }
     
