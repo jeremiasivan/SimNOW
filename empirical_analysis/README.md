@@ -43,10 +43,29 @@ Running the code will create a new folder for each pair of window sizes, startin
 Additionally, the code will generate `prefix.sumtable` in the output folder, which summarises the delta AIC and window trees for each `step`. If `bootstrap_type` is provided, the counts for window trees and topologies only include those with average bootstrap value more than 80 (parametric) or 95 (UFBoot).
 
 ### <a id="dacnow">Using variable window sizes</a>
-In this step, we run the splitting-and-merging algorithm on empirical alignment and generate the summary statistics. The parameters for this step are set in <a href="/empirical_analysis/2_variable_window_size/1_main.Rmd">`1_main.Rmd`</a>. The details of the parameters and outputs are similar to those from the simulations (see <a href="/codes/README.md">`codes/README.md`</a>).
+In this step, we run the splitting-and-merging algorithm on empirical alignment and generate the summary statistics. The parameters for this step are set in <a href="/empirical_analysis/2_variable_window_size/1_main.Rmd">`1_main.Rmd`</a>. The details of the parameters are similar to the stepwise non-overlapping window method, with the following addition:
 
-> **Important Notes** <br>
-When `initial_wsize` set to `NULL`, the approach would start with full concatenation (instead of the best fixed window size from AIC).
+| Parameters               | Definition                                                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `exe_seqkit`             | Executable for SeqKit                                                                                                                 |
+| `init_wsize`             | Initial window size to partition the alignment; if `NULL`, start with full concatenation                                              |
+| `division_prop`          | Vector of size ratios of the first window during the splitting step                                                                   |
+| `min_informative_sites`  | Minimum number of parsimony informative sites per window during the splitting procedure                                               |
+
+#### Output
+Running the code will create a new folder called `dac` that consists of:
+- `division/`: individual folder for each iteration of the splitting step, with its respective table summary (`summary_aic_iterXX.tsv`)
+- `combine/` : individual folder for each iteration of the merging step, with its respective table summary (`summary_aic_iterXX.tsv`).
+- `final/`: individual folder for the final partition of the alignment
+- `summary/`
+    - `prefix.sumtable`: summary table for the visualisation
+    - `prefix_wsize_pos.tiff`: distribution of window sizes across the alignment
+    - `prefix_top_pos.tiff`: distribution of all topologies across the alignment
+    - `prefix_top_pos_highbs.tiff`: distribution of highly-supported topologies across the alignment
+- `prefix.dacsum`: summary table from the splitting-and-merging procedure
+- `prefix.dactops`: table of window boundaries and topologies
+- `prefix_all.uqtops`: list of all topologies
+- `prefix_highbs.uqtops`: list of highly-supported topologies
 
 ## <a id="datasets">Datasets</a>
 
@@ -161,4 +180,4 @@ outdir/
 ```
 
 ---
-*Last update: 10 March 2026 by Jeremias Ivan*
+*Last update: 27 March 2026 by Jeremias Ivan*
