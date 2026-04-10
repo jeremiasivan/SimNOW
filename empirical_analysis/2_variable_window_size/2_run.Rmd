@@ -21,6 +21,7 @@ prefix_combine_summary <- paste0(outdir_combine, "summary_aic_iter")
 
 fn_summary <- paste0(getwd(), "/", params$prefix, ".dacsum")
 fn_topology <- paste0(getwd(), "/", params$prefix, ".dactops")
+fn_rootstrap <- paste0(getwd(), "/", params$prefix, ".dacroot")
 fn_topology_all <- paste0(getwd(), "/", params$prefix, "_all.uqtops")
 fn_topology_highbs <- paste0(getwd(), "/", params$prefix, "_highbs.uqtops")
 
@@ -554,6 +555,49 @@ df_topology_highbs <- df_topology %>%
 
 data.table::fwrite(df_topology_all, file=fn_topology_all, row.names=F, col.names=T, quote=F, sep="\t")
 data.table::fwrite(df_topology_highbs, file=fn_topology_highbs, row.names=F, col.names=T, quote=F, sep="\t")
+```
+
+```{r dac-tree-rootstrap, eval=params$run_rootstrap}
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
+
+# iterate over windows
+df_rootstrap <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
+  # output directory
+  outdir_window <- paste0(outdir_final, df_current$window[i], "/")
+
+  # input file
+  fn_fasta <- paste0(outdir_window, df_current$window[i], ".fa")
+
+  # output files
+  prefix <- paste0(outdir_window, "nonrev_", df_current$window[i])
+  fn_rootstrap_nexus <- paste0(prefix, ".rootstrap.nex")
+  fn_treefile <- paste0(prefix, ".treefile")
+  if (!all(file.exists(fn_rootstrap_nexus, fn_treefile)) || params$redo) {
+    # run rootstrap
+    f_calculate_rootstrap(fn_fasta, prefix, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+  }
+
+  # check if .treefile is not available
+  if (!all(file.exists(fn_rootstrap_nexus, fn_treefile))) {
+    return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], topology=NA, rootstrap=NA))
+  }
+
+  # extract topology
+  tre <- ape::read.tree(fn_treefile)
+  tre$edge.length <- NULL
+  tre$node.label <- NULL
+
+  max_root <- f_extract_max_rootstrap(fn_rootstrap_nexus)
+
+  return(data.table::data.table(window=df_current$window[i], length=df_current$length[i], topology=ape::write.tree(tre), rootstrap=max_root))
+}
+
+stopCluster(nwcl)
+
+# save data.frame
+data.table::fwrite(df_rootstrap, file=fn_rootstrap, row.names=F, col.names=T, quote=F, sep="\t")
 ```
 
 ```{r eval=FALSE}

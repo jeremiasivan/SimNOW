@@ -29,6 +29,8 @@ params:
   bootstrap: 1000
   bootstrap_type: ""
   outgroup: ""
+
+  run_rootstrap: FALSE
   
   # NOW analysis
   input_aln: ""
