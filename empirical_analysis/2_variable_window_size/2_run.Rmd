@@ -514,29 +514,7 @@ df_topology <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
 stopCluster(nwcl)
 
 # update list of topologies
-ls_topology <- unique(df_topology$topology)
-for (i in unique(df_topology$topology)) {
-  for (j in ls_topology) {
-    # skip the comparison if NA
-    if (is.na(i) || is.na(j)) {
-      next
-    }
-
-    # skip if both topologies are identical
-    if (i == j) {
-      next
-    }
-
-    # update topology name if equal
-    if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = i)), ape::unroot(ape::read.tree(text = j)))) {
-      df_topology[, topology := gsub(i, j, topology, fixed = TRUE)]
-      
-      idx_row <- match(i, ls_topology)
-      ls_topology <- ls_topology[-idx_row]
-      break
-    }
-  }
-}
+df_topology <- f_update_df_topology_unrooted(df_topology)
 
 # save data.frame
 data.table::fwrite(df_topology, file=fn_topology, row.names=F, col.names=T, quote=F, sep="\t")
@@ -598,6 +576,9 @@ df_rootstrap <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
 
 stopCluster(nwcl)
 
+# update list of topologies
+df_rootstrap <- f_update_df_topology_rooted(df_rootstrap)
+
 # save data.frame
 data.table::fwrite(df_rootstrap, file=fn_rootstrap, row.names=F, col.names=T, quote=F, sep="\t")
 ```
@@ -639,6 +620,9 @@ df_midroot <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
 }
 
 stopCluster(nwcl)
+
+# update list of topologies
+df_midroot <- f_update_df_topology_rooted(df_midroot)
 
 # save data.frame
 data.table::fwrite(df_midroot, file=fn_midroot, row.names=F, col.names=T, quote=F, sep="\t")
