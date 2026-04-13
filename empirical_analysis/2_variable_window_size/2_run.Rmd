@@ -514,7 +514,7 @@ df_topology <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
 stopCluster(nwcl)
 
 # update list of topologies
-if (!is.null(outgroup) && outgroup != ""){
+if (!is.null(outgroup) && length(outgroup) > 0){
   df_topology <- f_update_df_topology_rooted(df_topology)
 } else {
   df_topology <- f_update_df_topology_unrooted(df_topology)
