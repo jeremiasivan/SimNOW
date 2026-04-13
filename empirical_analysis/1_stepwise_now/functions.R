@@ -92,7 +92,7 @@ f_iqtree2_single <- function(input, outgroup, window_size, setblmin, setmodel, d
                       "-T 1 --quiet -redo")
   
   if (!is.null(outgroup) && outgroup != ""){
-    iqtree_cmd <- paste(iqtree_cmd, "-o", outgroup)
+    iqtree_cmd <- paste(iqtree_cmd, "-o", paste(outgroup, collapse=","))
   }
   
   if (setblmin) {
@@ -121,7 +121,7 @@ f_iqtree2_single_keepident <- function(input, outgroup, window_size, setblmin, s
                       "-T 1 --quiet -redo -keep-ident")
   
   if (!is.null(outgroup) && outgroup != ""){
-    iqtree_cmd <- paste(iqtree_cmd, "-o", outgroup)
+    iqtree_cmd <- paste(iqtree_cmd, "-o", paste(outgroup, collapse=","))
   }
   
   if (setblmin) {
