@@ -488,11 +488,17 @@ df_topology <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
     seq <- seqinr::read.fasta(fn_fasta, whole.header=T)
     seq <- as.data.frame(do.call(rbind, seq))
 
+    # set outgroup
+    outgroup <- params$outgroup
+    if (!is.null(params$outgroup) && length(params$outgroup) > 0){
+      outgroup <- names(seq)[names(seq)%in%outgroup]
+    }
+
     # conditional if bootstrap is needed
     if (nrow(unique(seq)) <= 3) {
-      f_iqtree2_single(fn_fasta, params$outgroup, df_current$length[i], params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
+      f_iqtree2_single(fn_fasta, outgroup, df_current$length[i], params$set_blmin, params$set_model, params$dna_model, "", 0, params$iqtree2dir)
     } else {
-      f_iqtree2_single(fn_fasta, params$outgroup, df_current$length[i], params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
+      f_iqtree2_single(fn_fasta, outgroup, df_current$length[i], params$set_blmin, params$set_model, params$dna_model, params$bootstrap_type, params$bootstrap, params$iqtree2dir)
     }
   }
 
@@ -514,7 +520,7 @@ df_topology <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
 stopCluster(nwcl)
 
 # update list of topologies
-if (!is.null(outgroup) && length(outgroup) > 0){
+if (!is.null(params$outgroup) && length(params$outgroup) > 0){
   df_topology <- f_update_df_topology_rooted(df_topology)
 } else {
   df_topology <- f_update_df_topology_unrooted(df_topology)
