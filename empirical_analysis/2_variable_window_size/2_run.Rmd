@@ -491,7 +491,7 @@ df_topology <- foreach (i = 1:nrow(df_current), .combine='rbind') %dopar% {
     # set outgroup
     outgroup <- params$outgroup
     if (!is.null(params$outgroup) && length(params$outgroup) > 0){
-      outgroup <- names(seq)[names(seq)%in%outgroup]
+      outgroup <- rownames(seq)[rownames(seq)%in%outgroup]
     }
 
     # conditional if bootstrap is needed
