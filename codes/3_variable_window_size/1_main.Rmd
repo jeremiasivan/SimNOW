@@ -71,7 +71,7 @@ if (!file.exists(fn_log)) {
 knitr::opts_knit$set(root.dir = currentdir)
 ```
 
-```{r child = paste0(params$codedir,"/3_variable_window_size/2_run.Rmd")}
+```{r child = paste0(params$codedir,"/3_variable_window_size/2a_run.Rmd")}
 ```
 
 ```{r child = paste0(params$codedir,"/3_variable_window_size/3_summary.Rmd")}
