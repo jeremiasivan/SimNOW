@@ -2,6 +2,11 @@
 
 **SimNOW (Simulation Non-Overlapping Windows)** is an R pipeline to assess the accuracy of non-overlapping windows analysis in simulated phylogenetic studies. It consists of two main steps: sequence simulation and non-overlapping window analyses using one fixed window size and/or variable window sizes. It is mainly developed and tested using MacOS and Linux, so there might be incompatibilities using Windows.
 
+**If you use this pipeline, please cite as:**
+```
+J. Ivan, P. Frandsen, R. Lanfear. (2026). Selecting a Window Size for Phylogenomic Analyses of Whole Genome Alignments Using AIC. Systematic Biology, 75(1), 100–114. doi:10.1093/sysbio/syaf053
+```
+
 ## Table of Content
 - <a href="#prereqs">Prerequisites</a>
 - <a href="#genpipe">General Pipeline</a>
@@ -38,7 +43,7 @@ This pipeline requires several software and R packages to run. All software have
     ```
 
 2. **Install the prerequisites** <br>
-    Please download `ms` and `IQ-TREE 2` from the links above. For the `R` packages, I prefer to download them from `Anaconda` as below.
+    Please download `ms`, `IQ-TREE 2`, and `SeqKit` from the links above. For the `R` packages, I prefer to download them from `Anaconda` as below.
 
     - Setting up conda environment with R
         ```
@@ -109,4 +114,4 @@ In order to run non-overlapping windows on empirical datasets, please refer to <
 7. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). **PHAST and RPHAST: phylogenetic analysis with space/time models**. *Briefings in Bioinformatics*, *12*(1), 41–51.
 
 ---
-*Last update: 06 March 2026 by Jeremias Ivan*
+*Last update: 05 June 2026 by Jeremias Ivan*
