@@ -29,6 +29,9 @@ params:
   bootstrap: 1000
   bootstrap_type: ""
   outgroup: ""
+
+  run_rootstrap: FALSE
+  run_midpoint_root: FALSE
   
   # NOW analysis
   input_aln: ""
@@ -40,6 +43,7 @@ params:
 ```{r, include=FALSE}
 # install.packages("data.table")
 # install.packages("log4r")
+# install.packages("phangorn")
 
 library(doSNOW)
 library(dplyr)

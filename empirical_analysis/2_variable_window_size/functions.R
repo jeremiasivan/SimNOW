@@ -61,3 +61,101 @@ f_plot_top_pos <- function(df, colour_scheme, fn_output) {
   print(plot)
   dev.off()
 }
+
+# function: calculate rootstrap in IQ-TREE
+f_calculate_rootstrap <- function(input, prefix, bs_type, bs, dir_iqtree2) {
+  iqtree_cmd <- paste(dir_iqtree2,
+                      "-s", input,
+                      "--model-joint UNREST",
+                      "--prefix", prefix,
+                      "-T 1 --quiet -redo")
+
+  if (!is.null(bs_type) && bs_type != "") {
+    if (tolower(bs_type) == "ufboot") {
+      iqtree_cmd <- paste(iqtree_cmd, "-bb", bs)
+    } else if (tolower(bs_type) == "nonparametric") {
+      iqtree_cmd <- paste(iqtree_cmd, "-b", bs)
+    }
+  }
+
+  system(iqtree_cmd)
+}
+
+# function: extract maximum rootstrap support value from IQ-TREE output (source: Claude)
+f_extract_max_rootstrap <- function(fn_rootstrap_nex) {
+  # read the nexus file
+  nexus_text <- readLines(fn_rootstrap_nex)
+
+  # extract all rootstrap values with regex
+  rootstrap_values <- regmatches(nexus_text, gregexpr('rootstrap="([0-9.]+)"', nexus_text))
+  rootstrap_values <- as.numeric(gsub('rootstrap="|"', '', unlist(rootstrap_values)))
+
+  # get the maximum rootstrap value
+  max_rootstrap <- max(rootstrap_values)
+
+  return(max_rootstrap)
+}
+
+# function: update data.frame with consistent topology format
+f_update_df_topology_unrooted <- function(df_topology) {
+  # extract list of unique topologies
+  ls_topology <- unique(df_topology$topology)
+
+  # iterate over topologies
+  for (i in unique(df_topology$topology)) {
+    for (j in ls_topology) {
+      # skip the comparison if NA
+      if (is.na(i) || is.na(j)) {
+        next
+      }
+
+      # skip if both topologies are identical
+      if (i == j) {
+        next
+      }
+
+      # update topology name if equal
+      if (ape::all.equal.phylo(ape::unroot(ape::read.tree(text = i)), ape::unroot(ape::read.tree(text = j)))) {
+        df_topology[, topology := gsub(i, j, topology, fixed = TRUE)]
+        
+        idx_row <- match(i, ls_topology)
+        ls_topology <- ls_topology[-idx_row]
+        break
+      }
+    }
+  }
+
+  return(df_topology)
+}
+
+# function: update data.frame with consistent topology format
+f_update_df_topology_rooted <- function(df_topology) {
+  # extract list of unique topologies
+  ls_topology <- unique(df_topology$topology)
+
+  # iterate over topologies
+  for (i in unique(df_topology$topology)) {
+    for (j in ls_topology) {
+      # skip the comparison if NA
+      if (is.na(i) || is.na(j)) {
+        next
+      }
+
+      # skip if both topologies are identical
+      if (i == j) {
+        next
+      }
+
+      # update topology name if equal
+      if (ape::all.equal.phylo(ape::read.tree(text = i), ape::read.tree(text = j))) {
+        df_topology[, topology := gsub(i, j, topology, fixed = TRUE)]
+        
+        idx_row <- match(i, ls_topology)
+        ls_topology <- ls_topology[-idx_row]
+        break
+      }
+    }
+  }
+
+  return(df_topology)
+}
