@@ -1,0 +1,41 @@
+# ============================================================
+#  SimNOW config file
+#  
+#  Edit this file, then run:
+#    Rscript run_pipeline.R --config config.yaml
+# ============================================================
+
+# --- General -------------------------------------------------
+codedir:  "/home/user/SimNOW/codes/"      # path to SimNOW/codes directory
+prefix:   "simulation"                    # output prefix (used for filenames) (default: "simulation")
+outdir:   "/home/user/output/"            # output directory
+thread:   1                               # number of parallel threads (default: 1)
+redo:     FALSE                           # re-run even if output files exist (default: FALSE)
+
+# --- Executables ---------------------------------------------
+exe_iqtree: "iqtree2"                     # path to IQ-TREE2 executable
+exe_ms:     "ms"                          # path to ms executable
+exe_seqkit: "seqkit"                      # path to SeqKit executable
+
+# --- Sequence Simulation -------------------------------------
+fn_ms_metadata: ""                      # input file for ms recombination rates
+ms_params:      ""                      # ms parameters
+nreps:          10                      # number of ms replicates per recombination rate (default: 10)
+
+alisim_model: "JC"                      # substitution model for sequence simulation (default: JC)
+alisim_scale: 0.01                      # scale factor for branch lengths in sequence simulation (default: 0.01)
+is_copy_gaps: FALSE                     # copy gaps from existing alignment to the simulated sequences (default: FALSE)
+src_aln:      ""                        # path to existing alignment (only used if is_copy_gaps==TRUE)
+
+# --- IQ-TREE2 Settings ---------------------------------------
+set_blmin:          TRUE                # set minimum branch length per window (default: TRUE)
+set_model:          FALSE               # set a fixed substitution model (default: FALSE)
+set_keepident:      FALSE               # keep identical sequences in the analysis (default: FALSE)
+dna_model:          ""                  # substitution model to be used (only if set_model==TRUE; default: alisim_model)
+outgroup:           ""                  # outgroup taxon name (default: "" (no outgroup))
+
+# --- NOW Analysis --------------------------------------------
+window_size:    [10000,100000,1000000,10000000]  # window sizes to test (bp)
+init_wsize:     NA                               # initial window size (bp) (default: ms_l)
+split_prop:     [0.25, 0.5, 0.75]                # split configurations to test at each splitting step (default: 0.25, 0.5, 0.75)
+min_informative_sites: 1                         # minimum parsimony-informative sites per window (default: 1)

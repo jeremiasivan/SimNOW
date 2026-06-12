@@ -2,9 +2,9 @@
 
 # function: run ms
 # required library: log4r
-f_ms <- function(ms_params, ms_r, ms_l, prefix, fn_msfile, fn_log, fn_logger, is_redo, randseed, msdir) {
+f_ms <- function(ms_params, ms_r, ms_l, prefix, fn_msfile, fn_log, fn_logger, is_redo, randseed, exe_ms) {
     # combine all ms parameters into one variable
-    ms_command <- paste(msdir, ms_params, "-r", ms_r, ms_l, "-seeds", randseed, ">", fn_msfile)
+    ms_command <- paste(exe_ms, ms_params, "-r", ms_r, ms_l, "-seeds", randseed, ">", fn_msfile)
 
     # add ms command to logfile                    
     log_ms_command <- paste("Command:", ms_command)                   

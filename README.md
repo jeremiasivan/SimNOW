@@ -2,7 +2,13 @@
 
 **SimNOW (Simulation Non-Overlapping Windows)** is an R pipeline to assess the accuracy of non-overlapping windows analysis in simulated phylogenetic studies. It consists of two main steps: sequence simulation and non-overlapping window analyses using one fixed window size and/or variable window sizes. It is mainly developed and tested using MacOS and Linux, so there might be incompatibilities using Windows.
 
-**If you use this pipeline, please cite as:**
+> [!NOTE]
+> The stepwise non-overlapping window analyses have been moved to <a href="https://github.com/jeremiasivan/StepwiseNOW"><b>StepwiseNOW (Stepwise Non-Overlapping Windows)</b></a>. The codes are also archived at `archive-empirical` branch.
+
+> [!NOTE]
+> This repository stores the R codes for simulating and running non-overlapping windows on simulated chromosomes. If you have your own chromosome alignments, please use <a href="https://github.com/jeremiasivan/PhyloNOW"><b>PhyloNOW (Phylogenomic Non-Overlapping Windows)</b></a> to run non-overlapping windows with variable window sizes, or <a href="https://github.com/jeremiasivan/StepwiseNOW"><b>StepwiseNOW (Stepwise Non-Overlapping Windows)</b></a> to run non-overlapping windows with fixed window size (which has been shown to perform poorly compared to using variable window sizes).
+
+**If you use SimNOW, please cite as:**
 ```
 J. Ivan, P. Frandsen, R. Lanfear. (2026). Selecting a Window Size for Phylogenomic Analyses of Whole Genome Alignments Using AIC. Systematic Biology, 75(1), 100–114. doi:10.1093/sysbio/syaf053
 ```
@@ -10,18 +16,18 @@ J. Ivan, P. Frandsen, R. Lanfear. (2026). Selecting a Window Size for Phylogenom
 ## Table of Content
 - <a href="#prereqs">Prerequisites</a>
 - <a href="#genpipe">General Pipeline</a>
-- <a href="#timecom">Time Complexity</a>
-- <a href="#emps">Empirical Analyses</a>
 - <a href="#refs">References</a>
 
 ## <a id="prereqs">Prerequisites</a>
-This pipeline requires several software and R packages to run. All software have to be executable, while the R packages should be installed either in your local directory or virtual environment. We recommend you to use environment management system (e.g. `conda`) to install the packages, but you can also use `install.packages()` built-in function in R or RStudio.
+SimNOW requires several software and R packages to run. We recommend you to use environment management system (e.g. `conda`) to install the prerequisites, but you can also use `install.packages()` built-in function in R or RStudio.
 
 ### Software
-- <a href="http://home.uchicago.edu/~rhudson1/source/mksamples.html">ms</a>
-- <a href="http://www.iqtree.org/doc/AliSim">AliSim</a>
-- <a href="http://www.iqtree.org">IQ-TREE 2</a>
-- <a href="https://bioinf.shenwei.me/seqkit/">SeqKit</a>
+|    Name    |                                  Website                                    |                             Anaconda                             |
+| ---------- |:---------------------------------------------------------------------------:|:----------------------------------------------------------------:|
+| IQ-TREE    | <a href="http://www.iqtree.org">Link</a>                                    | <a href="https://anaconda.org/bioconda/iqtree">Link</a>          |
+| ms         | <a href="http://home.uchicago.edu/~rhudson1/source/mksamples.html">Link</a> | <a href="https://anaconda.org/bioconda/ms">Link</a>              |
+| SeqKit     | <a href="https://bioinf.shenwei.me/seqkit/">Link</a>                        | <a href="https://anaconda.org/bioconda/seqkit">Link</a>          |
+
 
 ### R packages
 |    Name    |                               CRAN                               |                             Anaconda                             |
@@ -31,10 +37,12 @@ This pipeline requires several software and R packages to run. All software have
 | doSNOW     | <a href="https://cran.r-project.org/package=doSNOW">Link</a>     | <a href="https://anaconda.org/conda-forge/r-dosnow">Link</a>     |
 | kableExtra | <a href="https://cran.r-project.org/package=kableExtra">Link</a> | <a href="https://anaconda.org/conda-forge/r-kableextra">Link</a> |
 | log4r      | <a href="https://cran.r-project.org/package=log4r">Link</a>      | <a href="https://anaconda.org/conda-forge/r-log4r">Link</a>      |
+| optparse   | <a href="https://cran.r-project.org/package=optparse">Link</a>   | <a href="https://anaconda.org/conda-forge/r-optparse">Link</a>   |
 | rmarkdown  | <a href="https://cran.r-project.org/package=rmarkdown">Link</a>  | <a href="https://anaconda.org/conda-forge/r-rmarkdown">Link</a>  |
 | seqinr     | <a href="https://cran.r-project.org/package=seqinr">Link</a>     | <a href="https://anaconda.org/conda-forge/r-seqinr">Link</a>     |
 | tidyverse  | <a href="https://cran.r-project.org/package=tidyverse">Link</a>  | <a href="https://anaconda.org/conda-forge/r-tidyverse">Link</a>  |
 | viridis    | <a href="https://cran.r-project.org/package=viridis">Link</a>    | <a href="https://anaconda.org/conda-forge/r-viridis">Link</a>    |
+| yaml       | <a href="https://cran.r-project.org/package=yaml">Link</a>       | <a href="https://anaconda.org/conda-forge/r-yaml">Link</a>       |
 
 ## <a id="genpipe">General Pipeline</a>
 1. **Clone the Git repository** <br>
@@ -43,75 +51,59 @@ This pipeline requires several software and R packages to run. All software have
     ```
 
 2. **Install the prerequisites** <br>
-    Please download `ms`, `IQ-TREE 2`, and `SeqKit` from the links above. For the `R` packages, I prefer to download them from `Anaconda` as below.
-
-    - Setting up conda environment with R
+    - Create a new conda environment
         ```
         conda create -n simnow
         conda activate simnow
         ```
-    -  Installing R packages
+    -  Installing prerequisites
         ```
-        conda install package-name
+        conda install -c conda-forge r-ape r-data.table r-doSNOW r-kableExtra r-log4r r-optparse r-rmarkdown r-seqinr r-tidyverse r-viridis r-yaml bioconda::iqtree bioconda::ms bioconda::seqkit
         ```
-        Notes: Please install all of the R packages and their dependencies. A good starting point is to install <a href="https://anaconda.org/conda-forge/r-essentials">`r-essentials`</a> which includes commonly-used packages in R. 
 
-3. **Update the parameters in the file** <br>
-    Please refer to <a href="/codes/README.md">`codes/README.md`</a> for the details of each parameter and which files to be updated. 
+3. **Update the parameters in `config.yaml`** <br>
 
-4. **Run the code file** <br>
-    For running individual steps:
+4. **Run SimNOW** <br>
     ```
-    Rscript -e "rmarkdown::render('~/SimNOW/codes/1_sequence_simulation/1_main.Rmd')"
-    Rscript -e "rmarkdown::render('~/SimNOW/codes/2_non_overlapping_window/1_main.Rmd')"
-    Rscript -e "rmarkdown::render('~/SimNOW/codes/3_variable_window_size/1_main.Rmd')"
-    Rscript -e "rmarkdown::render('~/SimNOW/codes/4_all_runs_summary/1_main.Rmd')"
+    Rscript run_pipeline.R --config config.yaml
+    Rscript run_pipeline.R --config config.yaml --redo
     ```
 
-    For running the whole pipeline:
-    ```
-    Rscript ~/SimNOW/codes/run_all.R
-    ```
-
-    In UNIX-based operating systems (e.g., Linux and MacOS), it is advisable to use `nohup` or `tmux` to run the whole pipeline. For Windows, you can use `start`, but I have never tried it before. 
-
-## <a id="timecom">Time Complexity</a>
-Running the whole pipeline with the second scenario (see <a href="/codes/README.md#example">here</a>) using a server with `Intel(R) Xeon(R) CPU E5-2690 v4 @2.60GHz` and `Ubuntu 20.04.5 LTS`, the time required to run each step per replicate is as follows:
-- Sequence simulation: up to 1 hour for `ms_r = 2000`
-- Non-overlapping windows with one fixed window size: ~2.25 hours
-- Non-overlapping windows with variable window sizes: ~1.25 hours
-
-## <a id="emps">Empirical Analyses</a>
-In order to run non-overlapping windows on empirical datasets, please refer to <a href="/empirical_analysis/README.md">`empirical_analysis/README.md`</a>. There are additional software and R packages required to run the pipeline.
-
-### R packages
-|    Name    |                                 CRAN / Bioconductor                                |            Anaconda            |
-| ---------- |:----------------------------------------------------------------------------------:|:------------------------------:|
-| numbers    | <a href="https://cran.r-project.org/package=numbers">Link</a>                      | <a href="https://anaconda.org/conda-forge/r-numbers">Link</a>                            |
-| tidyr      | <a href="https://cran.r-project.org/package=tidyr">Link</a>                        | <a href="https://anaconda.org/conda-forge/r-tidyr">Link</a>                            |
-| ggtree     | <a href="https://bioconductor.org/packages/release/bioc/html/ggtree.html">Link</a> | <a href="https://anaconda.org/bioconda/bioconductor-ggtree">Link</a> |
-
-### Software
-- `hal2maf` from <a href="https://github.com/ComparativeGenomicsToolkit/hal">`HAL Toolkit`</a>
-- `getSingleCopy.py` from <a href="https://doi.org/10.5281/zenodo.3401692">Edelman et al. (2019)</a>
-- `maf-sort.sh` from <a href="https://github.com/UCSantaCruzComputationalGenomicsLab/last">`last`</a>
-- `msa_view` from <a href="http://compgen.cshl.edu/phast/">`PHAST`</a>
+    In UNIX-based operating systems (e.g., Linux and MacOS), it is advisable to use `nohup` or `tmux` to run the whole pipeline. For Windows, you can use `psmux`.
 
 ---
 ## <a id="refs">References</a>
-1. Hudson, R. (<a href="https://doi.org/10.1093/bioinformatics/18.2.337">2002</a>). **Generating samples under a Wright–Fisher neutral model of genetic variation**. *Bioinformatics*, *18*(2), 337–338.
+1. Ly-Trong, N., et al. (<a href="https://doi.org/10.1093/molbev/msac092">2022</a>). **AliSim: A Fast and Versatile Phylogenetic Sequence Simulator for the Genomic Era**. *Molecular Biology and Evolution*, *39*(5), msac092.
 
-2. Ly-Trong, N., et al. (<a href="https://doi.org/10.1093/molbev/msac092">2022</a>). **AliSim: A Fast and Versatile Phylogenetic Sequence Simulator for the Genomic Era**. *Molecular Biology and Evolution*, *39*(5), msac092.
+2. Minh, B.Q., et al. (<a href="https://doi.org/10.1093/molbev/msaa015">2020</a>). **IQ-TREE 2: New Models and Efficient Methods for Phylogenetic Inference in the Genomic Era**. *Molecular Biology and Evolution*, *37*(5), 1530–1534.
 
-3. Minh, B.Q., et al. (<a href="https://doi.org/10.1093/molbev/msaa015">2020</a>). **IQ-TREE 2: New Models and Efficient Methods for Phylogenetic Inference in the Genomic Era**. *Molecular Biology and Evolution*, *37*(5), 1530–1534.
+3. Hudson, R. (<a href="https://doi.org/10.1093/bioinformatics/18.2.337">2002</a>). **Generating samples under a Wright–Fisher neutral model of genetic variation**. *Bioinformatics*, *18*(2), 337–338.
 
 4. Shen et al. (<a href="https://doi.org/10.1371/journal.pone.0163962">2016</a>). **SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/Q File Manipulation**. *PLOS ONE*, *11*(10), e0163962.
 
-5. Edelman, et al. (<a href="https://doi.org/10.1126/science.aaw2090">2019</a>). **Genomic architecture and introgression shape a butterfly radiation**. *Science*, *366*(6465), 594–599.
+5. Paradis, E., et al. (<a href="https://doi.org/10.1093/bioinformatics/btg412">2004</a>). **APE: Analyses of Phylogenetics and Evolution in R language**. *Bioinformatics*, *20*(2), 289-290.
 
-6. Hickey, et al. (<a href="https://doi.org/10.1093/bioinformatics/btt128">2013</a>). **HAL: a hierarchical format for storing and analyzing multiple genome alignments**. *Bioinformatics*, *29*(10), 1341–1342.
+6. Barrett, T., et al. (<a href="https://doi.org/10.32614/CRAN.package.data.table">2026</a>). **data.table: Extension of 'data.frame'**. *R package*.
 
-7. Hubisz, et al. (<a href="https://doi.org/10.1093/bib/bbq072">2010</a>). **PHAST and RPHAST: phylogenetic analysis with space/time models**. *Briefings in Bioinformatics*, *12*(1), 41–51.
+7. Daniel, F. (<a href="https://cran.r-project.org/package=doSNOW">2022</a>). **doSNOW: Foreach Parallel Adaptor for the 'snow' Package**. *R package*.
+
+8. Zhu, H., et al. (<a href="https://cran.r-project.org/package=kableExtra">2024</a>). **kableExtra: Construct Complex Table with 'kable' and Pipe Syntax**. *R package*.
+
+9. White, J.M., & Jacobs, A. (<a href="https://doi.org/10.32614/CRAN.package.log4r">2024</a>). **log4r: A Fast and Lightweight Logging System for R, Based on 'log4j'**. *R package*.
+
+10. Davis, T.L. (<a href="https://doi.org/10.32614/CRAN.package.optparse">2026</a>). **optparse: Command Line Option Parser**. *R package*.
+
+11. Allaire, J.J., et al. (<a href="https://doi.org/10.32614/CRAN.package.rmarkdown">2026</a>). **rmarkdown: Dynamic Documents for R**. *R package*.
+
+12. Charif, D., et al. (<a href="https://cran.r-project.org/package=seqinr">2024</a>). **seqinr: Biological Sequences Retrieval and Analysis**. *R package*.
+
+13. Wickham, H., et al. (<a href="https://doi.org/10.21105/joss.01686">2019</a>). **Welcome to the tidyverse**. *Journal of Open Source Software*, *4*(43), 1686.
+
+14. Garnier, S., et al. (<a href="https://cran.r-project.org/package=viridis">2024</a>). **viridis: Colorblind-Friendly Color Maps for R**. *R package*.
+
+15. Stephens, J., et al. (<a href="https://doi.org/10.32614/CRAN.package.yaml">2025</a>). **yaml: Methods to Convert R Data to YAML and Back**. *R package*.
+
+16. Anthropic. (<a href="https://claude.ai/">2026</a>). Claude 4.6 Sonnet was used to generate `config.yaml` and `run_pipeline.R`. 
 
 ---
-*Last update: 05 June 2026 by Jeremias Ivan*
+*Last update: 12 June 2026 by Jeremias Ivan*

@@ -21,7 +21,7 @@ params:
   ms_l: 1000000
   
   # IQ-TREE 2
-  iqtree2dir: "~/iqtree-2.2.2.4-MacOSX/bin/iqtree2"
+  exe_iqtree: "~/iqtree-2.2.2.4-MacOSX/bin/iqtree2"
   set_model: TRUE
   set_blmin: TRUE
   

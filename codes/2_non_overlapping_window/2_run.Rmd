@@ -125,7 +125,7 @@ for (i in window_sizes) {
   # generate window trees
   f_window_tree(fastadir, prefix, tthread,
                 params$outgroup, params$set_model, params$set_blmin, params$dna_model, i,
-                params$iqtree2dir)
+                params$exe_iqtree)
 
   log4r::info(fn_logger, paste0("File created: ", i, "bp window treefile."))
 }

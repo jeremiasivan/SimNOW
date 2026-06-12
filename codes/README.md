@@ -5,8 +5,7 @@
 - <a href="#analyses">Analyses</a>
     - <a href="#seqsim">Sequence simulation</a>
     - <a href="#now">Non-overlapping window analysis</a>
-    - <a href="#dac">Using variable window sizes</a>
-    - <a href="#hmm">HMM</a>
+    - <a href="#sam">Using variable window sizes</a>
 - <a href="#multiple">Running multiple analyses</a>
     - <a href="#example">Example from publication</a>
 
@@ -88,15 +87,15 @@ In this step, we simulate locus trees using `ms` which then inputted into `AliSi
 | `prefix`       | Prefix for output files and folder                                                     | 
 | `outdir`       | Output directory                                                                       |
 | `redo`         | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results |
-| `msdir`        | Directory for `ms` executable                                                          |
+| `exe_ms`       | Directory for `ms` executable                                                          |
 | `ms_params`    | Parameters for `ms` **without** recombination rate (`-r`)                              |
 | `ms_r`         | Recombination rate for `ms`                                                            |
 | `ms_l`         | Alignment length                                                                       |
-| `iqtree2dir`   | Directory for `IQ-Tree2` executable with `AliSim`                                      |
+| `exe_iqtree`   | Directory for `IQ-Tree2` executable with `AliSim`                                      |
 | `alisim_model` | DNA substitution model for simulating alignment in `AliSim`                            |
 | `alisim_scale` | Branch length scaling factor for `AliSim`                                              |
-| `copy_gaps`    | If `TRUE`, copy gap pattern from reference alignment                                   |
-| `src_aln`      | Filepath of the reference alignment (evaluated when `copy_gaps` == `TRUE`)             |
+| `is_copy_gaps` | If `TRUE`, copy gap pattern from reference alignment                                   |
+| `src_aln`      | Filepath of the reference alignment (evaluated when `is_copy_gaps` == `TRUE`)          |
 
 #### Output
 Running the code will create a new folder called `simulation` with the following files:
@@ -123,7 +122,7 @@ In this step, we use the simulated alignment to perform non-overlapping window a
 | `thread`       | Number of threads for parallelization                                                                                                 |
 | `redo`         | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                                                |
 | `ms_l`         | Alignment length                                                                                                                      |
-| `iqtree2dir`   | Directory for `IQ-TREE2` executable                                                                                                   |
+| `exe_iqtree`   | Directory for `IQ-TREE2` executable                                                                                                   |
 | `set_model`    | If `TRUE`, set the substitution model of window trees to be `dna_model`; if `FALSE` use ModelFinder to find the best model per window |
 | `set_blmin`    | If `TRUE`, set the minimum branch length to be 1/window_size                                                                          |
 | `dna_model`    | DNA substitution model for window trees                                                                                               |
@@ -143,7 +142,7 @@ Running the code will create a new folder called `windows` with individual folde
 
 Additionally, the `windows` folder will contain `prefix.sum` which contains summary table of window sizes and their respective information criteria scores
 
-### <a id="dac">Using variable window sizes</a>
+### <a id="sam">Using variable window sizes</a>
 In this step, we use the simulated alignment to run splitting-and-merging procedure and generate the summary statistics. The parameters for this step is set in `3_variable_window_size/1_main.Rmd`.
 
 | Parameters             | Definition                                                                                                                            |
@@ -154,7 +153,7 @@ In this step, we use the simulated alignment to run splitting-and-merging proced
 | `thread`               | Number of threads for parallelization                                                                                                 |
 | `redo`                 | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results                                                |
 | `exe_seqkit`           | Executable for SeqKit                                                                                                                 |
-| `iqtree2dir`           | Directory for `IQ-TREE2` executable                                                                                                   |
+| `exe_iqtree`           | Directory for `IQ-TREE2` executable                                                                                                   |
 | `set_model`            | If `TRUE`, set the substitution model of window trees to be `dna_model`; if `FALSE` use ModelFinder to find the best model per window |
 | `set_blmin`            | If `TRUE`, set the minimum branch length to be 1/window_size                                                                          |
 | `set_keepident`        | If `TRUE`, keep identical sequences during tree inference                                                                             |
@@ -178,16 +177,12 @@ Running the code will create a new folder called `dac` that consists of:
 - `prefix.dacsum`: summary table from the splitting-and-merging procedure
 - `prefix.dactops`: table of window boundaries and topologies
 
-### <a id="hmm">HMM</a>
-*(to be implemented later)*
-
 ## <a id="multiple">Running multiple analyses</a>
-If you want to run more than one analysis at the same time, you can run `run_all.R`. There are several parameters that are new or changed:
-| Parameters | Definition                                                                       |
-| ---------- | -------------------------------------------------------------------------------- |
-| `ms_r`     | Vector of `ms` recombination rate                                                |
-| `nreps`    | Number of replicate per `ms` recombination rate                                  |
-| `nthread`  | Total number of threads; it is divided by `thread` to parallelize the replicates |
+If you want to run more than one analysis at the same time, you can run `run_pipeline.R`. There are several parameters that are new or changed:
+| Parameters           | Definition                                                                       |
+| -------------------- | -------------------------------------------------------------------------------- |
+| `fn_ms_metadata`     | File that stores different recombination rates and patterns per replicate        |
+| `nreps`              | Number of replicate per `ms` recombination rate                                  |
 
 #### Output
 Running the code will create a new folder called `summary` in `outdir` that stores the summary of all simulations. It contains the following folders/files:
@@ -214,67 +209,65 @@ Running the code will create a new folder called `summary` in `outdir` that stor
 ### <a id="example">Example from publication</a>
 In the paper, we ran three different simulation scenarios with different degree of incomplete lineage sorting (ILS) but the same percentage of informative sites. Please do refer to the publication for more detailed explanation.
 
-Parameters (in `codes/run_all.R`) with consistent value across scenarios:
+Parameters (in `config.yaml`) with consistent value across scenarios:
 ```
-nreps <- 10
-nthread <- 50
+codedir: "/home/user/SimNOW/"
+thread:  10
+redo:    FALSE
 
-codedir <- "~/SimNOW/codes"
-thread <- 10
-redo <- FALSE
+exe_iqtree: "iqtree2"
+exe_ms:     "ms"
+exe_seqkit: "seqkit"
 
-msdir <- "~/msdir/ms"
-ms_l <- 10000000
+nreps: 10
 
-iqtree2dir <- "~/iqtree-2.2.2.2-Linux/bin/iqtree2"
-alisim_model <- "JC"
-copy_gaps <- FALSE
-src_aln <- ""
+alisim_model:  "JC"
+is_copy_gaps:  FALSE
+src_aln:       ""
 
-set_model <- TRUE
-set_blmin <- FALSE
-dna_model <- alisim_model
-outgroup <- "7"
+set_blmin:     FALSE
+set_model:     TRUE
+set_keepident: FALSE
+dna_model:     "JC"
+outgroup:      "7"
 
-window_size <- c(100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000)
+window_size:   [100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000]
 
-exe_seqkit <- "~/seqkit"
-
-init_wsize <- 10000000
-division_prop <- c(0.25, 0.5, 0.75)
-min_informative_sites <- 11
+init_wsize:    10000000
+division_prop: [0.25, 0.5, 0.75]
+min_informative_sites: 11
 ```
 
 Specific parameters (in `codes/run_all.R`) for each scenario: <br>
 *First scenario*
 ```
-ms_r <- c(0,2,20,200)
-prefix <- "low"
-outdir <- "~/Documents/low"
+fn_ms_metadata: "/home/user/SimNOW/files/low_homogeneous.tsv"
+prefix:         "low"
+outdir:         "/home/user/low"
 
-ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 16.0 2 1 -ej 42.0 3 1 -ej 53.0 4 1 -ej 50.0 5 6 -ej 61.0 6 1 -ej 116.0 7 1 -es 1.6 2 0.966 -ej 1.6 8 1 -es 1.6 1 0.796 -ej 1.6 9 2 -es 41.4 3 0.115 -ej 41.4 10 4 -es 51.3 6 0.778 -ej 51.3 11 4 -es 51.3 4 0.853 -ej 51.3 12 6"
-alisim_scale <- 0.0007
+alisim_scale:   0.0007
+ms_params:      "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 16.0 2 1 -ej 42.0 3 1 -ej 53.0 4 1 -ej 50.0 5 6 -ej 61.0 6 1 -ej 116.0 7 1 -es 1.6 2 0.966 -ej 1.6 8 1 -es 1.6 1 0.796 -ej 1.6 9 2 -es 41.4 3 0.115 -ej 41.4 10 4 -es 51.3 6 0.778 -ej 51.3 11 4 -es 51.3 4 0.853 -ej 51.3 12 6"
 ```
 
 *Second scenario*
 ```
-ms_r <- c(0,20,200,2000)
-prefix <- "mid"
-outdir <- "~/Documents/mid"
+fn_ms_metadata: "/home/user/SimNOW/files/mid_homogeneous.tsv"
+prefix:         "mid"
+outdir:         "/home/user/mid"
 
-ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 2.13 2 1 -ej 5.60 3 1 -ej 7.07 4 1 -ej 6.67 5 6 -ej 8.13 6 1 -ej 15.47 7 1 -es 0.21 2 0.966 -ej 0.21 8 1 -es 0.21 1 0.796 -ej 0.21 9 2 -es 5.52 3 0.115 -ej 5.52 10 4 -es 6.84 6 0.778 -ej 6.84 11 4 -es 6.84 4 0.853 -ej 6.84 12 6"
-alisim_scale <- 0.005
+alisim_scale:   0.005
+ms_params:      "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 2.13 2 1 -ej 5.60 3 1 -ej 7.07 4 1 -ej 6.67 5 6 -ej 8.13 6 1 -ej 15.47 7 1 -es 0.21 2 0.966 -ej 0.21 8 1 -es 0.21 1 0.796 -ej 0.21 9 2 -es 5.52 3 0.115 -ej 5.52 10 4 -es 6.84 6 0.778 -ej 6.84 11 4 -es 6.84 4 0.853 -ej 6.84 12 6"
 ```
 
 *Third scenario*
 ```
-ms_r <- c(0,30,300,3000)
-prefix <- "high"
-outdir <- "~/Documents/high"
+fn_ms_metadata: "/home/user/SimNOW/files/high_homogeneous.tsv"
+prefix:         "high"
+outdir:         "/home/user/high"
 
-ms_params <- "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 1.6 2 1 -ej 4.2 3 1 -ej 5.3 4 1 -ej 5.0 5 6 -ej 6.1 6 1 -ej 11.6 7 1 -es 0.16 2 0.966 -ej 0.16 8 1 -es 0.16 1 0.796 -ej 0.16 9 2 -es 4.14 3 0.115 -ej 4.14 10 4 -es 5.13 6 0.778 -ej 5.13 11 4 -es 5.13 4 0.853 -ej 5.13 12 6"
-alisim_scale <- 0.007
+alisim_scale:   0.007
+ms_params:      "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 1.6 2 1 -ej 4.2 3 1 -ej 5.3 4 1 -ej 5.0 5 6 -ej 6.1 6 1 -ej 11.6 7 1 -es 0.16 2 0.966 -ej 0.16 8 1 -es 0.16 1 0.796 -ej 0.16 9 2 -es 4.14 3 0.115 -ej 4.14 10 4 -es 5.13 6 0.778 -ej 5.13 11 4 -es 5.13 4 0.853 -ej 5.13 12 6"
 ```
 
 ---
-*Last update: 30 July 2025 by Jeremias Ivan*
+*Last update: 12 June 2026 by Jeremias Ivan*
