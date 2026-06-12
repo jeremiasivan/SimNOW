@@ -106,7 +106,9 @@ render_params <- list(
 # --- Map config to rmarkdown params --------------------------
 
 # open ms metadata file
-df_ms <- data.table::fread(cfg$fn_ms_metadata)
+df_ms <- as.data.frame(data.table::fread(cfg$fn_ms_metadata))
+df_ms$group <- as.character(df_ms$group)
+
 ls_group <- unique(df_ms$group)
 
 # iterate over groupings
