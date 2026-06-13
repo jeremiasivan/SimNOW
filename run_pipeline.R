@@ -141,8 +141,8 @@ for (i in 1:nrow(temp_table)) {
   }
 
   # extract alignment length
-  init_wsize_concat <- sum(unlist(temp_table$seqlen[[i]]))
-  init_wsize_concat <- f_get_param(cfg$init_wsize, init_wsize_concat)
+  sum_seqlen <- sum(unlist(temp_table$seqlen[[i]]))
+  init_wsize_concat <- ifelse(is.na(cfg$init_wsize), sum_seqlen, cfg$init_wsize)
   
   repsim[[i]] <- list(out=out,
                       params=c(render_params[c("codedir", "outdir", "redo", "exe_ms", "ms_params",
@@ -154,13 +154,13 @@ for (i in 1:nrow(temp_table)) {
   repfix[[i]] <- list(out=out,
                       params=c(render_params[c("codedir", "outdir", "thread", "redo", "exe_iqtree",
                                                "set_model", "set_blmin", "dna_model", "outgroup", "window_size")],
-                               list(prefix=prex, ms_l=unlist(temp_table$seqlen[[i]]))
+                               list(prefix=prex, ms_l=sum_seqlen)
                       ))
 
   repvar[[i]] <- list(out=out,
                       params=c(render_params[c("codedir", "outdir", "thread", "redo", "exe_seqkit", "exe_iqtree",
                                                "set_model", "set_keepident", "set_blmin", "dna_model", "outgroup",
-                                               "division_prop", "min_informative_sites")],
+                                               "split_prop", "min_informative_sites")],
                       list(prefix=prex, init_wsize=init_wsize_concat)
                       ))
 }
@@ -183,7 +183,7 @@ make_repfix <- function(r) make_report(r, file.path(render_params$codedir, "2_no
 make_repvar <- function(r) make_report(r, file.path(render_params$codedir, "3_variable_window_size", "1_main.Rmd"))
 
 # run parallelized sequence simulations
-cl <- makeCluster(thread, outfile="")
+cl <- makeCluster(render_params$thread)
 registerDoSNOW(cl)
 
 foreach(r=repsim, .errorhandling='pass') %dopar% {

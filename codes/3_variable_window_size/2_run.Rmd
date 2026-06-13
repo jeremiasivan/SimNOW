@@ -182,7 +182,7 @@ while (is_repeat == TRUE) {
       ln_seq <- length(seq[[1]])
 
       # extract AIC
-      for (prop in params$division_prop) {
+      for (prop in params$split_prop) {
         window_one <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_1")
         window_two <- paste0(df_current$window[i], "_", gsub("\\.","",prop), "_2")
 

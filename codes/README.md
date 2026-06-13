@@ -160,7 +160,7 @@ In this step, we use the simulated alignment to run splitting-and-merging proced
 | `dna_model`            | DNA substitution model for window trees                                                                                               |
 | `outgroup`             | Outgroup of window trees (optional)                                                                                                   |
 | `init_wsize`           | Initial window size to partition the alignment; if `NULL`, use the window size with the lowest AIC from previous step                 |
-| `division_prop`        | Vector of size ratios of the first window during the splitting step                                                                   |
+| `split_prop`           | Vector of size ratios of the first window during the splitting step                                                                   |
 | `min_informative_sites`| Minimum number of parsimony informative sites per window during the splitting procedure                                               |
 
 #### Output
@@ -234,7 +234,7 @@ outgroup:      "7"
 window_size:   [100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000,2000000,5000000,10000000]
 
 init_wsize:    10000000
-division_prop: [0.25, 0.5, 0.75]
+split_prop:    [0.25, 0.5, 0.75]
 min_informative_sites: 11
 ```
 
