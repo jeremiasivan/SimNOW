@@ -1,5 +1,5 @@
 ---
-title: "Non-overlapping Windows Analysis"
+title: "NOW with Fixed Window Sizes for Simulated Datasets"
 author: "Jeremias Ivan"
 date: "`r format(Sys.time(), '%d %B %Y, %H:%M%p')`"
 
@@ -11,18 +11,18 @@ output:
 
 params:
   # general
-  codedir: "~/SimNOW/codes"
-  prefix: "sim"
-  outdir: "~/simulation"
-  thread: 5
-  redo: TRUE
+  codedir: "/home/user/SimNOW/codes/"
+  prefix: "simulation"
+  outdir: "/home/user/output/"
+  thread: 1
+  redo: FALSE
   
   # ms
-  ms_l: 1000000
+  ms_l: 10000000
   
   # IQ-TREE 2
-  exe_iqtree: "~/iqtree-2.2.2.4-MacOSX/bin/iqtree2"
-  set_model: TRUE
+  exe_iqtree: "iqtree2"
+  set_model: FALSE
   set_blmin: TRUE
   
   dna_model: "JC"

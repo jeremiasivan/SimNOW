@@ -142,7 +142,7 @@ for (i in 1:nrow(temp_table)) {
 
   # extract alignment length
   sum_seqlen <- sum(unlist(temp_table$seqlen[[i]]))
-  init_wsize_concat <- ifelse(is.na(cfg$init_wsize), sum_seqlen, cfg$init_wsize)
+  init_wsize_concat <- ifelse(is.na(cfg$init_wsize) || cfg$init_wsize=="NA", sum_seqlen, cfg$init_wsize)
   
   repsim[[i]] <- list(out=out,
                       params=c(render_params[c("codedir", "outdir", "redo", "exe_ms", "ms_params",

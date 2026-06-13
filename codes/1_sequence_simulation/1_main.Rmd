@@ -11,24 +11,24 @@ output:
 
 params:
   # general
-  codedir: "~/SimNOW/codes"
-  prefix: "sim"
-  outdir: "~/simulation"
+  codedir: "/home/user/SimNOW/codes/"
+  prefix: "simulation"
+  outdir: "/home/user/output/"
   redo: FALSE
   
   # ms
-  exe_ms: "~/msdir/ms"
+  exe_ms: "ms"
   ms_params: ""
   ms_r: 0
   ms_l: 1000000
   
   # AliSim
-  exe_iqtree: "~/iqtree-2.2.2.2-MacOSX/bin/iqtree2"
+  exe_iqtree: "iqtree2"
   alisim_model: "JC"
   alisim_scale: 0.001
   
   is_copy_gaps: FALSE
-  src_aln: "~/empirical_aln.fa"
+  src_aln: ""
 ---
 
 ## Load required libraries and functions

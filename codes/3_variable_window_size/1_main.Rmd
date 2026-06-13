@@ -1,5 +1,5 @@
 ---
-title: "Stepwise NOW with Variable Window Sizes for Simulated Datasets"
+title: "NOW with Variable Window Sizes for Simulated Datasets"
 author: "Jeremias Ivan"
 date: "`r format(Sys.time(), '%d %B %Y, %H:%M%p')`"
 
@@ -11,17 +11,17 @@ output:
     
 params:
   # general
-  codedir: "~/SimNOW/codes/"
-  prefix: "sim"
-  outdir: "~/simulation"
-  thread: 5
+  codedir: "/home/user/SimNOW/codes/"
+  prefix: "simulation"
+  outdir: "/home/user/output/"
+  thread: 1
   redo: FALSE
   
   # executables
-  exe_seqkit: ""
+  exe_seqkit: "seqkit"
 
   # IQ-Tree2
-  exe_iqtree: "~/iqtree2"
+  exe_iqtree: "iqtree2"
   set_blmin: TRUE
   set_model: FALSE
   set_keepident: FALSE

@@ -10,9 +10,9 @@ output:
     toc_float: true
 
 params:
-  codedir: "~/SimNOW/codes"
-  prefix: "sim"
-  outdir: "~/simulation"
+  codedir: "/home/user/SimNOW/codes/"
+  prefix: "simulation"
+  outdir: "/home/user/output/"
 ---
 
 ## Load required libraries and functions

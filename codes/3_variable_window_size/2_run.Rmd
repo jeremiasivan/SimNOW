@@ -1,5 +1,5 @@
 ---
-title: "Variable Window Size for Stepwise NOW"
+title: "Variable Window Size for NOW"
 ---
 
 ```{r dacsetup, include=FALSE}
