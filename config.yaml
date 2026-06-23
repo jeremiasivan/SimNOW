@@ -13,7 +13,7 @@ thread:   1                               # number of parallel threads (default:
 redo:     FALSE                           # re-run even if output files exist (default: FALSE)
 
 # --- Executables ---------------------------------------------
-exe_iqtree: "iqtree2"                     # path to IQ-TREE2 executable
+exe_iqtree: "iqtree3"                     # path to IQ-TREE2 executable
 exe_ms:     "ms"                          # path to ms executable
 exe_seqkit: "seqkit"                      # path to SeqKit executable
 

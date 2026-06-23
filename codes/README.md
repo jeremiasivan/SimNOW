@@ -4,7 +4,7 @@
 - <a href="#foldstr">Folder Structure</a>
 - <a href="#analyses">Analyses</a>
     - <a href="#seqsim">Sequence simulation</a>
-    - <a href="#now">Non-overlapping window analysis</a>
+    - <a href="#now">Using fixed window sizes</a>
     - <a href="#sam">Using variable window sizes</a>
 - <a href="#multiple">Running multiple analyses</a>
     - <a href="#example">Example from publication</a>
@@ -84,13 +84,14 @@ In this step, we simulate locus trees using `ms` which then inputted into `AliSi
 
 | Parameters     | Definition                                                                             |
 | -------------- | -------------------------------------------------------------------------------------- |
+| `codedir`      | Directory of `SimNOW/codes/`                                                           | 
 | `prefix`       | Prefix for output files and folder                                                     | 
 | `outdir`       | Output directory                                                                       |
 | `redo`         | If `FALSE`, skip analysis if output files exist; if `TRUE`, overwrite previous results |
 | `exe_ms`       | Directory for `ms` executable                                                          |
 | `ms_params`    | Parameters for `ms` **without** recombination rate (`-r`)                              |
-| `ms_r`         | Recombination rate for `ms`                                                            |
-| `ms_l`         | Alignment length                                                                       |
+| `ms_r`         | A list of recombination rates for `ms`                                                 |
+| `ms_l`         | A list of alignment length per recombination rate for `ms`                             |
 | `exe_iqtree`   | Directory for `IQ-Tree2` executable with `AliSim`                                      |
 | `alisim_model` | DNA substitution model for simulating alignment in `AliSim`                            |
 | `alisim_scale` | Branch length scaling factor for `AliSim`                                              |
@@ -111,8 +112,8 @@ Running the code will create a new folder called `simulation` with the following
 > **Important Notes** <br>
 The term `topology` refers to phylogenetic tree without branch lengths (i.e., only record the speciation events and not the timing).
 
-### <a id="now">Non-overlapping window analysis</a>
-In this step, we use the simulated alignment to perform non-overlapping window analysis and generate the summary statistics. The parameters for this step is set in `2_non_overlapping_window/1_main.Rmd`.
+### <a id="now">Using fixed window sizes</a>
+In this step, we use the simulated alignment to perform non-overlapping window analysis with fixed window sizes and generate the summary statistics. The parameters for this step is set in `2_non_overlapping_window/1_main.Rmd`.
 
 | Parameters     | Definition                                                                                                                            |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -270,4 +271,4 @@ ms_params:      "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 1.6 2 1 -ej 4.2 3 1 -ej 5.3 4 1 -
 ```
 
 ---
-*Last update: 12 June 2026 by Jeremias Ivan*
+*Last update: 23 June 2026 by Jeremias Ivan*
