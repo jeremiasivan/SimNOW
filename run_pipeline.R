@@ -82,8 +82,8 @@ render_params <- list(
   redo                  = as.logical(f_get_param(cfg$redo, FALSE)),
 
   exe_iqtree            = f_get_param(cfg$exe_iqtree, "iqtree3"),
-  exe_ms                = f_get_param(cfg$exe_iqtree, "ms"),
-  exe_seqkit            = f_get_param(cfg$exe_iqtree, "seqkit"),
+  exe_ms                = f_get_param(cfg$exe_ms, "ms"),
+  exe_seqkit            = f_get_param(cfg$exe_seqkit, "seqkit"),
 
   ms_params             = cfg$ms_params,
 
