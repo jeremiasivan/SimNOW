@@ -5,12 +5,12 @@
 - <a href="#analyses">Analyses</a>
     - <a href="#seqsim">Sequence simulation</a>
     - <a href="#now">Using fixed window sizes</a>
-    - <a href="#sam">Using variable window sizes</a>
+    - <a href="#dac">Using variable window sizes</a>
 - <a href="#multiple">Running multiple analyses</a>
     - <a href="#example">Example from publication</a>
 
 ## <a id="foldstr">Folder Structure</a>
-The following chart shows the general folder structure after running the first three analyses. Explanation of each output file is described below.
+The following chart shows the general folder structure after running the full analyses. Explanation of each output file is described below.
 ```
 prefix/
 ├── simulation/
@@ -72,15 +72,16 @@ prefix/
 │   │   └── prefix.wdist.tiff
 │   ├── prefix.dacsum
 │   └── prefix.dactops
+├── prefix.html
 └── prefix.log 
 ```
 
 ## <a id="analyses">Analyses</a>
 > **Important Notes** <br>
-In this pipeline, the results of one step might be used in the other steps. Please be careful about the *consistency* of the naming convention and folder structure.
+In SimNOW, the output of an analysis might be used in the other analyses. Please be careful about the *consistency* of the naming convention and folder structure.
 
 ### <a id="seqsim">Sequence simulation</a>
-In this step, we simulate locus trees using `ms` which then inputted into `AliSim` to generate the simulated alignment. The parameters for this step is set in `1_sequence_simulation/simulation.Rmd`.
+In this step, we simulate locus trees using `ms` which then inputted into `AliSim` to simulate an alignment. The parameters for this step is set in <a href="./1_sequence_simulation/1_main.Rmd">`1_sequence_simulation/1_main.Rmd`</a>.
 
 | Parameters     | Definition                                                                             |
 | -------------- | -------------------------------------------------------------------------------------- |
@@ -110,10 +111,10 @@ Running the code will create a new folder called `simulation` with the following
 - `prefix_nogaps.fa`: FASTA alignment without gaps (only when `only_gaps` == `TRUE`)
 
 > **Important Notes** <br>
-The term `topology` refers to phylogenetic tree without branch lengths (i.e., only record the speciation events and not the timing).
+The term `topology` refers to a phylogenetic tree without branch lengths (i.e., only record the speciation events and not the timings).
 
 ### <a id="now">Using fixed window sizes</a>
-In this step, we use the simulated alignment to perform non-overlapping window analysis with fixed window sizes and generate the summary statistics. The parameters for this step is set in `2_non_overlapping_window/1_main.Rmd`.
+In this step, we run non-overlapping window analyses on simulated alignment with fixed window sizes and generate the summary statistics. The parameters for this step is set in <a href="./2_non_overlapping_window/1_main.Rmd">`2_non_overlapping_window/1_main.Rmd`</a>.
 
 | Parameters     | Definition                                                                                                                            |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -131,7 +132,7 @@ In this step, we use the simulated alignment to perform non-overlapping window a
 | `window_size`  | Vector of window sizes; each has to be the factor of `ms_l`                                                                           |
 
 #### Output
-Running the code will create a new folder called `windows` with individual folder for each window size. Each window size folder consists of three folders:
+Running the code will create a new folder called `windows` with individual folders for each window size. Each window size folder consists of three folders:
 - `alignment/`: folder with all window alignments
 - `summary/`
     - `prefix.atsum`: table of window boundaries and trees
@@ -143,8 +144,8 @@ Running the code will create a new folder called `windows` with individual folde
 
 Additionally, the `windows` folder will contain `prefix.sum` which contains summary table of window sizes and their respective information criteria scores
 
-### <a id="sam">Using variable window sizes</a>
-In this step, we use the simulated alignment to run splitting-and-merging procedure and generate the summary statistics. The parameters for this step is set in `3_variable_window_size/1_main.Rmd`.
+### <a id="dac">Using variable window sizes</a>
+In this step, we run splitting-and-merging procedure on simulated alignment and generate the summary statistics. The parameters for this step is set in <a href="./3_variable_window_size/1_main.Rmd">`3_variable_window_size/1_main.Rmd`</a>.
 
 | Parameters             | Definition                                                                                                                            |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -179,7 +180,7 @@ Running the code will create a new folder called `dac` that consists of:
 - `prefix.dactops`: table of window boundaries and topologies
 
 ## <a id="multiple">Running multiple analyses</a>
-If you want to run more than one analysis at the same time, you can run `run_pipeline.R`. There are several parameters that are new or changed:
+To run more than one analysis at the same time, you can run <a href="../run_pipeline.R">`run_pipeline.R`</a> with all parameters set in <a href="../config.yaml">`config.yaml`</a>. There are several parameters that are new or changed:
 | Parameters           | Definition                                                                       |
 | -------------------- | -------------------------------------------------------------------------------- |
 | `fn_ms_metadata`     | File that stores different recombination rates and patterns per replicate        |
@@ -208,7 +209,7 @@ Running the code will create a new folder called `summary` in `outdir` that stor
     - ... (exactly the same with `site/` but with RMSE)
 
 ### <a id="example">Example from publication</a>
-In the paper, we ran three different simulation scenarios with different degree of incomplete lineage sorting (ILS) but the same percentage of informative sites. Please do refer to the publication for more detailed explanation.
+In SimNOW <a href="https://doi.org/10.1093/sysbio/syaf053">paper</a>, we ran three different simulation scenarios with different degree of incomplete lineage sorting (ILS) but the same percentage of informative sites. In PhyloNOW <a href="https://doi.org/10.64898/2026.03.04.709403">paper</a>, we ran an additional scenario with heterogeneous recombination rates. Please do refer to the publications for more detailed explanation.
 
 Parameters (in `config.yaml`) with consistent value across scenarios:
 ```
@@ -270,5 +271,15 @@ alisim_scale:   0.007
 ms_params:      "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 1.6 2 1 -ej 4.2 3 1 -ej 5.3 4 1 -ej 5.0 5 6 -ej 6.1 6 1 -ej 11.6 7 1 -es 0.16 2 0.966 -ej 0.16 8 1 -es 0.16 1 0.796 -ej 0.16 9 2 -es 4.14 3 0.115 -ej 4.14 10 4 -es 5.13 6 0.778 -ej 5.13 11 4 -es 5.13 4 0.853 -ej 5.13 12 6"
 ```
 
+*Fourth scenario with heterogeneous recombination rates*
+```
+fn_ms_metadata: "/home/user/SimNOW/files/heterogeneous.tsv"
+prefix:         "heterogeneous"
+outdir:         "/home/user/heterogeneous"
+
+alisim_scale:   0.005
+ms_params:      "7 1 -T -I 7 1 1 1 1 1 1 1 -ej 2.13 2 1 -ej 5.60 3 1 -ej 7.07 4 1 -ej 6.67 5 6 -ej 8.13 6 1 -ej 15.47 7 1 -es 0.21 2 0.966 -ej 0.21 8 1 -es 0.21 1 0.796 -ej 0.21 9 2 -es 5.52 3 0.115 -ej 5.52 10 4 -es 6.84 6 0.778 -ej 6.84 11 4 -es 6.84 4 0.853 -ej 6.84 12 6"
+```
+
 ---
-*Last update: 23 June 2026 by Jeremias Ivan*
+*Last update: 26 June 2026 by Jeremias Ivan*
