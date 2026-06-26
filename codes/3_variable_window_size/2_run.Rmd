@@ -18,17 +18,16 @@ if (!dir.exists(dac_outdir)) {
   dir.create(dac_outdir, recursive = T)
 }
 
+outdir_fasta <- paste0(dac_outdir, "fasta/")
 outdir_division <- paste0(dac_outdir, "division/")
 outdir_combine <- paste0(dac_outdir, "combine/")
 outdir_final <- paste0(dac_outdir, "final/")
-lapply(list(outdir_division, outdir_combine, outdir_final), function(x) if(!dir.exists(x)) dir.create(x, recursive=T))
+lapply(list(outdir_fasta, outdir_division, outdir_combine, outdir_final), function(x) if(!dir.exists(x)) dir.create(x, recursive=T))
 
 # output files
 prefix_division_summary <- paste0(outdir_division, "summary_aic_iter")
 prefix_combine_summary <- paste0(outdir_combine, "summary_aic_iter")
 
-fn_iqtree_ids <- paste0(dac_outdir, "iqtree_ids.tsv")
-fn_iqtree_aic <- paste0(dac_outdir, "iqtree_aic.tsv")
 fn_dacsum <- paste0(dac_outdir, params$prefix, ".dacsum")
 fn_dactops <- paste0(dac_outdir, params$prefix, ".dactops")
 ```
@@ -47,40 +46,10 @@ if (is.null(best_wsize_aic)) {
 
 write.table(paste0("Running DAC with a starting window size of ", best_wsize_aic, "bp"),
             file=fn_log, quote=F, row.names=F, col.names=F, append=T)
-
-# extract list of windows
-ls_windows <- list.files(paste0(getwd(), "/windows/", best_wsize_aic, "/alignment/"), recursive=F, full.names=F)
-
-# extract the AIC output from IQ-TREE2
-fn_iqtree <- paste0(getwd(), "/windows/", best_wsize_aic, "/trees/", params$prefix, ".iqtree")
-nline <- length(ls_windows) + 2
-
-# extract table that stores the ID for every window
-df_ids <- system(paste("grep -A", nline, "'Input data:'", fn_iqtree), intern=T)
-df_ids <- df_ids[-c(1,2)]
-df_ids <- as.data.frame(stringr::str_split_fixed(df_ids, "\t", 9))
-colnames(df_ids) <- df_ids[1,]
-df_ids <- df_ids[-1,]
-
-# extract table that stores the AIC for every ID
-df_aic <- system(paste("grep -A", nline, "'List of best-fit models per partition:'", fn_iqtree), intern=T)
-df_aic <- df_aic[-c(1,2)]
-df_aic <- lapply(df_aic, function(x) { ls_row <- strsplit(x, split=" ")[[1]]; ls_row[ls_row!="" & ls_row!="+"] })
-df_aic <- do.call(rbind.data.frame, df_aic)
-colnames(df_aic) <- df_aic[1,]
-df_aic <- df_aic[-1,]
-
-# save data.frame for reference
-data.table::fwrite(df_ids, file=fn_iqtree_ids, row.names=F, col.names=T, quote=F, sep="\t")
-data.table::fwrite(df_aic, file=fn_iqtree_aic, row.names=F, col.names=T, quote=F, sep="\t")
 ```
 
 ## Extract list of initial windows
 ```{r, include=FALSE}
-# open files
-df_ids <- data.table::fread(fn_iqtree_ids)
-df_aic <- data.table::fread(fn_iqtree_aic)
-
 # output file
 df_current <- NULL
 fn_df_current <- paste0(prefix_division_summary, "00.tsv")
@@ -95,14 +64,21 @@ if (file.exists(fn_df_current) && !params$redo) {
   nwcl <- makeCluster(params$thread)
   doSNOW::registerDoSNOW(nwcl)
 
+  # extract list of windows
+  ls_windows <- list.files(paste0(getwd(), "/windows/", best_wsize_aic, "/alignment/"), recursive=F, full.names=F)
+
   # save the AIC per window
   df_current <- foreach (window = ls_windows, .combine='rbind') %dopar% {
-    # input files
+    # copy input file
     fn_fasta <- paste0(getwd(), "/windows/", format(best_wsize_aic, scientific=F), "/alignment/", window)
+    system(paste("cp", fn_fasta, outdir_fasta))
 
-    # calculate AIC
-    id <- df_ids$ID[df_ids$Name==window]
-    aic <- as.numeric(df_aic$AIC[df_aic$ID==id])
+    # run IQ-TREE
+    f_iqtree2_single(fn_fasta, NULL, best_wsize_aic, params$set_blmin, params$set_keepident, params$set_model, params$dna_model, "", 0, params$exe_iqtree)
+
+    # extract AIC
+    fn_iqtree <- paste0(outdir_fasta, window, ".iqtree")
+    aic <- as.numeric(gsub("^.* ", "", system(paste("grep '^Akaike information criterion'", fn_iqtree), intern=T)))
 
     # update data.table
     return(data.table::data.table(iter="00", window=gsub(".fa","",window), length=as.numeric(best_wsize_aic), aic=aic, dir=fn_fasta, is_divided=TRUE))
