@@ -1,6 +1,6 @@
 # SimNOW
 
-**SimNOW (Simulation Non-Overlapping Windows)** is an R pipeline to assess the accuracy of non-overlapping windows analysis in simulated phylogenetic studies. It consists of two main steps: sequence simulation and non-overlapping window analyses using one fixed window size and/or variable window sizes. It is mainly developed and tested using MacOS and Linux, so there might be incompatibilities using Windows.
+**SimNOW (Simulation Non-Overlapping Windows)** is an R pipeline to assess the accuracy of non-overlapping windows approach in simulated phylogenetic studies. It starts with sequence simulation, followed by non-overlapping window analyses using fixed window sizes and/or variable window sizes. It is mainly developed and tested using MacOS and Linux, so there might be incompatibilities using Windows.
 
 > [!NOTE]
 > The stepwise non-overlapping window analyses have been moved to <a href="https://github.com/jeremiasivan/StepwiseNOW"><b>StepwiseNOW (Stepwise Non-Overlapping Windows)</b></a>. The codes are also archived at `archive-empirical` branch.
@@ -16,6 +16,7 @@ J. Ivan, P. Frandsen, R. Lanfear. (2026). Selecting a Window Size for Phylogenom
 ## Table of Content
 - <a href="#prereqs">Prerequisites</a>
 - <a href="#genpipe">General Pipeline</a>
+- <a href="#inout">Input and Output Files</a>
 - <a href="#refs">References</a>
 
 ## <a id="prereqs">Prerequisites</a>
@@ -71,6 +72,9 @@ SimNOW requires several software and R packages to run. We recommend you to use 
 
     In UNIX-based operating systems (e.g., Linux and MacOS), it is advisable to use `nohup` or `tmux` to run the whole pipeline. For Windows, you can use `psmux`.
 
+## <a id="inout">Input and Output Files</a>
+Please see <a href="./codes/README.md">README.md</a> for more details about input and output files required for running SimNOW, including examples from publications.
+
 ---
 ## <a id="refs">References</a>
 1. Ly-Trong, N., et al. (<a href="https://doi.org/10.1093/molbev/msac092">2022</a>). **AliSim: A Fast and Versatile Phylogenetic Sequence Simulator for the Genomic Era**. *Molecular Biology and Evolution*, *39*(5), msac092.
@@ -106,4 +110,4 @@ SimNOW requires several software and R packages to run. We recommend you to use 
 16. Anthropic. (<a href="https://claude.ai/">2026</a>). Claude 4.6 Sonnet was used to generate `config.yaml` and `run_pipeline.R`. 
 
 ---
-*Last update: 12 June 2026 by Jeremias Ivan*
+*Last update: 27 June 2026 by Jeremias Ivan*
